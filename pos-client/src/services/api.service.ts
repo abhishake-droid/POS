@@ -1,0 +1,25 @@
+import axios from 'axios';
+
+// Use relative path for Next.js rewrites to work
+// Next.js will proxy /api/* to http://localhost:8080/api/*
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
+      error.message = 'Cannot connect to backend. Please ensure the server is running on http://localhost:8080';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default apiClient;

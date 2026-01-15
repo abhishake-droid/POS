@@ -1,0 +1,57 @@
+package com.increff.pos.dao;
+
+import com.increff.pos.db.ClientPojo;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.repository.support.MongoRepositoryFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Repository;
+
+/**
+ * DAO for Client operations
+ */
+@Repository
+public class ClientDao extends AbstractDao<ClientPojo> {
+    public ClientDao(MongoOperations mongoOperations) {
+        super(
+            new MongoRepositoryFactory(mongoOperations)
+                .getEntityInformation(ClientPojo.class),
+            mongoOperations
+        );
+    }
+
+    public ClientPojo findByClientIdAndName(String clientId, String name) {
+        Query query = Query.query(
+            Criteria.where("clientId").is(clientId)
+                .and("name").is(name)
+        );
+        return mongoOperations.findOne(query, ClientPojo.class);
+    }
+
+    /**
+     * Find client by clientId
+     */
+    public ClientPojo findByClientId(String clientId) {
+        Query query = Query.query(Criteria.where("clientId").is(clientId));
+        return mongoOperations.findOne(query, ClientPojo.class);
+    }
+
+    public ClientPojo findByPhone(String phone) {
+        Query query = Query.query(Criteria.where("phone").is(phone));
+        return mongoOperations.findOne(query, ClientPojo.class);
+    }
+
+
+    public ClientPojo findByEmail(String email) {
+        Query query = Query.query(Criteria.where("email").is(email));
+        return mongoOperations.findOne(query, ClientPojo.class);
+    }
+
+
+    @Override
+    public Page<ClientPojo> findAll(Pageable pageable) {
+        return super.findAll(pageable);
+    }
+}
