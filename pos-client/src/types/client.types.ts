@@ -11,3 +11,14 @@ export interface ClientData {
   email: string;
   phone: string;
 }
+
+export type ClientSearchFilter =
+    | 'clientId'
+    | 'name'
+    | 'email'
+    | 'phone';
+
+export interface ClientSearchParams {
+  filter: ClientSearchFilter;
+  query: string;
+}
