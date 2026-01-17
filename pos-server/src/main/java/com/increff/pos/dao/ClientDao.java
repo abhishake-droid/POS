@@ -49,6 +49,11 @@ public class ClientDao extends AbstractDao<ClientPojo> {
         return mongoOperations.findOne(query, ClientPojo.class);
     }
 
+    public ClientPojo findByName(String name) {
+        Query query = Query.query(Criteria.where("name").is(name));
+        return mongoOperations.findOne(query, ClientPojo.class);
+    }
+
 
     @Override
     public Page<ClientPojo> findAll(Pageable pageable) {

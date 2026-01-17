@@ -9,10 +9,13 @@ import java.time.Instant;
 
 @Data
 public abstract class AbstractPojo {
+
     @Id
     private String id;
+
     @CreatedDate
     private Instant createdAt;
+
     @LastModifiedDate
     private Instant updatedAt;
-} 
+}

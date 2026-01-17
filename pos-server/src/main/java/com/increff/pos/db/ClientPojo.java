@@ -14,6 +14,7 @@ public class ClientPojo extends AbstractPojo {
     @Field("id")
     private String clientId;
 
+    @Indexed(unique = true)
     @Field("name")
     private String name;
 

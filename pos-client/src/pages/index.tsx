@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
-import { Button, Container, Box, Typography, Card, CardContent } from '@mui/material';
+import { Button, Container, Box, Typography, Card, CardContent, Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { People } from '@mui/icons-material';
+import { People, Inventory } from '@mui/icons-material';
 
 const StyledContainer = styled(Container)(({ theme }) => ({
   paddingTop: '4rem',
@@ -61,26 +61,61 @@ export default function Home() {
         </Typography>
       </Box>
 
-      <StyledCard>
-        <CardContent sx={{ padding: '3rem !important' }}>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <People sx={{ fontSize: 64, color: '#1976d2', mb: 2 }} />
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-              Client Management
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <StyledButton
-              variant="contained"
-              size="large"
-              onClick={() => router.push('/clients')}
-              startIcon={<People />}
-            >
-              Go to Clients
-            </StyledButton>
-          </Box>
-        </CardContent>
-      </StyledCard>
+      <Grid container spacing={3} sx={{ maxWidth: 1000, mt: 2 }}>
+        <Grid item xs={12} sm={6}>
+          <StyledCard>
+            <CardContent sx={{ padding: '2.5rem !important' }}>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <People sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                  Client Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Manage your clients and customer information
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <StyledButton
+                  variant="contained"
+                  size="large"
+                  onClick={() => router.push('/clients')}
+                  startIcon={<People />}
+                  fullWidth
+                >
+                  Go to Clients
+                </StyledButton>
+              </Box>
+            </CardContent>
+          </StyledCard>
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <StyledCard>
+            <CardContent sx={{ padding: '2.5rem !important' }}>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Inventory sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                  Product Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Manage products, inventory, and upload via TSV
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <StyledButton
+                  variant="contained"
+                  size="large"
+                  onClick={() => router.push('/products')}
+                  startIcon={<Inventory />}
+                  fullWidth
+                >
+                  Go to Products
+                </StyledButton>
+              </Box>
+            </CardContent>
+          </StyledCard>
+        </Grid>
+      </Grid>
     </StyledContainer>
   );
 }

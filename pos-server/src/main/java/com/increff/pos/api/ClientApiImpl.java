@@ -38,6 +38,10 @@ public class ClientApiImpl implements ClientApi {
         // Validation
         // Name validation
         validateNameFormat(clientPojo.getName());
+        String normalizedName = clientPojo.getName().trim().toLowerCase();
+        if (dao.findByName(normalizedName) != null) {
+            throw new ApiException("Client name already exists");
+        }
 
         // Phone validation
         validatePhoneFormat(clientPojo.getPhone());

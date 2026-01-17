@@ -55,6 +55,9 @@ export default function Navbar() {
           <NavButton onClick={() => router.push('/clients')}>
             Clients
           </NavButton>
+          <NavButton onClick={() => router.push('/products')}>
+            Products
+          </NavButton>
         </Box>
       </StyledToolbar>
     </StyledAppBar>
