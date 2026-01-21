@@ -5,7 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 
 @Data
 public abstract class AbstractPojo {
@@ -14,8 +14,8 @@ public abstract class AbstractPojo {
     private String id;
 
     @CreatedDate
-    private Instant createdAt;
+    private ZonedDateTime createdAt;
 
     @LastModifiedDate
-    private Instant updatedAt;
+    private ZonedDateTime updatedAt;
 }

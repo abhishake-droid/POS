@@ -1,7 +1,8 @@
 import { useRouter } from 'next/router';
 import { Button, Container, Box, Typography, Card, CardContent, Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { People, Inventory } from '@mui/icons-material';
+import { People, Inventory, Dashboard, SupervisorAccount } from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContext';
 
 const StyledContainer = styled(Container)(({ theme }) => ({
   paddingTop: '4rem',
@@ -40,6 +41,7 @@ const StyledButton = styled(Button)(({ theme }) => ({
 
 export default function Home() {
   const router = useRouter();
+  const { isSupervisor } = useAuth();
 
   return (
     <StyledContainer>
@@ -60,6 +62,64 @@ export default function Home() {
           Point of Sale Management System
         </Typography>
       </Box>
+
+      {isSupervisor && (
+        <Grid container spacing={3} sx={{ maxWidth: 1000, mt: 2, mb: 3 }}>
+          <Grid item xs={12} sm={6}>
+            <StyledCard>
+              <CardContent sx={{ padding: '2.5rem !important' }}>
+                <Box sx={{ textAlign: 'center', mb: 3 }}>
+                  <Dashboard sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
+                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                    Supervisor Dashboard
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    View operators and activity logs
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                  <StyledButton
+                    variant="contained"
+                    size="large"
+                    onClick={() => router.push('/supervisor-dashboard')}
+                    startIcon={<Dashboard />}
+                    fullWidth
+                  >
+                    Go to Dashboard
+                  </StyledButton>
+                </Box>
+              </CardContent>
+            </StyledCard>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <StyledCard>
+              <CardContent sx={{ padding: '2.5rem !important' }}>
+                <Box sx={{ textAlign: 'center', mb: 3 }}>
+                  <SupervisorAccount sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
+                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                    Operator Management
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Create and manage operators
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                  <StyledButton
+                    variant="contained"
+                    size="large"
+                    onClick={() => router.push('/operators')}
+                    startIcon={<SupervisorAccount />}
+                    fullWidth
+                  >
+                    Manage Operators
+                  </StyledButton>
+                </Box>
+              </CardContent>
+            </StyledCard>
+          </Grid>
+        </Grid>
+      )}
 
       <Grid container spacing={3} sx={{ maxWidth: 1000, mt: 2 }}>
         <Grid item xs={12} sm={6}>

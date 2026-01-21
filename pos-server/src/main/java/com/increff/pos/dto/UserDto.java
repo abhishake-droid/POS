@@ -10,6 +10,7 @@ import com.increff.pos.model.form.PageForm;
 import com.increff.pos.util.ValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,9 +20,24 @@ public class UserDto {
     @Autowired
     private UserApi userApi;
 
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     public UserData create(UserForm userForm) throws ApiException {
         ValidationUtil.validateUserForm(userForm);
+        
+        // Prevent creating supervisor users via API - supervisors are auto-created from properties
+        if (userForm.getRole() != null && "SUPERVISOR".equals(userForm.getRole())) {
+            throw new ApiException("Supervisor users cannot be created via API. They are automatically created from application properties.");
+        }
+        
         UserPojo userPojo = UserHelper.convertToEntity(userForm);
+        
+        // Operators don't need passwords - they login with email only
+        // No password hashing needed for operators
+        
+        // Force role to be USER (OPERATOR) - supervisors can only be created via initialization
+        userPojo.setRole("USER");
+        
         UserPojo savedUserPojo = userApi.add(userPojo);
         return UserHelper.convertToDto(savedUserPojo);
     }

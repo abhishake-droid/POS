@@ -1,6 +1,8 @@
-import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, Chip } from '@mui/material';
 import { useRouter } from 'next/router';
 import { styled } from '@mui/material/styles';
+import { useAuth } from '../contexts/AuthContext';
+import { Logout } from '@mui/icons-material';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   backgroundColor: '#1976d2',
@@ -32,6 +34,7 @@ const NavButton = styled(Button)(({ theme }) => ({
 
 export default function Navbar() {
   const router = useRouter();
+  const { user, logout, isSupervisor } = useAuth();
 
   return (
     <StyledAppBar position="sticky">
@@ -48,7 +51,7 @@ export default function Navbar() {
         >
           POS System
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           <NavButton onClick={() => router.push('/')}>
             Home
           </NavButton>
@@ -58,6 +61,33 @@ export default function Navbar() {
           <NavButton onClick={() => router.push('/products')}>
             Products
           </NavButton>
+          {isSupervisor && (
+            <>
+              <NavButton onClick={() => router.push('/supervisor-dashboard')}>
+                Dashboard
+              </NavButton>
+              <NavButton onClick={() => router.push('/operators')}>
+                Operators
+              </NavButton>
+            </>
+          )}
+          {user && (
+            <>
+              <Chip
+                label={user.role}
+                color={isSupervisor ? 'secondary' : 'default'}
+                sx={{ color: 'white', fontWeight: 600 }}
+              />
+              <NavButton
+                startIcon={<Logout />}
+                onClick={() => {
+                  logout().catch(console.error);
+                }}
+              >
+                Logout
+              </NavButton>
+            </>
+          )}
         </Box>
       </StyledToolbar>
     </StyledAppBar>

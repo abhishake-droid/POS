@@ -36,9 +36,8 @@ import { productService } from '../services/product.service';
 import { clientService } from '../services/client.service';
 import { ProductData, ProductForm, ProductSearchFilter, InventoryForm } from '../types/product.types';
 import { ClientData } from '../types/client.types';
+import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
-import {Simulate} from "react-dom/test-utils";
-import input = Simulate.input;
 
 const PAGE_SIZE = 10;
 
@@ -127,6 +126,7 @@ const HiddenInput = styled('input')({
 /* ================= COMPONENT ================= */
 
 export default function Products() {
+  const { isSupervisor } = useAuth();
   const [products, setProducts] = useState<ProductData[]>([]);
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
@@ -286,6 +286,27 @@ export default function Products() {
     window.URL.revokeObjectURL(url);
   };
 
+  const tsvHasErrors = (base64Tsv: string): boolean => {
+    const decoded = atob(base64Tsv);
+    const lines = decoded.split('\n');
+
+    // skip header, check status column
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue; // skip empty lines
+      
+      const columns = line.split('\t');
+      if (columns.length > 1) {
+        const status = columns[1].trim();
+        if (status === 'FAILED') {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+
   const handleFileUpload = async (file: File, isInventory: boolean) => {
     if (!file) return;
 
@@ -307,13 +328,23 @@ export default function Products() {
           if (isInventory) {
             const resultTsv = await productService.uploadInventoryTsvWithResults(base64);
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            downloadTsvFile(resultTsv, `inventory-upload-results-${timestamp}.tsv`);
-            toast.success('Inventory uploaded. Results file downloaded.');
+            if (tsvHasErrors(resultTsv)) {
+              downloadTsvFile(resultTsv, `inventory-upload-results-${timestamp}.tsv`);
+              toast.error('Inventory upload completed with errors.');
+            } else {
+              toast.success('Inventory uploaded successfully.');
+            }
+
           } else {
             const resultTsv = await productService.uploadProductsTsvWithResults(base64);
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            downloadTsvFile(resultTsv, `products-upload-results-${timestamp}.tsv`);
-            toast.success('Products uploaded. Results file downloaded.');
+            if (tsvHasErrors(resultTsv)) {
+              downloadTsvFile(resultTsv, `products-upload-results-${timestamp}.tsv`);
+              toast.error('Upload completed with errors.');
+            } else {
+              toast.success('Products uploaded successfully.');
+            }
+
           }
           // Reset to first page and reload to show updated data
           setCurrentPage(0);
@@ -373,49 +404,56 @@ export default function Products() {
             Add Product
           </Button>
 
-          <HiddenInput
-            id="products-tsv-upload"
-            type="file"
-            accept=".tsv,.txt"
-            onChange={(e) => {
-              const file = (e.target as HTMLInputElement).files?.[0];
-              if (file) handleFileUpload(file, false);
-            }}
-          />
-          <label htmlFor="products-tsv-upload">
-            <Button
-              variant="outlined"
-              component="span"
-              startIcon={<CloudUpload />}
-              disabled={loading}
-            >
-              Upload Products TSV
-            </Button>
-          </label>
+          {isSupervisor && (
+            <>
+              <HiddenInput
+                id="products-tsv-upload"
+                type="file"
+                accept=".tsv,.txt"
+                onChange={(e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) handleFileUpload(file, false);
+                  // Reset input to allow uploading the same or another file again
+                  (e.target as HTMLInputElement).value = '';
+                }}
+              />
+              <label htmlFor="products-tsv-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<CloudUpload />}
+                  disabled={loading}
+                >
+                  Upload Products TSV
+                </Button>
+              </label>
 
-          <HiddenInput
-              id="inventory-tsv-upload"
-              type="file"
-              accept=".tsv,.txt"
-              onChange={(e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (file) {
-                  handleFileUpload(file, true);
-                }
-              }}
-          />
+              <HiddenInput
+                  id="inventory-tsv-upload"
+                  type="file"
+                  accept=".tsv,.txt"
+                  onChange={(e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      handleFileUpload(file, true);
+                    }
+                    // Reset input to allow uploading the same or another file again
+                    (e.target as HTMLInputElement).value = '';
+                  }}
+              />
 
-
-          <label htmlFor="inventory-tsv-upload">
-            <Button
-              variant="outlined"
-              component="span"
-              startIcon={<CloudUpload />}
-              disabled={loading}
-            >
-              Upload Inventory TSV
-            </Button>
-          </label>
+              <label htmlFor="inventory-tsv-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<CloudUpload />}
+                  disabled={loading}
+                >
+                  Upload Inventory TSV
+                </Button>
+              </label>
+            </>
+          )}
         </ActionBox>
       </HeaderBox>
 
@@ -503,12 +541,18 @@ export default function Products() {
                   <TableCell>₹{p.mrp.toFixed(2)}</TableCell>
                   <TableCell>{p.quantity || 0}</TableCell>
                   <TableCell align="center">
-                    <Button
-                      startIcon={<Edit />}
-                      onClick={() => handleEdit(p)}
-                    >
-                      Edit
-                    </Button>
+                    {isSupervisor ? (
+                      <Button
+                        startIcon={<Edit />}
+                        onClick={() => handleEdit(p)}
+                      >
+                        Edit
+                      </Button>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        View Only
+                      </Typography>
+                    )}
                   </TableCell>
                 </StyledTableRow>
               ))}

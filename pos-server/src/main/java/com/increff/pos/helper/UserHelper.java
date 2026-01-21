@@ -13,6 +13,9 @@ public class UserHelper {
         UserPojo userPojo = new UserPojo();
         userPojo.setName(dto.getName());
         userPojo.setEmail(dto.getEmail());
+        userPojo.setRole(dto.getRole() != null ? dto.getRole() : "USER");
+        // Password should be hashed before calling this, so set it directly
+        userPojo.setPassword(dto.getPassword());
         return userPojo;
     }
     public static List<UserData> convertToUserDataList(List<UserPojo> userPojoDataList) {
@@ -25,6 +28,7 @@ public class UserHelper {
         userData.setId(userPojo.getId());
         userData.setName(userPojo.getName());
         userData.setEmail(userPojo.getEmail());
+        userData.setRole(userPojo.getRole() != null ? userPojo.getRole() : "USER");
         return userData;
     }
 }

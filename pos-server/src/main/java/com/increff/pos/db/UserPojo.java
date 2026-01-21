@@ -14,4 +14,8 @@ public class UserPojo extends AbstractPojo {
     private String email;
     @Field("name")
     private String name;
+    @Field("password")
+    private String password; // Hashed password, null for regular users
+    @Field("role")
+    private String role; // "SUPERVISOR" or "USER"
 } 

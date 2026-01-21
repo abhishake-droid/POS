@@ -29,6 +29,7 @@ import {
 import { styled } from '@mui/material/styles';
 import { clientService } from '../services/client.service';
 import { ClientData, ClientForm } from '../types/client.types';
+import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 
 type ClientSearchFilter = 'clientId' | 'name' | 'email' | 'phone';
@@ -105,6 +106,7 @@ const StyledIconButton = styled(IconButton)({
 /* ================= COMPONENT ================= */
 
 export default function Clients() {
+  const { isSupervisor } = useAuth();
   const [clients, setClients] = useState<ClientData[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [searchFilter, setSearchFilter] =
@@ -277,20 +279,27 @@ export default function Clients() {
                     <TableCell>{c.phone}</TableCell>
                     <TableCell>{c.email}</TableCell>
                     <TableCell align="center">
-                      <Button
-                          startIcon={<Edit />}
-                          onClick={() => {
-                            setEditingId(c.id);
-                            setForm({
-                              name: c.name,
-                              phone: c.phone,
-                              email: c.email,
-                            });
-                            setOpen(true);
-                          }}
-                      >
-                        Edit
-                      </Button>
+                      {isSupervisor && (
+                        <Button
+                            startIcon={<Edit />}
+                            onClick={() => {
+                              setEditingId(c.id);
+                              setForm({
+                                name: c.name,
+                                phone: c.phone,
+                                email: c.email,
+                              });
+                              setOpen(true);
+                            }}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                      {!isSupervisor && (
+                        <Typography variant="body2" color="text.secondary">
+                          View Only
+                        </Typography>
+                      )}
                     </TableCell>
                   </StyledTableRow>
               ))}
