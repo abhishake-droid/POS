@@ -4,12 +4,6 @@ import {
   Box,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Dialog,
   DialogTitle,
@@ -19,18 +13,16 @@ import {
   IconButton,
   MenuItem,
   Avatar,
-  Input,
   CircularProgress,
   Autocomplete,
+  Grid,
+  Card,
+  CardContent,
+  CardHeader,
+  CardActions,
+  Chip,
 } from '@mui/material';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Upload,
-  Edit,
-  CloudUpload,
-  Add,
-} from '@mui/icons-material';
+import { ChevronLeft, ChevronRight, Edit, CloudUpload, Add } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { productService } from '../services/product.service';
 import { clientService } from '../services/client.service';
@@ -44,8 +36,8 @@ const PAGE_SIZE = 10;
 /* ================= STYLES ================= */
 
 const StyledContainer = styled(Container)({
-  paddingTop: '2rem',
-  paddingBottom: '2rem',
+  paddingTop: '3rem',
+  paddingBottom: '3rem',
   minHeight: 'calc(100vh - 64px)',
 });
 
@@ -54,10 +46,11 @@ const HeaderBox = styled(Box)({
   justifyContent: 'space-between',
   alignItems: 'center',
   marginBottom: '1.5rem',
-  padding: '1.5rem',
-  backgroundColor: '#f5f5f5',
-  borderRadius: '12px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  padding: '1.25rem 1.5rem',
+  borderRadius: '16px',
+  backgroundColor: '#ffffff',
+  border: '1px solid #e5e7eb',
+  boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
 });
 
 const ActionBox = styled(Box)({
@@ -68,35 +61,14 @@ const ActionBox = styled(Box)({
 
 const SearchBox = styled(Box)({
   display: 'flex',
-  gap: '1rem',
+  flexWrap: 'wrap',
+  gap: '0.75rem',
   alignItems: 'center',
-  padding: '1rem 1.5rem',
-  marginBottom: '2rem',
-  backgroundColor: '#fafafa',
-  borderRadius: '10px',
-  border: '1px solid #e0e0e0',
-});
-
-const StyledTableContainer = styled(TableContainer)({
-  borderRadius: '12px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-});
-
-const StyledTableHead = styled(TableHead)({
-  backgroundColor: '#1976d2',
-  '& .MuiTableCell-head': {
-    color: 'white',
-    fontWeight: 600,
-  },
-});
-
-const StyledTableRow = styled(TableRow)({
-  '&:nth-of-type(odd)': {
-    backgroundColor: '#f9f9f9',
-  },
-  '&:hover': {
-    backgroundColor: '#e3f2fd',
-  },
+  padding: '1rem 1.25rem',
+  marginBottom: '1.75rem',
+  borderRadius: '14px',
+  backgroundColor: '#ffffff',
+  border: '1px solid #e5e7eb',
 });
 
 const PaginationBox = styled(Box)({
@@ -107,20 +79,11 @@ const PaginationBox = styled(Box)({
 });
 
 const StyledIconButton = styled(IconButton)({
-  backgroundColor: '#1976d2',
+  backgroundColor: '#1d4ed8',
   color: 'white',
   '&:hover': {
-    backgroundColor: '#1565c0',
+    backgroundColor: '#1e40af',
   },
-});
-
-const ImageCell = styled(TableCell)({
-  width: '80px',
-  padding: '8px',
-});
-
-const HiddenInput = styled('input')({
-  display: 'none',
 });
 
 /* ================= COMPONENT ================= */
@@ -150,6 +113,16 @@ export default function Products() {
     productId: '',
     quantity: 0,
   });
+
+  // TSV upload dialog state
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadType, setUploadType] = useState<'products' | 'inventory' | null>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResultTsv, setUploadResultTsv] = useState<string | null>(null);
+  const [uploadFailures, setUploadFailures] = useState<
+    { rowNumber: string; error: string; data: string }[]
+  >([]);
 
   useEffect(() => {
     loadProducts(currentPage);
@@ -328,7 +301,7 @@ export default function Products() {
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue; // skip empty lines
-      
+
       const columns = line.split('\t');
       if (columns.length > 1) {
         const status = columns[1].trim();
@@ -340,60 +313,119 @@ export default function Products() {
     return false;
   };
 
+  const extractFailures = (
+    base64Tsv: string
+  ): { rowNumber: string; error: string; data: string }[] => {
+    const decoded = atob(base64Tsv);
+    const lines = decoded.split('\n');
+    const failures: { rowNumber: string; error: string; data: string }[] = [];
 
-  const handleFileUpload = async (file: File, isInventory: boolean) => {
-    if (!file) return;
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      const columns = line.split('\t');
+      if (columns.length >= 4) {
+        const [rowNumber, status, error, data] = columns;
+        if (status.trim() === 'FAILED') {
+          failures.push({
+            rowNumber: rowNumber.trim(),
+            error: error.trim(),
+            data: data.trim(),
+          });
+        }
+      }
+    }
+    return failures;
+  };
 
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+  const downloadTemplateTsv = (type: 'products' | 'inventory') => {
+    let content = '';
+    let filename = '';
+
+    if (type === 'products') {
+      content =
+        'barcode\tclientId\tname\tmrp\timageUrl\n' +
+        'ABC-123\tclient-001\tSample Product\t199.99\thttps://example.com/image.png\n';
+      filename = 'products-template.tsv';
+    } else {
+      content = 'barcode\tquantity\nABC-123\t10\n';
+      filename = 'inventory-template.tsv';
+    }
+
+    const blob = new Blob([content], { type: 'text/tab-separated-values' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleUploadConfirm = () => {
+    if (!uploadType || !uploadFile) {
+      toast.error('Please select a TSV file to upload');
+      return;
+    }
+
+    if (uploadFile.size > 5 * 1024 * 1024) {
       toast.error('File size must be less than 5MB');
       return;
     }
 
-    setLoading(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const text = e.target?.result as string;
-          // Convert to base64
-          const base64 = btoa(unescape(encodeURIComponent(text)));
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const base64 = btoa(unescape(encodeURIComponent(text)));
 
-          if (isInventory) {
-            const resultTsv = await productService.uploadInventoryTsvWithResults(base64);
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            if (tsvHasErrors(resultTsv)) {
-              downloadTsvFile(resultTsv, `inventory-upload-results-${timestamp}.tsv`);
-              toast.error('Inventory upload completed with errors.');
-            } else {
-              toast.success('Inventory uploaded successfully.');
-            }
-
-          } else {
-            const resultTsv = await productService.uploadProductsTsvWithResults(base64);
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            if (tsvHasErrors(resultTsv)) {
-              downloadTsvFile(resultTsv, `products-upload-results-${timestamp}.tsv`);
-              toast.error('Upload completed with errors.');
-            } else {
-              toast.success('Products uploaded successfully.');
-            }
-
-          }
-          // Reset to first page and reload to show updated data
-          setCurrentPage(0);
-          await loadProducts(0);
-        } catch (err: any) {
-          toast.error(err.response?.data?.message || 'Upload failed');
-        } finally {
-          setLoading(false);
+        let resultTsv: string;
+        if (uploadType === 'inventory') {
+          resultTsv = await productService.uploadInventoryTsvWithResults(base64);
+        } else {
+          resultTsv = await productService.uploadProductsTsvWithResults(base64);
         }
-      };
-      reader.readAsText(file);
-    } catch (e: any) {
-      toast.error('Failed to read file');
-      setLoading(false);
-    }
+
+        setUploadResultTsv(resultTsv);
+        const hasErrors = tsvHasErrors(resultTsv);
+        const failures = extractFailures(resultTsv);
+        setUploadFailures(failures);
+
+        if (hasErrors) {
+          toast.error('Upload completed with some errors. See details below.');
+        } else {
+          toast.success(
+            uploadType === 'inventory'
+              ? 'Inventory uploaded successfully.'
+              : 'Products uploaded successfully.'
+          );
+          setUploadDialogOpen(false);
+        }
+
+        setCurrentPage(0);
+        await loadProducts(0);
+      } catch (err: any) {
+        toast.error(err?.response?.data?.message || 'Upload failed');
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.readAsText(uploadFile);
+  };
+
+  const handleOpenUploadDialog = (type: 'products' | 'inventory') => {
+    setUploadType(type);
+    setUploadFile(null);
+    setUploadResultTsv(null);
+    setUploadFailures([]);
+    setUploadDialogOpen(true);
+  };
+
+  const handleCloseUploadDialog = () => {
+    if (uploading) return;
+    setUploadDialogOpen(false);
   };
 
   const handleEdit = (product: ProductData) => {
@@ -419,11 +451,40 @@ export default function Products() {
     <StyledContainer maxWidth="lg">
       {/* HEADER */}
       <HeaderBox>
-        <Typography variant="h4" sx={{ fontWeight: 600, color: '#1976d2' }}>
-          Product Management
-        </Typography>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: '#111827' }}>
+            Products
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#6b7280' }}>
+            Manage product catalog and inventory in a clean, card-based view.
+          </Typography>
+        </Box>
 
         <ActionBox>
+          {isSupervisor && (
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<CloudUpload />}
+                disabled={loading}
+                sx={{ borderRadius: '999px' }}
+                onClick={() => handleOpenUploadDialog('products')}
+              >
+                Products TSV
+              </Button>
+
+              <Button
+                variant="outlined"
+                startIcon={<CloudUpload />}
+                disabled={loading}
+                sx={{ borderRadius: '999px' }}
+                onClick={() => handleOpenUploadDialog('inventory')}
+              >
+                Inventory TSV
+              </Button>
+            </>
+          )}
+
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -431,63 +492,13 @@ export default function Products() {
               setEditingId(null);
               setForm({ barcode: '', clientId: '', name: '', mrp: 0, imageUrl: '' });
               setInventoryForm({ productId: '', quantity: 0 });
-              loadClients(); // Reload clients when opening dialog
+              loadClients();
               setOpen(true);
             }}
+            sx={{ borderRadius: '999px', px: 3, py: 1 }}
           >
             Add Product
           </Button>
-
-          {isSupervisor && (
-            <>
-              <HiddenInput
-                id="products-tsv-upload"
-                type="file"
-                accept=".tsv,.txt"
-                onChange={(e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0];
-                  if (file) handleFileUpload(file, false);
-                  // Reset input to allow uploading the same or another file again
-                  (e.target as HTMLInputElement).value = '';
-                }}
-              />
-              <label htmlFor="products-tsv-upload">
-                <Button
-                  variant="outlined"
-                  component="span"
-                  startIcon={<CloudUpload />}
-                  disabled={loading}
-                >
-                  Upload Products TSV
-                </Button>
-              </label>
-
-              <HiddenInput
-                  id="inventory-tsv-upload"
-                  type="file"
-                  accept=".tsv,.txt"
-                  onChange={(e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) {
-                      handleFileUpload(file, true);
-                    }
-                    // Reset input to allow uploading the same or another file again
-                    (e.target as HTMLInputElement).value = '';
-                  }}
-              />
-
-              <label htmlFor="inventory-tsv-upload">
-                <Button
-                  variant="outlined"
-                  component="span"
-                  startIcon={<CloudUpload />}
-                  disabled={loading}
-                >
-                  Upload Inventory TSV
-                </Button>
-              </label>
-            </>
-          )}
         </ActionBox>
       </HeaderBox>
 
@@ -515,7 +526,12 @@ export default function Products() {
           <MenuItem value="clientName">Client Name</MenuItem>
         </TextField>
 
-        <Button variant="contained" onClick={handleSearch} disabled={loading}>
+        <Button
+            variant="contained"
+            onClick={handleSearch}
+            disabled={loading}
+            sx={{ borderRadius: '999px' }}
+        >
           Search
         </Button>
 
@@ -531,68 +547,276 @@ export default function Products() {
         </Button>
       </SearchBox>
 
-      {/* TABLE */}
+      {/* PRODUCT CARDS */}
       {loading && (
         <Box display="flex" justifyContent="center" p={4}>
           <CircularProgress />
         </Box>
       )}
 
-      {!loading && (
-        <StyledTableContainer>
-          <Table>
-            <StyledTableHead>
-              <TableRow>
-                <TableCell>Image</TableCell>
-                <TableCell>Barcode</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Client</TableCell>
-                <TableCell>MRP</TableCell>
-                <TableCell>Inventory</TableCell>
-                <TableCell align="center">Actions</TableCell>
-              </TableRow>
-            </StyledTableHead>
-            <TableBody>
-              {products.map((p) => (
-                <StyledTableRow key={p.id}>
-                  <ImageCell>
-                    {p.imageUrl ? (
-                      <Avatar
-                        src={p.imageUrl}
-                        alt={p.name}
-                        sx={{ width: 56, height: 56 }}
-                        variant="rounded"
-                      />
-                    ) : (
-                      <Avatar sx={{ width: 56, height: 56 }} variant="rounded">
-                        No Image
-                      </Avatar>
-                    )}
-                  </ImageCell>
-                  <TableCell>{p.barcode}</TableCell>
-                  <TableCell>{p.name}</TableCell>
-                  <TableCell>{p.clientName || p.clientId}</TableCell>
-                  <TableCell>₹{p.mrp.toFixed(2)}</TableCell>
-                  <TableCell>{p.quantity || 0}</TableCell>
-                  <TableCell align="center">
-                    {isSupervisor ? (
-                      <Button
-                        startIcon={<Edit />}
-                        onClick={() => handleEdit(p)}
+      {/* TSV UPLOAD DIALOG */}
+      <Dialog open={uploadDialogOpen} onClose={handleCloseUploadDialog} fullWidth maxWidth="sm">
+        <DialogTitle>
+          {uploadType === 'inventory'
+            ? 'Upload Inventory TSV'
+            : uploadType === 'products'
+            ? 'Upload Products TSV'
+            : 'Upload TSV'}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Select a TSV file in the expected format. You can download a ready-to-use template
+              below.
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() =>
+                  uploadType && downloadTemplateTsv(uploadType === 'inventory' ? 'inventory' : 'products')
+                }
+              >
+                Download template
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="small"
+                component="label"
+                disabled={uploading}
+              >
+                {uploadFile ? uploadFile.name : 'Select TSV file'}
+                <input
+                  type="file"
+                  accept=".tsv,.txt"
+                  hidden
+                  onChange={(e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0] || null;
+                    setUploadFile(file);
+                  }}
+                />
+              </Button>
+            </Box>
+
+            {uploadFailures.length > 0 && (
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 1.5,
+                  borderRadius: 1,
+                  border: '1px solid rgba(248,113,113,0.4)',
+                  bgcolor: 'rgba(127,29,29,0.1)',
+                  maxHeight: 220,
+                  overflowY: 'auto',
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 600, mb: 1, color: '#fecaca' }}
+                >
+                  Failed rows
+                </Typography>
+                {uploadFailures.map((f) => (
+                  <Box key={f.rowNumber + f.data} sx={{ mb: 1 }}>
+                    <Typography variant="caption" sx={{ color: '#fecaca' }}>
+                      Row {f.rowNumber}: {f.error}
+                    </Typography>
+                    {f.data && (
+                      <Typography
+                        variant="caption"
+                        sx={{ display: 'block', color: '#f97373' }}
                       >
-                        Edit
-                      </Button>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        View Only
+                        {f.data}
                       </Typography>
                     )}
-                  </TableCell>
-                </StyledTableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </StyledTableContainer>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          {uploadResultTsv && (
+            <Button
+              onClick={() =>
+                downloadTsvFile(
+                  uploadResultTsv,
+                  uploadType === 'inventory'
+                    ? 'inventory-upload-results.tsv'
+                    : 'products-upload-results.tsv'
+                )
+              }
+              size="small"
+            >
+              Download results TSV
+            </Button>
+          )}
+          <Box sx={{ flex: 1 }} />
+          <Button onClick={handleCloseUploadDialog} disabled={uploading}>
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleUploadConfirm}
+            disabled={uploading || !uploadFile || !uploadType}
+          >
+            {uploading ? 'Uploading...' : 'Upload'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {!loading && (
+        <Grid container spacing={3}>
+          {products.map((p) => (
+            <Grid item xs={12} sm={6} md={6} lg={4} key={p.id}>
+              <Card
+                sx={{
+                  height: '100%',
+                  minHeight: 260,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: '16px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 4px 16px rgba(15,23,42,0.08)',
+                  '&:hover': {
+                    borderColor: '#1976d2',
+                    boxShadow: '0 10px 24px rgba(15,23,42,0.12)',
+                    transform: 'translateY(-3px)',
+                    transition: 'all 0.15s ease-out',
+                  },
+                }}
+              >
+                <CardHeader
+                  sx={{
+                    pb: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                  }}
+                  avatar={
+                    <Avatar
+                      src={p.imageUrl || undefined}
+                      alt={p.name}
+                      sx={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: 3,
+                        bgcolor: '#e5e7eb',
+                        fontSize: 14,
+                        border: '1px solid #e5e7eb',
+                      }}
+                      variant="rounded"
+                    >
+                      {p.imageUrl ? null : 'No Img'}
+                    </Avatar>
+                  }
+                  title={
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 600, color: '#111827', mb: 0.25 }}
+                    >
+                      {p.name}
+                    </Typography>
+                  }
+                  subheader={
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: '#6b7280', fontFamily: 'monospace' }}
+                      >
+                        {p.barcode}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#4b5563' }}>
+                        {p.clientName || p.clientId}
+                      </Typography>
+                    </Box>
+                  }
+                />
+                <CardContent sx={{ pt: 1, pb: 2, px: 2.25, flexGrow: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                      MRP
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 600, color: '#111827' }}
+                    >
+                      ₹{p.mrp.toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                      Inventory
+                    </Typography>
+                    <Chip
+                      size="small"
+                      label={p.quantity ?? 0}
+                      sx={{
+                        height: 22,
+                        borderRadius: '999px',
+                        backgroundColor:
+                          (p.quantity ?? 0) === 0
+                            ? 'rgba(248,113,113,0.12)'
+                            : 'rgba(34,197,94,0.1)',
+                        color:
+                          (p.quantity ?? 0) === 0 ? '#f97373' : 'rgba(74,222,128,0.95)',
+                        fontSize: 11,
+                        px: 1,
+                      }}
+                    />
+                  </Box>
+                </CardContent>
+                <CardActions
+                  sx={{
+                    px: 2.25,
+                    pb: 2,
+                    pt: 0.5,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: '#9ca3af', fontStyle: 'italic' }}>
+                    {isSupervisor ? 'Editable' : 'View only'}
+                  </Typography>
+                  {isSupervisor ? (
+                    <Button
+                      size="small"
+                      startIcon={<Edit sx={{ fontSize: 16 }} />}
+                      onClick={() => handleEdit(p)}
+                      sx={{
+                        borderRadius: '999px',
+                        textTransform: 'none',
+                        px: 1.8,
+                        py: 0.4,
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  ) : null}
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+          {!loading && products.length === 0 && (
+            <Box
+              sx={{
+                width: '100%',
+                py: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                color: '#9ca3af',
+              }}
+            >
+              <Typography variant="body1">
+                No products found. Try adjusting your filters or add a new product.
+              </Typography>
+            </Box>
+          )}
+        </Grid>
       )}
 
       {/* PAGINATION */}

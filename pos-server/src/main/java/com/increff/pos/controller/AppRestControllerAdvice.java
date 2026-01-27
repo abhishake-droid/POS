@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 @RestControllerAdvice
 public class AppRestControllerAdvice {
@@ -28,4 +29,10 @@ public class AppRestControllerAdvice {
     public MessageData handle(DuplicateKeyException e) {
         return new MessageData("A record with this key already exists");
     }
-} 
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public MessageData handle(OptimisticLockingFailureException e) {
+        return new MessageData("The record was updated by another user. Please refresh and try again.");
+    }
+}

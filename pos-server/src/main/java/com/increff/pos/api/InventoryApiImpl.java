@@ -5,12 +5,15 @@ import com.increff.pos.dao.ProductDao;
 import com.increff.pos.db.InventoryPojo;
 import com.increff.pos.db.ProductPojo;
 import com.increff.pos.exception.ApiException;
+import org.springframework.dao.DuplicateKeyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -89,7 +92,12 @@ public class InventoryApiImpl implements InventoryApi {
     @Override
     @Transactional(rollbackFor = ApiException.class)
     public InventoryPojo updateByProductId(String productId, Integer quantity) throws ApiException {
+        productId = productId != null ? productId.trim() : null;
         logger.info("Updating inventory for productId: {} with quantity: {}", productId, quantity);
+
+        if (productId == null || productId.isEmpty()) {
+            throw new ApiException("Product ID cannot be empty");
+        }
 
         // Validate product exists
         ProductPojo product = productDao.findById(productId).orElse(null);
@@ -100,17 +108,26 @@ public class InventoryApiImpl implements InventoryApi {
         // Validate quantity
         validateQuantity(quantity);
 
-        InventoryPojo existing = inventoryDao.findByProductId(productId);
-        if (existing == null) {
-            // Create new inventory if it doesn't exist
-            existing = new InventoryPojo();
-            existing.setProductId(productId);
+        try {
+            InventoryPojo updated = inventoryDao.upsertQuantityByProductId(productId, quantity);
+            if (updated == null) {
+                updated = inventoryDao.findByProductId(productId);
+            }
+            logger.info("Updated inventory for productId: {}", productId);
+            return updated;
+        } catch (DuplicateKeyException e) {
+            // Extremely rare, but handle concurrency issues gracefully
+            InventoryPojo retryExisting = inventoryDao.findByProductId(productId);
+            if (retryExisting == null) {
+                throw new ApiException("Inventory update failed: inventory already exists for product " + productId);
+            }
+            retryExisting.setQuantity(quantity);
+            InventoryPojo updated = inventoryDao.save(retryExisting);
+            logger.info("Updated inventory for productId: {} after duplicate key retry", productId);
+            return updated;
+        } catch (Exception e) {
+            throw new ApiException("Failed to update inventory for product " + productId);
         }
-        existing.setQuantity(quantity);
-
-        InventoryPojo updated = inventoryDao.save(existing);
-        logger.info("Updated inventory for productId: {}", productId);
-        return updated;
     }
 
     @Override
@@ -123,28 +140,25 @@ public class InventoryApiImpl implements InventoryApi {
             throw new ApiException("Cannot upload more than 5000 rows at once");
         }
 
-        List<InventoryPojo> toSave = new java.util.ArrayList<>();
+        // Deduplicate within the same request (last quantity wins) to avoid unique-index collisions on productId.
+        Map<String, Integer> quantityByProductId = new LinkedHashMap<>();
         for (InventoryPojo inventoryPojo : inventoryPojos) {
-            // Validate product exists
-            ProductPojo product = productDao.findById(inventoryPojo.getProductId()).orElse(null);
-            if (product == null) {
-                throw new ApiException("Product with ID " + inventoryPojo.getProductId() + " does not exist");
+            String productId = inventoryPojo.getProductId() != null ? inventoryPojo.getProductId().trim() : null;
+            if (productId == null || productId.isEmpty()) {
+                throw new ApiException("Product ID cannot be empty");
             }
 
             // Validate quantity
             validateQuantity(inventoryPojo.getQuantity());
 
-            // Check if inventory exists, update or create
-            InventoryPojo existing = inventoryDao.findByProductId(inventoryPojo.getProductId());
-            if (existing != null) {
-                existing.setQuantity(inventoryPojo.getQuantity());
-                toSave.add(existing);
-            } else {
-                toSave.add(inventoryPojo);
-            }
+            quantityByProductId.put(productId, inventoryPojo.getQuantity());
         }
 
-        List<InventoryPojo> saved = inventoryDao.saveAll(toSave);
+        // Use atomic upserts per productId (avoids duplicate-key collisions)
+        List<InventoryPojo> saved = new java.util.ArrayList<>();
+        for (Map.Entry<String, Integer> entry : quantityByProductId.entrySet()) {
+            saved.add(updateByProductId(entry.getKey(), entry.getValue()));
+        }
         logger.info("Bulk updated {} inventory records successfully", saved.size());
         return saved;
     }

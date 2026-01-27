@@ -43,7 +43,7 @@ export default function Navbar() {
           variant="h5"
           component="div"
           sx={{
-            fontWeight: 600,
+            fontWeight: 700,
             cursor: 'pointer',
             letterSpacing: '0.5px',
           }}

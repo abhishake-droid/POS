@@ -326,8 +326,8 @@ public class ProductDto {
     }
 
     private void validateInventoryForm(InventoryForm form) throws ApiException {
-        if (form.getProductId() == null || form.getProductId().trim().isEmpty()) {
-            throw new ApiException("Product ID cannot be empty");
+        if (form == null) {
+            throw new ApiException("Inventory update request cannot be empty");
         }
         if (form.getQuantity() == null || form.getQuantity() < 0) {
             throw new ApiException("Quantity must be a non-negative number");

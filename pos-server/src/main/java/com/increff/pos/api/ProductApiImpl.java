@@ -7,6 +7,7 @@ import com.increff.pos.db.ProductPojo;
 import com.increff.pos.exception.ApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -15,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.HashSet;
 
 @Service
 public class ProductApiImpl implements ProductApi {
@@ -61,9 +64,13 @@ public class ProductApiImpl implements ProductApi {
             productPojo.setImageUrl(productPojo.getImageUrl().trim());
         }
 
-        ProductPojo saved = productDao.save(productPojo);
-        logger.info("Product created successfully with barcode: {}", saved.getBarcode());
-        return saved;
+        try {
+            ProductPojo saved = productDao.save(productPojo);
+            logger.info("Product created successfully with barcode: {}", saved.getBarcode());
+            return saved;
+        } catch (DuplicateKeyException e) {
+            throw new ApiException("Product with barcode " + productPojo.getBarcode() + " already exists");
+        }
     }
 
     @Override
@@ -98,45 +105,42 @@ public class ProductApiImpl implements ProductApi {
     public ProductPojo update(String id, ProductPojo productPojo) throws ApiException {
         logger.info("Updating product with id: {}", id);
 
-        ProductPojo existing = get(id);
-
-        // Validate barcode if provided
-        if (productPojo.getBarcode() != null) {
-            validateBarcodeFormat(productPojo.getBarcode());
-            ProductPojo barcodeDuplicate = productDao.findByBarcode(productPojo.getBarcode().trim().toLowerCase());
-            if (barcodeDuplicate != null && !barcodeDuplicate.getId().equals(id)) {
-                throw new ApiException("Barcode already exists");
-            }
-            existing.setBarcode(productPojo.getBarcode().trim().toLowerCase());
-        }
+        // Barcode is immutable after creation (ignore on update)
 
         // Validate client if provided
+        String clientId = null;
         if (productPojo.getClientId() != null) {
-            ClientPojo client = clientDao.findByClientId(productPojo.getClientId().trim());
+            clientId = productPojo.getClientId().trim();
+            ClientPojo client = clientDao.findByClientId(clientId);
             if (client == null) {
                 throw new ApiException("Client with ID " + productPojo.getClientId() + " does not exist");
             }
-            existing.setClientId(productPojo.getClientId().trim());
         }
 
         // Update name
+        String name = null;
         if (productPojo.getName() != null) {
             validateNameFormat(productPojo.getName());
-            existing.setName(productPojo.getName().trim().toLowerCase());
+            name = productPojo.getName().trim().toLowerCase();
         }
 
         // Update MRP
+        Double mrp = null;
         if (productPojo.getMrp() != null) {
             validateMrp(productPojo.getMrp());
-            existing.setMrp(productPojo.getMrp());
+            mrp = productPojo.getMrp();
         }
 
         // Update image URL
+        String imageUrl = null;
         if (productPojo.getImageUrl() != null) {
-            existing.setImageUrl(productPojo.getImageUrl().trim());
+            imageUrl = productPojo.getImageUrl().trim();
         }
 
-        ProductPojo updated = productDao.save(existing);
+        ProductPojo updated = productDao.updateFieldsById(id, clientId, name, mrp, imageUrl);
+        if (updated == null) {
+            throw new ApiException("Product not found with id: " + id);
+        }
         logger.info("Updated product with id: {}", updated.getId());
         return updated;
     }
@@ -151,12 +155,18 @@ public class ProductApiImpl implements ProductApi {
             throw new ApiException("Cannot upload more than 5000 rows at once");
         }
 
+        Set<String> seenBarcodes = new HashSet<>();
         for (ProductPojo productPojo : productPojos) {
             // Validate barcode
             validateBarcodeFormat(productPojo.getBarcode());
+
+            String normalizedBarcode = productPojo.getBarcode().trim().toLowerCase();
+            if (!seenBarcodes.add(normalizedBarcode)) {
+                throw new ApiException("Duplicate barcode in upload: " + normalizedBarcode);
+            }
             
             // Check if barcode already exists
-            if (productDao.findByBarcode(productPojo.getBarcode().trim().toLowerCase()) != null) {
+            if (productDao.findByBarcode(normalizedBarcode) != null) {
                 throw new ApiException("Product with barcode " + productPojo.getBarcode() + " already exists");
             }
 
@@ -173,7 +183,7 @@ public class ProductApiImpl implements ProductApi {
             validateMrp(productPojo.getMrp());
 
             // Normalize data
-            productPojo.setBarcode(productPojo.getBarcode().trim().toLowerCase());
+            productPojo.setBarcode(normalizedBarcode);
             productPojo.setName(productPojo.getName().trim().toLowerCase());
             productPojo.setClientId(productPojo.getClientId().trim());
             if (productPojo.getImageUrl() != null) {
@@ -181,9 +191,13 @@ public class ProductApiImpl implements ProductApi {
             }
         }
 
-        List<ProductPojo> saved = productDao.saveAll(productPojos);
-        logger.info("Bulk added {} products successfully", saved.size());
-        return saved;
+        try {
+            List<ProductPojo> saved = productDao.saveAll(productPojos);
+            logger.info("Bulk added {} products successfully", saved.size());
+            return saved;
+        } catch (DuplicateKeyException e) {
+            throw new ApiException("Bulk upload failed: a record with this key already exists");
+        }
     }
 
     private void validateBarcodeFormat(String barcode) throws ApiException {
