@@ -11,9 +11,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * DAO for Product operations
- */
 @Repository
 public class ProductDao extends AbstractDao<ProductPojo> {
     public ProductDao(MongoOperations mongoOperations) {
@@ -24,25 +21,16 @@ public class ProductDao extends AbstractDao<ProductPojo> {
         );
     }
 
-    /**
-     * Find product by barcode
-     */
     public ProductPojo findByBarcode(String barcode) {
         Query query = Query.query(Criteria.where("barcode").is(barcode));
         return mongoOperations.findOne(query, ProductPojo.class);
     }
 
-    /**
-     * Find products by clientId
-     */
     public List<ProductPojo> findByClientId(String clientId) {
         Query query = Query.query(Criteria.where("clientId").is(clientId));
         return mongoOperations.find(query, ProductPojo.class);
     }
 
-    /**
-     * Find products by name (case-insensitive search)
-     */
     public List<ProductPojo> findByNameContaining(String name) {
         Query query = Query.query(Criteria.where("name").regex(name, "i"));
         return mongoOperations.find(query, ProductPojo.class);

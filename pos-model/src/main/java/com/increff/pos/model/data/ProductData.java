@@ -1,11 +1,10 @@
 package com.increff.pos.model.data;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * Data transfer object for Product
- */
-@Data
+@Getter
+@Setter
 public class ProductData {
     private String id;
     private String barcode;

@@ -148,6 +148,7 @@ export default function Clients() {
   const handleSearch = async () => {
     if (!searchValue.trim()) {
       loadClients(0);
+      setCurrentPage(0);
       return;
     }
 
@@ -162,17 +163,51 @@ export default function Clients() {
       } catch {
         toast.error('Client not found');
         setClients([]);
+        setTotalPages(0);
+        setTotalElements(0);
       }
       return;
     }
 
-    // UI-level filtering for name/email/phone
-    const filtered = clients.filter((c) =>
-        c[searchFilter]
-            .toLowerCase()
-            .includes(searchValue.toLowerCase())
-    );
-    setClients(filtered);
+    // For other fields, load all pages and filter
+    setLoading(true);
+    try {
+      let allClients: ClientData[] = [];
+      let page = 0;
+      const pageSize = 100; // Use larger page size for fetching all
+      let hasMore = true;
+
+      // Fetch all pages
+      while (hasMore) {
+        const res = await clientService.getAll(page, pageSize);
+        const clientList = res.content || [];
+        allClients = [...allClients, ...clientList];
+        
+        // Check if there are more pages
+        hasMore = res.totalPages > page + 1;
+        page++;
+      }
+
+      // Filter across all clients
+      const value = searchValue.toLowerCase();
+      const filtered = allClients.filter((c) =>
+          c[searchFilter]
+              .toLowerCase()
+              .includes(value)
+      );
+
+      setClients(filtered);
+      setTotalPages(1);
+      setTotalElements(filtered.length);
+      setCurrentPage(0);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Search failed');
+      setClients([]);
+      setTotalPages(0);
+      setTotalElements(0);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async () => {

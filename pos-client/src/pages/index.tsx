@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { Button, Container, Box, Typography, Card, CardContent, Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { People, Inventory, Dashboard, SupervisorAccount } from '@mui/icons-material';
+import { People, Inventory, Dashboard, SupervisorAccount, ShoppingCart, Assessment } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
 const StyledContainer = styled(Container)(({ theme }) => ({
@@ -121,8 +121,8 @@ export default function Home() {
         </Grid>
       )}
 
-      <Grid container spacing={3} sx={{ maxWidth: 1000, mt: 2 }}>
-        <Grid item xs={12} sm={6}>
+      <Grid container spacing={3} sx={{ maxWidth: 1200, mt: 2 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StyledCard>
             <CardContent sx={{ padding: '2.5rem !important' }}>
               <Box sx={{ textAlign: 'center', mb: 3 }}>
@@ -149,7 +149,7 @@ export default function Home() {
           </StyledCard>
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={6} md={3}>
           <StyledCard>
             <CardContent sx={{ padding: '2.5rem !important' }}>
               <Box sx={{ textAlign: 'center', mb: 3 }}>
@@ -170,6 +170,60 @@ export default function Home() {
                   fullWidth
                 >
                   Go to Products
+                </StyledButton>
+              </Box>
+            </CardContent>
+          </StyledCard>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <StyledCard>
+            <CardContent sx={{ padding: '2.5rem !important' }}>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <ShoppingCart sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                  Order Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Create orders, generate and download invoices
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <StyledButton
+                  variant="contained"
+                  size="large"
+                  onClick={() => router.push('/orders')}
+                  startIcon={<ShoppingCart />}
+                  fullWidth
+                >
+                  Go to Orders
+                </StyledButton>
+              </Box>
+            </CardContent>
+          </StyledCard>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <StyledCard>
+            <CardContent sx={{ padding: '2.5rem !important' }}>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Assessment sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                  Sales Report
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  View sales reports by date range and brand
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <StyledButton
+                  variant="contained"
+                  size="large"
+                  onClick={() => router.push('/sales-report')}
+                  startIcon={<Assessment />}
+                  fullWidth
+                >
+                  View Reports
                 </StyledButton>
               </Box>
             </CardContent>

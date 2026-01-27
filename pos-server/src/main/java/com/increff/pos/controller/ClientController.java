@@ -20,12 +20,12 @@ import jakarta.servlet.http.HttpServletRequest;
 public class ClientController {
 
     private final ClientDto clientDto;
+    private final AuthUtil authUtil;
 
-    @Autowired
-    private AuthUtil authUtil;
+    public ClientController(ClientDto clientDto, AuthUtil authUtil) {
 
-    public ClientController(ClientDto clientDto) {
         this.clientDto = clientDto;
+        this.authUtil = authUtil;
     }
 
     @Operation(summary = "Create a new client")

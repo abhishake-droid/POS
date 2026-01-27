@@ -4,9 +4,7 @@ import com.increff.pos.db.InventoryPojo;
 import com.increff.pos.model.data.InventoryData;
 import com.increff.pos.model.form.InventoryForm;
 
-/**
- * Helper class for Inventory entity conversions
- */
+
 public class InventoryHelper {
 
     public static InventoryPojo convertToEntity(InventoryForm form) {

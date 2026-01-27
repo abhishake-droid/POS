@@ -1,11 +1,10 @@
 package com.increff.pos.model.form;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * Form for TSV file upload (base64 encoded)
- */
-@Data
+@Getter
+@Setter
 public class TsvUploadForm {
     private String fileContent; // Base64 encoded TSV content
 }

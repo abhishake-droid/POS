@@ -24,12 +24,12 @@ import java.util.List;
 public class ProductController {
 
     private final ProductDto productDto;
+    private final AuthUtil authUtil;
 
-    @Autowired
-    private AuthUtil authUtil;
 
-    public ProductController(ProductDto productDto) {
+    public ProductController(ProductDto productDto, AuthUtil authUtil) {
         this.productDto = productDto;
+        this.authUtil = authUtil;
     }
 
     @Operation(summary = "Create a new product")

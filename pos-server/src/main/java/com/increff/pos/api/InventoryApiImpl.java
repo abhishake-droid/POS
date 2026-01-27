@@ -13,9 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * API implementation for Inventory operations
- */
 @Service
 public class InventoryApiImpl implements InventoryApi {
     private static final Logger logger = LoggerFactory.getLogger(InventoryApiImpl.class);

@@ -1,11 +1,10 @@
 package com.increff.pos.model.form;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * Form for creating/updating a product
- */
-@Data
+@Getter
+@Setter
 public class ProductForm {
     private String barcode;
     private String clientId;

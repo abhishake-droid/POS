@@ -1,9 +1,11 @@
 package com.increff.pos.model.data;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 public class MessageData {
     private String message;

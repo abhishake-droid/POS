@@ -61,6 +61,12 @@ export default function Navbar() {
           <NavButton onClick={() => router.push('/products')}>
             Products
           </NavButton>
+          <NavButton onClick={() => router.push('/orders')}>
+            Orders
+          </NavButton>
+          <NavButton onClick={() => router.push('/sales-report')}>
+            Sales Report
+          </NavButton>
           {isSupervisor && (
             <>
               <NavButton onClick={() => router.push('/supervisor-dashboard')}>

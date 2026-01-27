@@ -6,6 +6,6 @@ import lombok.Data;
 public class UserForm {
     private String name;
     private String email;
-    private String password; // Required for supervisor, optional for user
+    private String password;
     private String role; // "SUPERVISOR" or "USER"
 } 

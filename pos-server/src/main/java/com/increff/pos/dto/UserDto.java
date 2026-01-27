@@ -17,8 +17,11 @@ import java.util.List;
 
 @Service
 public class UserDto {
-    @Autowired
-    private UserApi userApi;
+
+    private final UserApi userApi;
+    public UserDto(UserApi userApi) {
+        this.userApi = userApi;
+    }
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 

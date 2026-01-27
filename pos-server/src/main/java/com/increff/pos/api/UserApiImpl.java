@@ -19,8 +19,11 @@ import java.util.Objects;
 public class UserApiImpl implements UserApi {
     private static final Logger logger = LoggerFactory.getLogger(UserApiImpl.class);
 
-    @Autowired
-    private UserDao dao;
+    private final UserDao dao;
+    public UserApiImpl(UserDao dao){
+        this.dao = dao;
+    }
+
 
     @Override
     @Transactional(rollbackFor = ApiException.class)

@@ -19,7 +19,6 @@ public class ProductHelper {
         return pojo;
     }
 
-    // Why setting it twice?
     public static ProductData convertToDto(ProductPojo pojo, String clientName, Integer quantity) {
         ProductData data = new ProductData();
         data.setId(pojo.getId());

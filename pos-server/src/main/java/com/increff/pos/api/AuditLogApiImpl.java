@@ -12,7 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -28,7 +28,7 @@ public class AuditLogApiImpl implements AuditLogApi {
     @Transactional(rollbackFor = ApiException.class)
     public AuditLogPojo add(AuditLogPojo auditLogPojo) throws ApiException {
         logger.info("Creating audit log: {} - {}", auditLogPojo.getOperatorEmail(), auditLogPojo.getAction());
-        auditLogPojo.setTimestamp(ZonedDateTime.now());
+        auditLogPojo.setTimestamp(Instant.now());
         AuditLogPojo saved = dao.save(auditLogPojo);
         logger.info("Created audit log with id: {}", saved.getId());
         return saved;

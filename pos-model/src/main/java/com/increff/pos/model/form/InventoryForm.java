@@ -1,11 +1,10 @@
 package com.increff.pos.model.form;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * Form for updating inventory
- */
-@Data
+@Getter
+@Setter
 public class InventoryForm {
     private String productId;
     private Integer quantity;

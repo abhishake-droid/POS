@@ -24,6 +24,7 @@
     <modules>
         <module>pos-server</module>
 		<module>pos-model</module>
+        <module>invoice-app</module>
 	</modules>
     <scm>
 		<connection/>

@@ -2,9 +2,8 @@ package com.increff.pos.dto;
 
 import com.increff.pos.api.InventoryApi;
 import com.increff.pos.api.ProductApi;
-import com.increff.pos.dao.ClientDao;
-import com.increff.pos.dao.ProductDao;
-import com.increff.pos.db.ClientPojo;
+import com.increff.pos.flow.ProductFlow;
+import com.increff.pos.flow.InventoryFlow;
 import com.increff.pos.db.InventoryPojo;
 import com.increff.pos.db.ProductPojo;
 import com.increff.pos.exception.ApiException;
@@ -16,7 +15,6 @@ import com.increff.pos.model.data.TsvUploadResult;
 import com.increff.pos.model.form.InventoryForm;
 import com.increff.pos.model.form.PageForm;
 import com.increff.pos.model.form.ProductForm;
-import com.increff.pos.util.ValidationUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -29,14 +27,14 @@ public class ProductDto {
 
     private final ProductApi productApi;
     private final InventoryApi inventoryApi;
-    private final ClientDao clientDao;
-    private final ProductDao productDao;
+    private final ProductFlow productFlow;
+    private final InventoryFlow inventoryFlow;
 
-    public ProductDto(ProductApi productApi, InventoryApi inventoryApi, ClientDao clientDao, ProductDao productDao) {
+    public ProductDto(ProductApi productApi, InventoryApi inventoryApi, ProductFlow productFlow, InventoryFlow inventoryFlow) {
         this.productApi = productApi;
         this.inventoryApi = inventoryApi;
-        this.clientDao = clientDao;
-        this.productDao = productDao;
+        this.productFlow = productFlow;
+        this.inventoryFlow = inventoryFlow;
     }
 
     public ProductData create(ProductForm form) throws ApiException {
@@ -47,77 +45,31 @@ public class ProductDto {
     }
 
     public ProductData getById(String id) throws ApiException {
-        ProductPojo pojo = productApi.get(id);
-        InventoryPojo inventory = inventoryApi.getByProductId(id);
-        ClientPojo client = clientDao.findByClientId(pojo.getClientId());
-        return ProductHelper.convertToDto(pojo, client != null ? client.getName() : null, 
-                inventory != null ? inventory.getQuantity() : 0);
+        return productFlow.getById(id);
     }
 
     public ProductData getByBarcode(String barcode) throws ApiException {
-        ProductPojo pojo = productApi.getByBarcode(barcode);
-        InventoryPojo inventory = inventoryApi.getByProductId(pojo.getId());
-        ClientPojo client = clientDao.findByClientId(pojo.getClientId());
-        return ProductHelper.convertToDto(pojo, client != null ? client.getName() : null, 
-                inventory != null ? inventory.getQuantity() : 0);
+        return productFlow.getByBarcode(barcode);
     }
 
     public Page<ProductData> getAll(PageForm form) throws ApiException {
-        ValidationUtil.validatePageForm(form);
-        Page<ProductPojo> pojoPage = productApi.getAll(form.getPage(), form.getSize());
-        
-        return pojoPage.map(pojo -> {
-            try {
-                InventoryPojo inventory = inventoryApi.getByProductId(pojo.getId());
-                ClientPojo client = clientDao.findByClientId(pojo.getClientId());
-                return ProductHelper.convertToDto(pojo, 
-                        client != null ? client.getName() : null, 
-                        inventory != null ? inventory.getQuantity() : 0);
-            } catch (ApiException e) {
-                ClientPojo client = clientDao.findByClientId(pojo.getClientId());
-                return ProductHelper.convertToDto(pojo, 
-                        client != null ? client.getName() : null, 0);
-            }
-        });
+        return productFlow.getAll(form);
     }
 
     public ProductData update(String id, ProductForm form) throws ApiException {
         validateProductForm(form);
         ProductPojo pojo = ProductHelper.convertToEntity(form);
-        ProductPojo updated = productApi.update(id, pojo);
-        InventoryPojo inventory = null;
-        try {
-            inventory = inventoryApi.getByProductId(id);
-        } catch (ApiException e) {
-            // Inventory doesn't exist, use 0
-        }
-        ClientPojo client = clientDao.findByClientId(updated.getClientId());
-        return ProductHelper.convertToDto(updated, client != null ? client.getName() : null, 
-                inventory != null ? inventory.getQuantity() : 0);
+        return productFlow.update(id, pojo);
     }
 
     public InventoryData updateInventory(String productId, InventoryForm form) throws ApiException {
         validateInventoryForm(form);
-        InventoryPojo updated = inventoryApi.updateByProductId(productId, form.getQuantity());
-        ProductPojo product = productApi.get(productId);
-        return InventoryHelper.convertToDto(updated, product.getBarcode());
+        return inventoryFlow.updateInventory(productId, form.getQuantity());
     }
 
     public List<ProductData> uploadProductsTsv(String base64Content) throws ApiException {
         // Decode base64 content
-        String tsvContent;
-        try {
-            byte[] decodedBytes = Base64.getDecoder().decode(base64Content);
-            tsvContent = new String(decodedBytes);
-        } catch (IllegalArgumentException e) {
-            throw new ApiException("Invalid base64 encoded content");
-        }
-
-        // Parse TSV - handle different line endings
-        String[] lines = tsvContent.split("\\r?\\n");
-        if (lines.length > 5000) {
-            throw new ApiException("Cannot upload more than 5000 rows");
-        }
+        String[] lines = decodeAndValidateTsv(base64Content);
 
         List<ProductPojo> productPojos = new ArrayList<>();
         int startIndex = 0;
@@ -157,24 +109,9 @@ public class ProductDto {
         return ProductHelper.convertToDataList(saved);
     }
 
-    /**
-     * Upload products TSV and return results with status for each row
-     */
     public String uploadProductsTsvWithResults(String base64Content) throws ApiException {
         // Decode base64 content
-        String tsvContent;
-        try {
-            byte[] decodedBytes = Base64.getDecoder().decode(base64Content);
-            tsvContent = new String(decodedBytes);
-        } catch (IllegalArgumentException e) {
-            throw new ApiException("Invalid base64 encoded content");
-        }
-
-        // Parse TSV - handle different line endings
-        String[] lines = tsvContent.split("\\r?\\n");
-        if (lines.length > 5000) {
-            throw new ApiException("Cannot upload more than 5000 rows");
-        }
+        String[] lines = decodeAndValidateTsv(base64Content);
 
         List<TsvUploadResult> results = new ArrayList<>();
         int startIndex = 0;
@@ -223,11 +160,13 @@ public class ProductDto {
                 // Try to add the product
                 try {
                     // Check if product already exists
-                    ProductPojo existing = productDao.findByBarcode(pojo.getBarcode().trim().toLowerCase());
-                    if (existing != null) {
+                    try {
+                        productApi.getByBarcode(pojo.getBarcode().trim().toLowerCase());
+                        // Product exists, skip it
                         results.add(new TsvUploadResult(rowNumber, "SKIPPED", 
                             "Product with barcode " + pojo.getBarcode() + " already exists", originalLine));
-                    } else {
+                    } catch (ApiException e) {
+                        // Product doesn't exist, proceed to add
                         ProductPojo saved = productApi.add(pojo);
                         results.add(new TsvUploadResult(rowNumber, "SUCCESS", 
                             "Product created successfully with barcode: " + saved.getBarcode(), originalLine));
@@ -244,39 +183,13 @@ public class ProductDto {
         }
 
         // Convert results to TSV format
-        StringBuilder tsvResult = new StringBuilder();
-        tsvResult.append("Row Number\tStatus\tError Message\tOriginal Data\n");
-        
-        for (TsvUploadResult result : results) {
-            tsvResult.append(result.getRowNumber())
-                    .append("\t")
-                    .append(result.getStatus())
-                    .append("\t")
-                    .append(result.getErrorMessage() != null ? result.getErrorMessage().replace("\t", " ") : "")
-                    .append("\t")
-                    .append(result.getData())
-                    .append("\n");
-        }
-
-        // Encode to base64
-        return Base64.getEncoder().encodeToString(tsvResult.toString().getBytes());
+        String tsvOutput = buildTsvResult(results);
+        return Base64.getEncoder().encodeToString(tsvOutput.getBytes());
     }
 
     public List<InventoryData> uploadInventoryTsv(String base64Content) throws ApiException {
         // Decode base64 content
-        String tsvContent;
-        try {
-            byte[] decodedBytes = Base64.getDecoder().decode(base64Content);
-            tsvContent = new String(decodedBytes);
-        } catch (IllegalArgumentException e) {
-            throw new ApiException("Invalid base64 encoded content");
-        }
-
-        // Parse TSV - handle different line endings
-        String[] lines = tsvContent.split("\\r?\\n");
-        if (lines.length > 5000) {
-            throw new ApiException("Cannot upload more than 5000 rows");
-        }
+        String[] lines = decodeAndValidateTsv(base64Content);
 
         List<InventoryPojo> inventoryPojos = new ArrayList<>();
         int startIndex = 0;
@@ -326,29 +239,14 @@ public class ProductDto {
                 .collect(java.util.stream.Collectors.toList());
     }
 
-    /**
-     * Upload inventory TSV and return results with status for each row
-     */
+    // Upload inventory TSV and return results with status for each row
     public String uploadInventoryTsvWithResults(String base64Content) throws ApiException {
         // Decode base64 content
-        String tsvContent;
-        try {
-            byte[] decodedBytes = Base64.getDecoder().decode(base64Content);
-            tsvContent = new String(decodedBytes);
-        } catch (IllegalArgumentException e) {
-            throw new ApiException("Invalid base64 encoded content");
-        }
-
-        // Parse TSV - handle different line endings
-        String[] lines = tsvContent.split("\\r?\\n");
-        if (lines.length > 5000) {
-            throw new ApiException("Cannot upload more than 5000 rows");
-        }
+        String[] lines = decodeAndValidateTsv(base64Content);
 
         List<TsvUploadResult> results = new ArrayList<>();
         int startIndex = 0;
-        
-        // Skip header row if present
+
         if (lines.length > 0 && lines[0].trim().toLowerCase().matches(".*\\b(barcode|quantity)\\b.*")) {
             startIndex = 1;
         }
@@ -371,7 +269,6 @@ public class ProductDto {
             }
 
             try {
-                // Find product by barcode
                 ProductPojo product = null;
                 try {
                     product = productApi.getByBarcode(columns[0].trim().toLowerCase());
@@ -409,22 +306,8 @@ public class ProductDto {
         }
 
         // Convert results to TSV format
-        StringBuilder tsvResult = new StringBuilder();
-        tsvResult.append("Row Number\tStatus\tError Message\tOriginal Data\n");
-        
-        for (TsvUploadResult result : results) {
-            tsvResult.append(result.getRowNumber())
-                    .append("\t")
-                    .append(result.getStatus())
-                    .append("\t")
-                    .append(result.getErrorMessage() != null ? result.getErrorMessage().replace("\t", " ") : "")
-                    .append("\t")
-                    .append(result.getData())
-                    .append("\n");
-        }
-
-        // Encode to base64
-        return Base64.getEncoder().encodeToString(tsvResult.toString().getBytes());
+        String tsvOutput = buildTsvResult(results);
+        return Base64.getEncoder().encodeToString(tsvOutput.getBytes());
     }
 
     private void validateProductForm(ProductForm form) throws ApiException {
@@ -450,4 +333,43 @@ public class ProductDto {
             throw new ApiException("Quantity must be a non-negative number");
         }
     }
+
+    private String[] decodeAndValidateTsv(String base64Content) throws ApiException {
+        String tsvContent;
+        try {
+            byte[] decodedBytes = Base64.getDecoder().decode(base64Content);
+            tsvContent = new String(decodedBytes);
+        } catch (IllegalArgumentException e) {
+            throw new ApiException("Invalid base64 encoded content");
+        }
+
+        String[] lines = tsvContent.split("\\r?\\n");
+
+        if (lines.length > 5000) {
+            throw new ApiException("Cannot upload more than 5000 rows");
+        }
+
+        return lines;
+    }
+
+    private String buildTsvResult(List<TsvUploadResult> results) {
+        StringBuilder tsvResult = new StringBuilder();
+        tsvResult.append("Row Number\tStatus\tError Message\tOriginal Data\n");
+
+        for (TsvUploadResult result : results) {
+            tsvResult.append(result.getRowNumber())
+                    .append("\t")
+                    .append(result.getStatus())
+                    .append("\t")
+                    .append(result.getErrorMessage() != null
+                            ? result.getErrorMessage().replace("\t", " ")
+                            : "")
+                    .append("\t")
+                    .append(result.getData())
+                    .append("\n");
+        }
+
+        return tsvResult.toString();
+    }
+
 }

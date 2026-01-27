@@ -13,9 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Objects;
 
-/**
- * API implementation for Client operations
- */
 @Service
 public class ClientApiImpl implements ClientApi {
     private static final Logger logger = LoggerFactory.getLogger(ClientApiImpl.class);

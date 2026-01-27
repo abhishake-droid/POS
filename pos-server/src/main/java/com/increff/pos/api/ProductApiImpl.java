@@ -16,9 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * API implementation for Product operations
- */
 @Service
 public class ProductApiImpl implements ProductApi {
     private static final Logger logger = LoggerFactory.getLogger(ProductApiImpl.class);

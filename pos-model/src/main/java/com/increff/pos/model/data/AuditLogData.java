@@ -1,14 +1,16 @@
 package com.increff.pos.model.data;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
-@Data
+@Getter
+@Setter
 public class AuditLogData {
     private String id;
     private String operatorEmail;
     private String operatorName;
     private String action; // "LOGIN" or "LOGOUT"
-    private ZonedDateTime timestamp;
+    private Instant timestamp;
 }

@@ -19,11 +19,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
-    @Autowired
-    private UserDto userDto;
 
-    @Autowired
-    private AuthUtil authUtil;
+    private final UserDto userDto;
+    private final AuthUtil authUtil;
+
+    public UserController(UserDto userDto, AuthUtil authUtil){
+        this.userDto = userDto;
+        this.authUtil = authUtil;
+    }
 
     @Operation(summary = "Create a new operator (Supervisor only)")
     @RequestMapping(path = "/add", method = RequestMethod.POST)

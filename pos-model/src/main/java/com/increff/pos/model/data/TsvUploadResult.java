@@ -1,8 +1,10 @@
 package com.increff.pos.model.data;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class TsvUploadResult {
     private int rowNumber;
     private String status; // "SUCCESS" or "FAILED"

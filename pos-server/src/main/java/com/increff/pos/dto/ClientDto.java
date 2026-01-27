@@ -11,9 +11,6 @@ import com.increff.pos.util.ValidationUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
-/**
- * DTO layer for Client operations
- */
 @Service
 public class ClientDto {
 

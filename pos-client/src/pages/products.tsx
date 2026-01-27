@@ -207,6 +207,7 @@ export default function Products() {
   const handleSearch = async () => {
     if (!searchValue.trim()) {
       loadProducts(0);
+      setCurrentPage(0);
       return;
     }
 
@@ -221,25 +222,58 @@ export default function Products() {
       } catch {
         toast.error('Product not found');
         setProducts([]);
+        setTotalPages(0);
+        setTotalElements(0);
       }
       return;
     }
 
-    // UI-level filtering for other fields
-    const filtered = products.filter((p) => {
-      const value = searchValue.toLowerCase();
-      switch (searchFilter) {
-        case 'name':
-          return p.name.toLowerCase().includes(value);
-        case 'clientId':
-          return p.clientId.toLowerCase().includes(value);
-        case 'clientName':
-          return (p.clientName || '').toLowerCase().includes(value);
-        default:
-          return true;
+    // For other fields, load all pages and filter
+    setLoading(true);
+    try {
+      let allProducts: ProductData[] = [];
+      let page = 0;
+      const pageSize = 100; // Use larger page size for fetching all
+      let hasMore = true;
+
+      // Fetch all pages
+      while (hasMore) {
+        const res = await productService.getAll(page, pageSize);
+        const productList = res.content || [];
+        allProducts = [...allProducts, ...productList];
+        
+        // Check if there are more pages
+        hasMore = res.totalPages > page + 1;
+        page++;
       }
-    });
-    setProducts(filtered);
+
+      // Filter across all products
+      const value = searchValue.toLowerCase();
+      const filtered = allProducts.filter((p) => {
+        switch (searchFilter) {
+          case 'name':
+            return p.name.toLowerCase().includes(value);
+          case 'clientId':
+            return p.clientId.toLowerCase().includes(value);
+          case 'clientName':
+            return (p.clientName || '').toLowerCase().includes(value);
+          default:
+            return true;
+        }
+      });
+
+      setProducts(filtered);
+      setTotalPages(1);
+      setTotalElements(filtered.length);
+      setCurrentPage(0);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Search failed');
+      setProducts([]);
+      setTotalPages(0);
+      setTotalElements(0);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async () => {

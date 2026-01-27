@@ -7,9 +7,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.repository.support.MongoRepositoryFactory;
 import org.springframework.stereotype.Repository;
 
-/**
- * DAO for Inventory operations
- */
 @Repository
 public class InventoryDao extends AbstractDao<InventoryPojo> {
     public InventoryDao(MongoOperations mongoOperations) {
@@ -20,9 +17,6 @@ public class InventoryDao extends AbstractDao<InventoryPojo> {
         );
     }
 
-    /**
-     * Find inventory by productId
-     */
     public InventoryPojo findByProductId(String productId) {
         Query query = Query.query(Criteria.where("productId").is(productId));
         return mongoOperations.findOne(query, InventoryPojo.class);

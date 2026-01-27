@@ -1,11 +1,10 @@
 package com.increff.pos.model.data;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * Data transfer object for Client
- */
-@Data
+@Getter
+@Setter
 public class ClientData {
     private String id;
     private String clientId;

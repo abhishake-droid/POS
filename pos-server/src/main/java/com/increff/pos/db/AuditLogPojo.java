@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 @Data
 @Document(collection = "audit_logs")
@@ -20,5 +20,5 @@ public class AuditLogPojo extends AbstractPojo {
     private String action; // "LOGIN" or "LOGOUT"
     
     @Field("timestamp")
-    private ZonedDateTime timestamp;
+    private Instant timestamp;
 }

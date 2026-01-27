@@ -144,10 +144,10 @@ public class AuthDto {
             auditLog.setOperatorEmail(email);
             auditLog.setOperatorName(name);
             auditLog.setAction(action);
-            auditLog.setTimestamp(java.time.ZonedDateTime.now());
+            auditLog.setTimestamp(java.time.Instant.now());
             auditLogApi.add(auditLog);
         } catch (Exception e) {
-            // Log error but don't fail the request
+            // Log error
             System.err.println("Failed to log activity: " + e.getMessage());
         }
     }

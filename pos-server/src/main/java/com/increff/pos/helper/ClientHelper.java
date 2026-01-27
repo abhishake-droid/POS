@@ -7,9 +7,6 @@ import com.increff.pos.model.form.ClientForm;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Helper class for Client entity conversions
- */
 public class ClientHelper {
 
     public static ClientPojo convertToEntity(ClientForm form) {

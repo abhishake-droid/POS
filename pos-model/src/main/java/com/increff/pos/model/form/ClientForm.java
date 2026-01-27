@@ -1,11 +1,10 @@
 package com.increff.pos.model.form;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * Form for creating/updating a client
- */
-@Data
+@Getter
+@Setter
 public class ClientForm {
 //    private String id; // Client ID
     private String name; // Client name
