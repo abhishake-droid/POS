@@ -31,10 +31,11 @@ const HeaderBox = styled(Box)({
   justifyContent: 'space-between',
   alignItems: 'center',
   marginBottom: '1.5rem',
-  padding: '1.5rem',
-  backgroundColor: '#f5f5f5',
-  borderRadius: '12px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  padding: '1.25rem 1.5rem',
+  borderRadius: '16px',
+  backgroundColor: '#ffffff',
+  border: '1px solid #e5e7eb',
+  boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
 });
 
 const SectionCard = styled(Paper)({
@@ -103,9 +104,14 @@ export default function SalesReportPage() {
   return (
     <StyledContainer maxWidth="lg">
       <HeaderBox>
-        <Typography variant="h4" sx={{ fontWeight: 600, color: '#1976d2' }}>
-          Sales Report
-        </Typography>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: '#111827' }}>
+            Sales Report
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#6b7280' }}>
+            Generate sales reports by date range and brand.
+          </Typography>
+        </Box>
       </HeaderBox>
 
       <SectionCard>
@@ -148,7 +154,7 @@ export default function SalesReportPage() {
             />
           </Grid>
         </Grid>
-        <Button variant="contained" onClick={loadSalesReport} disabled={loading}>
+        <Button variant="contained" onClick={loadSalesReport} disabled={loading} sx={{ borderRadius: '999px', px: 3, py: 1 }}>
           {loading ? <CircularProgress size={20} /> : 'Generate Report'}
         </Button>
       </SectionCard>

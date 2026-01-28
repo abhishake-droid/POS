@@ -61,5 +61,10 @@ export const orderService = {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   },
+
+  update: async (orderId: string, form: CreateOrderForm): Promise<OrderData> => {
+    const response = await apiClient.put(`/order/update/${orderId}`, form);
+    return response.data;
+  },
 };
 

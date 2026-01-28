@@ -35,10 +35,10 @@ public class AuthDto {
         }
 
         String email = loginForm.getEmail().trim();
-        
+
         // Check if email is supervisor email
         boolean isSupervisorEmail = supervisorEmail != null && supervisorEmail.equalsIgnoreCase(email);
-        
+
         if (isSupervisorEmail) {
             // Supervisor login - require password
             UserPojo user = userApi.getByEmail(email);
@@ -47,7 +47,7 @@ public class AuthDto {
             }
 
             String role = user.getRole() != null ? user.getRole() : "USER";
-            
+
             // Verify it's actually a supervisor
             if (!"SUPERVISOR".equals(role)) {
                 throw new ApiException("Invalid email or password");
@@ -68,16 +68,26 @@ public class AuthDto {
             authData.setEmail(user.getEmail());
             authData.setName(user.getName());
             authData.setRole(role);
-            
+
             // Log login activity
             logActivity(user.getEmail(), user.getName(), "LOGIN");
-            
+
             return authData;
         } else {
-            // Operator login - must exist, no password required
+            // Operator login - require password
             UserPojo user = userApi.getByEmail(email);
             if (user == null) {
                 throw new ApiException("Operator not found. Please contact supervisor to create your account.");
+            }
+
+            // Operator must provide password
+            if (loginForm.getPassword() == null || loginForm.getPassword().trim().isEmpty()) {
+                throw new ApiException("Password is required");
+            }
+
+            // Verify password
+            if (user.getPassword() == null || !passwordEncoder.matches(loginForm.getPassword(), user.getPassword())) {
+                throw new ApiException("Invalid email or password");
             }
 
             // Force role to USER for non-supervisor emails
@@ -90,10 +100,10 @@ public class AuthDto {
             authData.setEmail(user.getEmail());
             authData.setName(user.getName());
             authData.setRole(role);
-            
+
             // Log login activity
             logActivity(user.getEmail(), user.getName(), "LOGIN");
-            
+
             return authData;
         }
     }

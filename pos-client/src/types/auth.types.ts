@@ -1,6 +1,6 @@
 export interface LoginForm {
   email: string;
-  password?: string; // Optional for regular users, required for supervisors
+  password: string;
 }
 
 export interface AuthData {

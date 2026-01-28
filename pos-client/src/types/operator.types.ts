@@ -1,6 +1,7 @@
 export interface OperatorForm {
   email: string;
   name: string;
+  password: string;
 }
 
 export interface OperatorData {

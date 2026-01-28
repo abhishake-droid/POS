@@ -44,7 +44,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     return (
       <>
         <Component {...pageProps} />
-        <ToastContainer position="top-right" autoClose={3000} />
+        <ToastContainer position="top-right" autoClose={false} closeButton={true} />
       </>
     );
   }
@@ -54,7 +54,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     <AuthGuard>
       <Navbar />
       <Component {...pageProps} />
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="top-right" />
     </AuthGuard>
   );
 }

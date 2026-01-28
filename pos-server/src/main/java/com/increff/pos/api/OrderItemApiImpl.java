@@ -47,4 +47,14 @@ public class OrderItemApiImpl implements OrderItemApi {
         logger.info("Creating {} order items", orderItemPojos.size());
         return orderItemDao.saveAll(orderItemPojos);
     }
+
+    @Override
+    @Transactional(rollbackFor = ApiException.class)
+    public void delete(String id) throws ApiException {
+        if (id == null || id.trim().isEmpty()) {
+            throw new ApiException("Order item ID cannot be empty");
+        }
+        logger.info("Deleting order item with ID: {}", id);
+        orderItemDao.deleteById(id);
+    }
 }

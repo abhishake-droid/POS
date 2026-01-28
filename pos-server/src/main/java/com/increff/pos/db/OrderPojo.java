@@ -18,7 +18,7 @@ public class OrderPojo extends AbstractPojo {
     private String orderId;
 
     @Field("status")
-    private String status; // CREATED, INVOICED, CANCELLED
+    private String status; // PLACED, INVOICED, CANCELLED
 
     @Field("totalItems")
     private Integer totalItems;

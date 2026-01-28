@@ -11,6 +11,16 @@ public class ValidationUtil {
     public static void validateUserForm(UserForm form) throws ApiException {
         validateEmail(form.getEmail());
         validateName(form.getName());
+        validatePassword(form.getPassword());
+    }
+
+    private static void validatePassword(String password) throws ApiException {
+        if (!StringUtils.hasText(password)) {
+            throw new ApiException("Password cannot be empty");
+        }
+        if (password.length() < 6) {
+            throw new ApiException("Password must be at least 6 characters long");
+        }
     }
 
     private static void validateEmail(String email) throws ApiException {
@@ -40,4 +50,4 @@ public class ValidationUtil {
             throw new ApiException("Page size cannot be greater than 100");
         }
     }
-} 
+}

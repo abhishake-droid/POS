@@ -23,8 +23,11 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
+  FirstPage,
+  LastPage,
   Add,
 } from '@mui/icons-material';
+import { Tooltip } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { operatorService } from '../services/operator.service';
 import { OperatorData, OperatorForm } from '../types/operator.types';
@@ -35,8 +38,8 @@ import AuthGuard from '../components/AuthGuard';
 const PAGE_SIZE = 10;
 
 const StyledContainer = styled(Container)({
-  paddingTop: '2rem',
-  paddingBottom: '2rem',
+  paddingTop: '3rem',
+  paddingBottom: '3rem',
   minHeight: 'calc(100vh - 64px)',
 });
 
@@ -45,10 +48,11 @@ const HeaderBox = styled(Box)({
   justifyContent: 'space-between',
   alignItems: 'center',
   marginBottom: '1.5rem',
-  padding: '1.5rem',
-  backgroundColor: '#f5f5f5',
-  borderRadius: '12px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  padding: '1.25rem 1.5rem',
+  borderRadius: '16px',
+  backgroundColor: '#ffffff',
+  border: '1px solid #e5e7eb',
+  boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
 });
 
 const StyledTableContainer = styled(TableContainer)({
@@ -81,10 +85,10 @@ const PaginationBox = styled(Box)({
 });
 
 const StyledIconButton = styled(IconButton)({
-  backgroundColor: '#1976d2',
+  backgroundColor: '#1d4ed8',
   color: 'white',
   '&:hover': {
-    backgroundColor: '#1565c0',
+    backgroundColor: '#1e40af',
   },
 });
 
@@ -98,6 +102,7 @@ export default function Operators() {
   const [form, setForm] = useState<OperatorForm>({
     email: '',
     name: '',
+    password: '',
   });
 
   useEffect(() => {
@@ -124,7 +129,7 @@ export default function Operators() {
       await operatorService.create(form);
       toast.success('Operator created successfully');
       setOpen(false);
-      setForm({ email: '', name: '' });
+      setForm({ email: '', name: '', password: '' });
       loadOperators(currentPage);
     } catch (e: any) {
       toast.error(e.response?.data?.message || 'Failed to create operator');
@@ -135,16 +140,22 @@ export default function Operators() {
     <AuthGuard requireSupervisor>
       <StyledContainer maxWidth="lg">
         <HeaderBox>
-          <Typography variant="h4" sx={{ fontWeight: 600, color: '#1976d2' }}>
-            Operator Management
-          </Typography>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: '#111827' }}>
+              Operator Management
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#6b7280' }}>
+              Manage system operators and their access.
+            </Typography>
+          </Box>
           <Button
             variant="contained"
             startIcon={<Add />}
             onClick={() => {
-              setForm({ email: '', name: '' });
+              setForm({ email: '', name: '', password: '' });
               setOpen(true);
             }}
+            sx={{ borderRadius: '999px', px: 3, py: 1 }}
           >
             Add Operator
           </Button>
@@ -187,23 +198,58 @@ export default function Operators() {
 
             {totalPages > 1 && (
               <PaginationBox>
-                <StyledIconButton
-                  disabled={currentPage === 0}
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                >
-                  <ChevronLeft />
-                </StyledIconButton>
+                <Tooltip title="First Page">
+                  <span>
+                    <StyledIconButton
+                      disabled={currentPage === 0 || loading}
+                      onClick={() => setCurrentPage(0)}
+                    >
+                      <FirstPage />
+                    </StyledIconButton>
+                  </span>
+                </Tooltip>
+
+                <Tooltip title="Previous Page">
+                  <span>
+                    <StyledIconButton
+                      disabled={currentPage === 0 || loading}
+                      onClick={() => setCurrentPage((p) => p - 1)}
+                    >
+                      <ChevronLeft />
+                    </StyledIconButton>
+                  </span>
+                </Tooltip>
+
                 <Pagination
                   count={totalPages}
                   page={currentPage + 1}
                   onChange={(_, v) => setCurrentPage(v - 1)}
+                  disabled={loading}
+                  hidePrevButton
+                  hideNextButton
                 />
-                <StyledIconButton
-                  disabled={currentPage >= totalPages - 1}
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                >
-                  <ChevronRight />
-                </StyledIconButton>
+
+                <Tooltip title="Next Page">
+                  <span>
+                    <StyledIconButton
+                      disabled={currentPage >= totalPages - 1 || loading}
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                    >
+                      <ChevronRight />
+                    </StyledIconButton>
+                  </span>
+                </Tooltip>
+
+                <Tooltip title="Last Page">
+                  <span>
+                    <StyledIconButton
+                      disabled={currentPage >= totalPages - 1 || loading}
+                      onClick={() => setCurrentPage(totalPages - 1)}
+                    >
+                      <LastPage />
+                    </StyledIconButton>
+                  </span>
+                </Tooltip>
               </PaginationBox>
             )}
           </>
@@ -213,21 +259,40 @@ export default function Operators() {
           <DialogTitle>Add Operator</DialogTitle>
           <DialogContent>
             <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              margin="normal"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
+                fullWidth
+                label={
+                  <>
+                    Email <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+                  </>
+                }
+                type="email"
+                margin="normal"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
             <TextField
               fullWidth
-              label="Name"
+              label={
+                <>
+                  Name <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+                </>
+              }
               margin="normal"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
+            />
+            <TextField
+              fullWidth
+              label={
+                <>
+                  Password <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+                </>
+              }
+              type="password"
+              margin="normal"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              helperText="Minimum 6 characters"
             />
           </DialogContent>
           <DialogActions>

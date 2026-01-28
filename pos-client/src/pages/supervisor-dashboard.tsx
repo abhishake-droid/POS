@@ -35,9 +35,21 @@ import AuthGuard from '../components/AuthGuard';
 const PAGE_SIZE = 10;
 
 const StyledContainer = styled(Container)({
-  paddingTop: '2rem',
-  paddingBottom: '2rem',
+  paddingTop: '3rem',
+  paddingBottom: '3rem',
   minHeight: 'calc(100vh - 64px)',
+});
+
+const HeaderBox = styled(Box)({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '1.5rem',
+  padding: '1.25rem 1.5rem',
+  borderRadius: '16px',
+  backgroundColor: '#ffffff',
+  border: '1px solid #e5e7eb',
+  boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
 });
 
 const StyledCard = styled(Card)({
@@ -119,9 +131,16 @@ export default function SupervisorDashboard() {
   return (
     <AuthGuard requireSupervisor>
       <StyledContainer maxWidth="lg">
-        <Typography variant="h4" sx={{ fontWeight: 600, color: '#1976d2', mb: 3 }}>
-          Supervisor Dashboard
-        </Typography>
+        <HeaderBox>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: '#111827' }}>
+              Supervisor Dashboard
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#6b7280' }}>
+              Monitor operators and track system activity.
+            </Typography>
+          </Box>
+        </HeaderBox>
 
         {/* Operators List */}
         <StyledCard>

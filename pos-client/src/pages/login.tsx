@@ -59,7 +59,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login(email.trim(), password.trim() || undefined);
+      await login(email.trim(), password.trim());
       toast.success('Login successful');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Login failed');
@@ -105,11 +105,12 @@ export default function Login() {
 
             <TextField
               fullWidth
-              label="Password (Required for Supervisor only)"
+              label="Password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               margin="normal"
+              required
               sx={{ mb: 2 }}
             />
 
@@ -117,7 +118,7 @@ export default function Login() {
               type="submit"
               variant="contained"
               fullWidth
-              disabled={isLoading || !email.trim()}
+              disabled={isLoading || !email.trim() || !password.trim()}
               sx={{ mt: 2 }}
             >
               {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}

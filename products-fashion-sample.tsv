@@ -1,0 +1,25 @@
+barcode	clientId	name	mrp	imageUrl
+ZARA-001	C0001	Classic White Cotton Shirt	2499.00	https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400
+ZARA-002	C0001	Slim Fit Black Jeans	3499.00	https://images.unsplash.com/photo-1542272604-787c3835535d?w=400
+ZARA-003	C0001	Floral Summer Dress	4299.00	https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400
+HM-001	C0002	Striped Casual T-Shirt	999.00	https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400
+HM-002	C0002	Denim Jacket	3999.00	https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400
+HM-003	C0002	Knitted Sweater	2299.00	https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400
+NIKE-001	C0003	Air Max Running Shoes	8999.00	https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400
+NIKE-002	C0003	Dri-FIT Sports T-Shirt	1899.00	https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400
+NIKE-003	C0003	Tech Fleece Hoodie	4999.00	https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400
+ADIDAS-001	C0004	Ultraboost Sneakers	12999.00	https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400
+ADIDAS-002	C0004	Performance Track Pants	2999.00	https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=400
+ADIDAS-003	C0004	Classic Three-Stripe Jacket	5499.00	https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400
+LEVIS-001	C0005	501 Original Fit Jeans	4999.00	https://images.unsplash.com/photo-1475178626620-a4d074967452?w=400
+LEVIS-002	C0005	Denim Trucker Jacket	5999.00	https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=400
+LEVIS-003	C0005	Vintage Graphic Tee	1499.00	https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=400
+PUMA-001	C0006	RS-X Sneakers	7999.00	https://images.unsplash.com/photo-1539185441755-769473a23570?w=400
+PUMA-002	C0006	Essentials Logo Hoodie	3299.00	https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=400
+PUMA-003	C0006	Training Shorts	1799.00	https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400
+GUCCI-001	C0007	Leather Belt with Double G	24999.00	https://images.unsplash.com/photo-1624222247344-550fb60583c2?w=400
+GUCCI-002	C0007	Signature Canvas Tote Bag	89999.00	https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400
+GUCCI-003	C0007	Horsebit Loafers	54999.00	https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=400
+UNIQLO-001	C0008	Heattech Thermal Shirt	1299.00	https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400
+UNIQLO-002	C0008	Ultra Light Down Jacket	3999.00	https://images.unsplash.com/photo-1544923408-75c5cef46f14?w=400
+UNIQLO-003	C0008	Airism Cotton T-Shirt	799.00	https://images.unsplash.com/photo-1622445275463-afa2ab738c34?w=400

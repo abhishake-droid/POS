@@ -1,0 +1,17 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: invoice-service
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/pos
+
+invoice:
+  storage:
+    path: ./invoices
+
+logging:
+  level:
+    com.increff.invoice: INFO

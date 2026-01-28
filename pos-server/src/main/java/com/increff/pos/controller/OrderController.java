@@ -44,4 +44,10 @@ public class OrderController {
     public OrderData cancel(@PathVariable String orderId) throws ApiException {
         return orderDto.cancel(orderId);
     }
+
+    @Operation(summary = "Update an order (only if PLACED)")
+    @PutMapping("/update/{orderId}")
+    public OrderData update(@PathVariable String orderId, @RequestBody OrderForm form) throws ApiException {
+        return orderDto.update(orderId, form);
+    }
 }

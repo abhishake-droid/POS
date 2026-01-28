@@ -1,10 +1,11 @@
 barcode	clientId	name	mrp	imageUrl
-PROD021	C0001	Classic White T-Shirt	1200.00	https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400
-PROD022	C0001	Casual Sneakers	3500.00
-PROD023	C0002	Running Sneakers Running Sneakers Running Sneakers Running Sneakers Running Sneakers Running Sneakers Running Sneakers Running Sneakers	5500.00	https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400
-PROD014	C0002	Floral Summer Dress	2800.00	https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400
-PROD015		Minimalist Wrist Watch	8500.00	https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400
-PROD016	C0003	Aviator Sunglasses	4200.00	https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400
-PROD017	C0002	Leather Handbag		https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400
-PROD018	C0001	Blue Hoodie	-2200.00	https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400
-PROD019	C00031234	Silk Scarf	1500.00	https://images.unsplash.com/photo-1584030373081-f37b7bb4fa8e?w=400
+PROD001	C0001	Classic White T-Shirt	1200.00	https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400
+PROD002	C0001	Blue Denim Jeans	3500.00	https://images.unsplash.com/photo-1542272454315-4c01d7abdf4a?w=400
+PROD003	C0002	Running Sneakers	5500.00	https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400
+PROD004	C0003	Leather Biker Jacket	12000.00	https://images.unsplash.com/photo-1551028919-ac66e624ec12?w=400
+PROD005	C0002	Floral Summer Dress	2800.00	https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400
+PROD006	C0001	Minimalist Wrist Watch	8500.00	https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400
+PROD007	C0003	Aviator Sunglasses	4200.00	https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400
+PROD008	C0002	Leather Handbag	6500.00	https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400
+PROD009	C0001	Bl Hoodie	2200.00	https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400
+PROD010	C0003	Silk Scarf	1500.00	https://images.unsplash.com/photo-1584030373081-f37b7bb4fa8e?w=400

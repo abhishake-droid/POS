@@ -1,4 +1,4 @@
-export type OrderStatus = 'CREATED' | 'INVOICED' | 'CANCELLED';
+export type OrderStatus = 'PLACED' | 'INVOICED' | 'CANCELLED';
 
 export interface OrderLineForm {
   productId: string;

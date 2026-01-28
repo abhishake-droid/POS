@@ -1,6 +1,6 @@
-package com.increff.pos.dao;
+package com.increff.invoice.dao;
 
-import com.increff.pos.db.InvoicePojo;
+import com.increff.invoice.db.InvoicePojo;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -11,10 +11,9 @@ import org.springframework.stereotype.Repository;
 public class InvoiceDao extends AbstractDao<InvoicePojo> {
     public InvoiceDao(MongoOperations mongoOperations) {
         super(
-            new MongoRepositoryFactory(mongoOperations)
-                .getEntityInformation(InvoicePojo.class),
-            mongoOperations
-        );
+                new MongoRepositoryFactory(mongoOperations)
+                        .getEntityInformation(InvoicePojo.class),
+                mongoOperations);
     }
 
     public InvoicePojo findByInvoiceId(String invoiceId) {

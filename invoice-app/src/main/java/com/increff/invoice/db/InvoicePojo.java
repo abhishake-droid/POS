@@ -1,4 +1,4 @@
-package com.increff.pos.db;
+package com.increff.invoice.db;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

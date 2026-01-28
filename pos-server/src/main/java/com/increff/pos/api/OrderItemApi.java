@@ -7,7 +7,12 @@ import java.util.List;
 
 public interface OrderItemApi {
     OrderItemPojo add(OrderItemPojo orderItemPojo) throws ApiException;
+
     OrderItemPojo get(String id) throws ApiException;
+
     List<OrderItemPojo> getByOrderId(String orderId);
+
     List<OrderItemPojo> addBulk(List<OrderItemPojo> orderItemPojos) throws ApiException;
+
+    void delete(String id) throws ApiException;
 }

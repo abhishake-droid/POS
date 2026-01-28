@@ -6,7 +6,7 @@ import { authStorage } from '../utils/authStorage';
 
 interface AuthContextType {
   user: AuthData | null;
-  login: (email: string, password?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isSupervisor: boolean;
   isLoading: boolean;
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password?: string) => {
+  const login = async (email: string, password: string) => {
     try {
       const authData = await authService.login({ email, password });
       setUser(authData);
@@ -81,18 +81,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-      <AuthContext.Provider
-          value={{
-            user,
-            login,
-            logout,
-            isSupervisor: user?.role === 'SUPERVISOR',
-            isLoading,
-            checkAuth,
-          }}
-      >
-        {children}
-      </AuthContext.Provider>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        isSupervisor: user?.role === 'SUPERVISOR',
+        isLoading,
+        checkAuth,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
 }
 

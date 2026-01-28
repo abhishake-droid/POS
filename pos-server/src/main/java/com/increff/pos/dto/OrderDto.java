@@ -1,6 +1,5 @@
 package com.increff.pos.dto;
 
-import com.increff.pos.api.InvoiceApi;
 import com.increff.pos.db.OrderItemPojo;
 import com.increff.pos.db.OrderPojo;
 import com.increff.pos.exception.ApiException;
@@ -25,26 +24,16 @@ import java.util.stream.Collectors;
 public class OrderDto {
 
     private final OrderFlow orderFlow;
-    private final InvoiceApi invoiceApi;
 
-    public OrderDto(OrderFlow orderFlow, InvoiceApi invoiceApi) {
+    public OrderDto(OrderFlow orderFlow) {
         this.orderFlow = orderFlow;
-        this.invoiceApi = invoiceApi;
     }
 
     public OrderData create(OrderForm form) throws ApiException {
         validateOrderForm(form);
 
         // Convert form lines to OrderItemPojos
-        List<OrderItemPojo> orderItems = form.getLines().stream()
-                .map(line -> {
-                    OrderItemPojo item = new OrderItemPojo();
-                    item.setProductId(line.getProductId());
-                    item.setQuantity(line.getQuantity());
-                    item.setMrp(line.getMrp());
-                    return item;
-                })
-                .collect(Collectors.toList());
+        List<OrderItemPojo> orderItems = convertToOrderItems(form);
 
         // Create order through flow
         OrderPojo order = orderFlow.createOrder(orderItems);
@@ -62,16 +51,8 @@ public class OrderDto {
         OrderPojo order = orderFlow.getOrderWithItems(orderId);
         List<OrderItemPojo> items = orderFlow.getOrderItems(orderId);
 
-        // Get client name (Removed as client decoupled)
-
         // Check if invoice exists
-        boolean hasInvoice = false;
-        try {
-            invoiceApi.getByOrderId(orderId);
-            hasInvoice = true;
-        } catch (ApiException e) {
-            // Invoice doesn't exist
-        }
+        boolean hasInvoice = hasInvoiceForOrder(orderId);
 
         OrderData orderData = OrderHelper.convertToDto(order, hasInvoice);
         orderData.setItems(OrderHelper.convertItemsToDtoList(items));
@@ -89,13 +70,30 @@ public class OrderDto {
         Instant toDate = null;
         try {
             if (form.getFromDate() != null && !form.getFromDate().trim().isEmpty()) {
-                fromDate = Instant.parse(form.getFromDate());
+                try {
+                    // Try parsing as ISO-8601 first
+                    fromDate = Instant.parse(form.getFromDate());
+                } catch (DateTimeParseException e) {
+                    // Fall back to parsing as LocalDate (yyyy-MM-dd format from HTML date input)
+                    fromDate = java.time.LocalDate.parse(form.getFromDate())
+                            .atStartOfDay(java.time.ZoneOffset.UTC)
+                            .toInstant();
+                }
             }
             if (form.getToDate() != null && !form.getToDate().trim().isEmpty()) {
-                toDate = Instant.parse(form.getToDate());
+                try {
+                    // Try parsing as ISO-8601 first
+                    toDate = Instant.parse(form.getToDate());
+                } catch (DateTimeParseException e) {
+                    // Fall back to parsing as LocalDate and set to end of day
+                    toDate = java.time.LocalDate.parse(form.getToDate())
+                            .atTime(23, 59, 59)
+                            .atZone(java.time.ZoneOffset.UTC)
+                            .toInstant();
+                }
             }
         } catch (DateTimeParseException e) {
-            throw new ApiException("Invalid date format. Use ISO-8601 format (e.g., 2024-01-01T00:00:00Z)");
+            throw new ApiException("Invalid date format. Use yyyy-MM-dd format (e.g., 2024-01-01)");
         }
 
         // Get filtered orders
@@ -126,14 +124,8 @@ public class OrderDto {
     public OrderData cancel(String orderId) throws ApiException {
         OrderPojo cancelled = orderFlow.cancelOrder(orderId);
 
-        // Check if invoice exists
-        boolean hasInvoice = false;
-        try {
-            invoiceApi.getByOrderId(orderId);
-            hasInvoice = true;
-        } catch (ApiException e) {
-            // Invoice doesn't exist
-        }
+        // Check if invoice exists based on order status
+        boolean hasInvoice = "INVOICED".equals(cancelled.getStatus());
 
         List<OrderItemPojo> items = orderFlow.getOrderItems(orderId);
         OrderData orderData = OrderHelper.convertToDto(cancelled, hasInvoice);
@@ -160,4 +152,44 @@ public class OrderDto {
             }
         }
     }
+
+    public OrderData update(String orderId, OrderForm form) throws ApiException {
+        validateOrderForm(form);
+
+        // Convert form lines to OrderItemPojos
+        List<OrderItemPojo> orderItems = convertToOrderItems(form);
+
+        // Update order through flow
+        OrderPojo order = orderFlow.updateOrder(orderId, orderItems);
+
+        // Get updated order items
+        List<OrderItemPojo> savedItems = orderFlow.getOrderItems(order.getOrderId());
+
+        // Check if invoice exists
+        boolean hasInvoice = hasInvoiceForOrder(orderId);
+
+        // Convert to DTO
+        OrderData orderData = OrderHelper.convertToDto(order, hasInvoice);
+        orderData.setItems(OrderHelper.convertItemsToDtoList(savedItems));
+        return orderData;
+    }
+
+    private List<OrderItemPojo> convertToOrderItems(OrderForm form) {
+        return form.getLines().stream()
+                .map(line -> {
+                    OrderItemPojo item = new OrderItemPojo();
+                    item.setProductId(line.getProductId());
+                    item.setQuantity(line.getQuantity());
+                    item.setMrp(line.getMrp());
+                    return item;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private boolean hasInvoiceForOrder(String orderId) {
+        // Note: This method is not actively used, invoice status is checked directly
+        // via order.getStatus()
+        return false;
+    }
+
 }

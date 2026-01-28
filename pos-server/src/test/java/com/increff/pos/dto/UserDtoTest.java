@@ -12,15 +12,16 @@ import org.springframework.data.domain.Page;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class UserDtoTest extends AbstractUnitTest {
-    
+
     @Autowired
     private UserDto userDto;
-    
+
     @Test
     public void testCreateUserWithInvalidEmail() {
         UserForm form = new UserForm();
         form.setEmail("invalid-email");
         form.setName("Test User");
+        form.setPassword("testpass123");
         assertThrows(ApiException.class, () -> userDto.create(form));
     }
 
@@ -29,6 +30,7 @@ public class UserDtoTest extends AbstractUnitTest {
         UserForm form = new UserForm();
         form.setEmail("");
         form.setName("Test User");
+        form.setPassword("testpass123");
         assertThrows(ApiException.class, () -> userDto.create(form));
     }
 
@@ -37,6 +39,7 @@ public class UserDtoTest extends AbstractUnitTest {
         UserForm form = new UserForm();
         form.setEmail("test@example.com");
         form.setName("");
+        form.setPassword("testpass123");
         assertThrows(ApiException.class, () -> userDto.create(form));
     }
 
@@ -45,9 +48,10 @@ public class UserDtoTest extends AbstractUnitTest {
         UserForm form = new UserForm();
         form.setEmail("test@example.com");
         form.setName("Test User");
-        
+        form.setPassword("testpass123");
+
         UserData userData = userDto.create(form);
-        
+
         assertNotNull(userData);
         assertEquals(form.getEmail(), userData.getEmail());
         assertEquals(form.getName(), userData.getName());
@@ -59,7 +63,8 @@ public class UserDtoTest extends AbstractUnitTest {
         UserForm form = new UserForm();
         form.setEmail("duplicate@example.com");
         form.setName("Test User");
-        
+        form.setPassword("testpass123");
+
         userDto.create(form);
         assertThrows(ApiException.class, () -> userDto.create(form));
     }
@@ -76,11 +81,12 @@ public class UserDtoTest extends AbstractUnitTest {
         UserForm form = new UserForm();
         form.setEmail("get-by-id@example.com");
         form.setName("Test User");
+        form.setPassword("testpass123");
         UserData created = userDto.create(form);
-        
+
         // Then retrieve it
         UserData retrieved = userDto.getById(created.getId());
-        
+
         assertNotNull(retrieved);
         assertEquals(created.getId(), retrieved.getId());
         assertEquals(created.getEmail(), retrieved.getEmail());
@@ -92,7 +98,7 @@ public class UserDtoTest extends AbstractUnitTest {
         PageForm form = new PageForm();
         form.setPage(0);
         form.setSize(101); // Max size is 100
-        
+
         assertThrows(ApiException.class, () -> userDto.getAll(form));
     }
 
@@ -101,7 +107,7 @@ public class UserDtoTest extends AbstractUnitTest {
         PageForm form = new PageForm();
         form.setPage(-1);
         form.setSize(10);
-        
+
         assertThrows(ApiException.class, () -> userDto.getAll(form));
     }
 
@@ -112,17 +118,18 @@ public class UserDtoTest extends AbstractUnitTest {
             UserForm form = new UserForm();
             form.setEmail("test" + i + "@example.com");
             form.setName("Test User " + i);
+            form.setPassword("testpass123");
             userDto.create(form);
         }
-        
+
         PageForm pageForm = new PageForm();
         pageForm.setPage(0);
         pageForm.setSize(3);
-        
+
         Page<UserData> page = userDto.getAll(pageForm);
-        
+
         assertNotNull(page);
         assertTrue(page.getContent().size() <= 3);
         assertTrue(page.getTotalElements() >= 5);
     }
-} 
+}

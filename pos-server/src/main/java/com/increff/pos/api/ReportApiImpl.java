@@ -1,10 +1,8 @@
 package com.increff.pos.api;
 
-import com.increff.pos.dao.InvoiceDao;
 import com.increff.pos.dao.OrderDao;
 import com.increff.pos.dao.OrderItemDao;
 import com.increff.pos.dao.ProductDao;
-import com.increff.pos.db.InvoicePojo;
 import com.increff.pos.db.OrderItemPojo;
 import com.increff.pos.db.OrderPojo;
 import com.increff.pos.db.ProductPojo;
@@ -22,17 +20,14 @@ import java.util.stream.Collectors;
 public class ReportApiImpl implements ReportApi {
     private static final Logger logger = LoggerFactory.getLogger(ReportApiImpl.class);
 
-    private final InvoiceDao invoiceDao;
     private final OrderDao orderDao;
     private final OrderItemDao orderItemDao;
     private final ProductDao productDao;
 
     public ReportApiImpl(
-            InvoiceDao invoiceDao,
             OrderDao orderDao,
             OrderItemDao orderItemDao,
             ProductDao productDao) {
-        this.invoiceDao = invoiceDao;
         this.orderDao = orderDao;
         this.orderItemDao = orderItemDao;
         this.productDao = productDao;
@@ -42,20 +37,20 @@ public class ReportApiImpl implements ReportApi {
     public List<SalesReportData> getSalesReport(Instant fromDate, Instant toDate, String brand) throws ApiException {
         logger.info("Generating sales report from {} to {}, brand: {}", fromDate, toDate, brand);
 
-        // Get all invoices in the date range
-        List<InvoicePojo> allInvoices = invoiceDao.findAll();
+        // Get all INVOICED orders in the date range
+        List<OrderPojo> allOrders = orderDao.findAll();
 
-        List<InvoicePojo> invoices = allInvoices.stream()
-                .filter(inv -> {
-                    if (inv.getInvoiceDate() == null)
+        List<OrderPojo> orders = allOrders.stream()
+                .filter(order -> {
+                    if (order.getOrderDate() == null || !"INVOICED".equals(order.getStatus()))
                         return false;
-                    return !inv.getInvoiceDate().isBefore(fromDate) && !inv.getInvoiceDate().isAfter(toDate);
+                    return !order.getOrderDate().isBefore(fromDate) && !order.getOrderDate().isAfter(toDate);
                 })
                 .collect(Collectors.toList());
 
-        // Get all order IDs from invoices
-        Set<String> orderIds = invoices.stream()
-                .map(InvoicePojo::getOrderId)
+        // Get all order IDs from invoiced orders
+        Set<String> orderIds = orders.stream()
+                .map(OrderPojo::getOrderId)
                 .collect(Collectors.toSet());
 
         if (orderIds.isEmpty()) {

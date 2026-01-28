@@ -22,7 +22,8 @@ import {
   CardActions,
   Chip,
 } from '@mui/material';
-import { ChevronLeft, ChevronRight, Edit, CloudUpload, Add } from '@mui/icons-material';
+import { ChevronLeft, ChevronRight, FirstPage, LastPage, Edit, CloudUpload, Add, Remove, Check, Close } from '@mui/icons-material';
+import { Tooltip } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { productService } from '../services/product.service';
 import { clientService } from '../services/client.service';
@@ -31,7 +32,7 @@ import { ClientData } from '../types/client.types';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 
 /* ================= STYLES ================= */
 
@@ -114,6 +115,10 @@ export default function Products() {
     quantity: 0,
   });
 
+  // Inline inventory editing state
+  const [editingInventoryId, setEditingInventoryId] = useState<string | null>(null);
+  const [tempInventoryValue, setTempInventoryValue] = useState<number>(0);
+
   // TSV upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadType, setUploadType] = useState<'products' | 'inventory' | null>(null);
@@ -144,7 +149,7 @@ export default function Products() {
         const res = await clientService.getAll(page, pageSize);
         const clientList = res.content || [];
         allClients = [...allClients, ...clientList];
-        
+
         // Check if there are more pages
         hasMore = res.totalPages > page + 1;
         page++;
@@ -214,7 +219,7 @@ export default function Products() {
         const res = await productService.getAll(page, pageSize);
         const productList = res.content || [];
         allProducts = [...allProducts, ...productList];
-        
+
         // Check if there are more pages
         hasMore = res.totalPages > page + 1;
         page++;
@@ -320,19 +325,30 @@ export default function Products() {
     const lines = decoded.split('\n');
     const failures: { rowNumber: string; error: string; data: string }[] = [];
 
+    // Parse header to find column indices
+    if (lines.length < 2) return failures;
+
+    const header = lines[0].split('\t');
+    const statusIndex = header.findIndex(h => h.trim().toLowerCase() === 'status');
+    const errorIndex = header.findIndex(h => h.trim().toLowerCase() === 'error');
+    const barcodeIndex = header.findIndex(h => h.trim().toLowerCase() === 'barcode');
+
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
+
       const columns = line.split('\t');
-      if (columns.length >= 4) {
-        const [rowNumber, status, error, data] = columns;
-        if (status.trim() === 'FAILED') {
-          failures.push({
-            rowNumber: rowNumber.trim(),
-            error: error.trim(),
-            data: data.trim(),
-          });
-        }
+      const status = statusIndex >= 0 ? columns[statusIndex]?.trim() : '';
+
+      if (status === 'FAILED') {
+        const error = errorIndex >= 0 ? columns[errorIndex]?.trim() : 'Unknown error';
+        const barcode = barcodeIndex >= 0 ? columns[barcodeIndex]?.trim() : 'N/A';
+
+        failures.push({
+          rowNumber: String(i),
+          error: error || 'Unknown error',
+          data: `Barcode: ${barcode}`,
+        });
       }
     }
     return failures;
@@ -379,6 +395,55 @@ export default function Products() {
     reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
+
+        // Validate headers
+        const lines = text.split('\n');
+        if (lines.length === 0) {
+          toast.error('File is empty');
+          setUploading(false);
+          return;
+        }
+
+        const headerLine = lines[0].trim();
+        const headers = headerLine.split('\t').map(h => h.trim().toLowerCase());
+
+        // Check mandatory headers based on upload type
+        if (uploadType === 'products') {
+          const requiredHeaders = ['barcode', 'clientid', 'name', 'mrp'];
+          const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+
+          if (missingHeaders.length > 0) {
+            toast.error(`Missing required headers: ${missingHeaders.join(', ')}`);
+            setUploading(false);
+            return;
+          }
+
+          // Check for blank client IDs in data rows
+          const clientIdIndex = headers.indexOf('clientid');
+          for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const columns = line.split('\t');
+            const clientId = columns[clientIdIndex]?.trim();
+
+            if (!clientId || clientId === '') {
+              toast.error(`Row ${i + 1}: Client ID cannot be blank. Please provide a valid client ID for all products.`);
+              setUploading(false);
+              return;
+            }
+          }
+        } else if (uploadType === 'inventory') {
+          const requiredHeaders = ['barcode', 'quantity'];
+          const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+
+          if (missingHeaders.length > 0) {
+            toast.error(`Missing required headers: ${missingHeaders.join(', ')}`);
+            setUploading(false);
+            return;
+          }
+        }
+
         const base64 = btoa(unescape(encodeURIComponent(text)));
 
         let resultTsv: string;
@@ -445,6 +510,45 @@ export default function Products() {
     setOpen(true);
   };
 
+  /* ================= INLINE INVENTORY HANDLERS ================= */
+
+  const handleStartInventoryEdit = (product: ProductData) => {
+    setEditingInventoryId(product.id);
+    setTempInventoryValue(product.quantity || 0);
+  };
+
+  const handleInventoryIncrement = () => {
+    setTempInventoryValue((prev) => prev + 1);
+  };
+
+  const handleInventoryDecrement = () => {
+    setTempInventoryValue((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleInventoryManualChange = (value: string) => {
+    const numValue = parseInt(value) || 0;
+    setTempInventoryValue(Math.max(0, numValue));
+  };
+
+  const handleInventorySave = async (productId: string) => {
+    try {
+      await productService.updateInventory(productId, {
+        productId,
+        quantity: tempInventoryValue,
+      });
+      toast.success('Inventory updated');
+      setEditingInventoryId(null);
+      loadProducts(currentPage);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update inventory');
+    }
+  };
+
+  const handleInventoryCancel = () => {
+    setEditingInventoryId(null);
+    setTempInventoryValue(0);
+  };
+
   /* ================= RENDER ================= */
 
   return (
@@ -467,7 +571,15 @@ export default function Products() {
                 variant="outlined"
                 startIcon={<CloudUpload />}
                 disabled={loading}
-                sx={{ borderRadius: '999px' }}
+                sx={{
+                  borderRadius: '999px',
+                  borderColor: '#10b981',
+                  color: '#10b981',
+                  '&:hover': {
+                    borderColor: '#059669',
+                    backgroundColor: 'rgba(16, 185, 129, 0.04)',
+                  },
+                }}
                 onClick={() => handleOpenUploadDialog('products')}
               >
                 Products TSV
@@ -477,7 +589,15 @@ export default function Products() {
                 variant="outlined"
                 startIcon={<CloudUpload />}
                 disabled={loading}
-                sx={{ borderRadius: '999px' }}
+                sx={{
+                  borderRadius: '999px',
+                  borderColor: '#f59e0b',
+                  color: '#f59e0b',
+                  '&:hover': {
+                    borderColor: '#d97706',
+                    backgroundColor: 'rgba(245, 158, 11, 0.04)',
+                  },
+                }}
                 onClick={() => handleOpenUploadDialog('inventory')}
               >
                 Inventory TSV
@@ -505,14 +625,6 @@ export default function Products() {
       {/* SEARCH BAR */}
       <SearchBox>
         <TextField
-          label="Search"
-          size="small"
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-          sx={{ width: 260 }}
-        />
-
-        <TextField
           select
           label="Filter By"
           size="small"
@@ -526,11 +638,25 @@ export default function Products() {
           <MenuItem value="clientName">Client Name</MenuItem>
         </TextField>
 
+        <TextField
+          label="Search"
+          size="small"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          placeholder={
+            searchFilter === 'barcode' ? 'Enter barcode' :
+              searchFilter === 'name' ? 'Enter product name' :
+                searchFilter === 'clientId' ? 'Enter client ID' :
+                  'Enter client name'
+          }
+          sx={{ width: 260 }}
+        />
+
         <Button
-            variant="contained"
-            onClick={handleSearch}
-            disabled={loading}
-            sx={{ borderRadius: '999px' }}
+          variant="contained"
+          onClick={handleSearch}
+          disabled={loading}
+          sx={{ borderRadius: '999px' }}
         >
           Search
         </Button>
@@ -560,8 +686,8 @@ export default function Products() {
           {uploadType === 'inventory'
             ? 'Upload Inventory TSV'
             : uploadType === 'products'
-            ? 'Upload Products TSV'
-            : 'Upload TSV'}
+              ? 'Upload Products TSV'
+              : 'Upload TSV'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -680,18 +806,19 @@ export default function Products() {
                   borderRadius: '16px',
                   backgroundColor: '#ffffff',
                   border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 16px rgba(15,23,42,0.08)',
+                  boxShadow: '0 2px 8px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.06)',
+                  transition: 'all 0.2s ease',
                   '&:hover': {
-                    borderColor: '#1976d2',
-                    boxShadow: '0 10px 24px rgba(15,23,42,0.12)',
-                    transform: 'translateY(-3px)',
-                    transition: 'all 0.15s ease-out',
+                    borderColor: '#cbd5e1',
+                    boxShadow: '0 8px 16px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.06)',
+                    transform: 'translateY(-2px)',
                   },
                 }}
               >
                 <CardHeader
                   sx={{
-                    pb: 1,
+                    pb: 1.5,
+                    pt: 2,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1.5,
@@ -704,8 +831,10 @@ export default function Products() {
                         width: 72,
                         height: 72,
                         borderRadius: 3,
-                        bgcolor: '#e5e7eb',
-                        fontSize: 14,
+                        bgcolor: '#f3f4f6',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: '#9ca3af',
                         border: '1px solid #e5e7eb',
                       }}
                       variant="rounded"
@@ -716,7 +845,12 @@ export default function Products() {
                   title={
                     <Typography
                       variant="subtitle1"
-                      sx={{ fontWeight: 600, color: '#111827', mb: 0.25 }}
+                      sx={{
+                        fontWeight: 600,
+                        color: '#0f172a',
+                        mb: 0.25,
+                        fontSize: '0.95rem',
+                      }}
                     >
                       {p.name}
                     </Typography>
@@ -736,50 +870,139 @@ export default function Products() {
                   }
                 />
                 <CardContent sx={{ pt: 1, pb: 2, px: 2.25, flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.25 }}>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500, fontSize: '0.75rem' }}>
                       MRP
                     </Typography>
                     <Typography
                       variant="body2"
-                      sx={{ fontWeight: 600, color: '#111827' }}
+                      sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}
                     >
                       ₹{p.mrp.toFixed(2)}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500, fontSize: '0.75rem' }}>
                       Inventory
                     </Typography>
-                    <Chip
-                      size="small"
-                      label={p.quantity ?? 0}
-                      sx={{
-                        height: 22,
-                        borderRadius: '999px',
-                        backgroundColor:
-                          (p.quantity ?? 0) === 0
-                            ? 'rgba(248,113,113,0.12)'
-                            : 'rgba(34,197,94,0.1)',
-                        color:
-                          (p.quantity ?? 0) === 0 ? '#f97373' : 'rgba(74,222,128,0.95)',
-                        fontSize: 11,
-                        px: 1,
-                      }}
-                    />
+                    {isSupervisor && editingInventoryId === p.id ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <IconButton
+                          size="small"
+                          onClick={handleInventoryDecrement}
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            backgroundColor: '#f3f4f6',
+                            '&:hover': { backgroundColor: '#e5e7eb' },
+                          }}
+                        >
+                          <Remove sx={{ fontSize: 14 }} />
+                        </IconButton>
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={tempInventoryValue}
+                          onChange={(e) => handleInventoryManualChange(e.target.value)}
+                          sx={{
+                            width: 60,
+                            '& input': {
+                              textAlign: 'center',
+                              padding: '4px 6px',
+                              fontSize: 13,
+                            },
+                          }}
+                          inputProps={{ min: 0 }}
+                        />
+                        <IconButton
+                          size="small"
+                          onClick={handleInventoryIncrement}
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            backgroundColor: '#f3f4f6',
+                            '&:hover': { backgroundColor: '#e5e7eb' },
+                          }}
+                        >
+                          <Add sx={{ fontSize: 14 }} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleInventorySave(p.id)}
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            backgroundColor: '#22c55e',
+                            color: 'white',
+                            ml: 0.5,
+                            '&:hover': { backgroundColor: '#16a34a' },
+                          }}
+                        >
+                          <Check sx={{ fontSize: 14 }} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={handleInventoryCancel}
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            '&:hover': { backgroundColor: '#dc2626' },
+                          }}
+                        >
+                          <Close sx={{ fontSize: 14 }} />
+                        </IconButton>
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Chip
+                          size="small"
+                          label={p.quantity ?? 0}
+                          sx={{
+                            height: 24,
+                            borderRadius: '8px',
+                            backgroundColor:
+                              (p.quantity ?? 0) === 0
+                                ? '#fef2f2'
+                                : '#f0fdf4',
+                            color:
+                              (p.quantity ?? 0) === 0 ? '#dc2626' : '#16a34a',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            px: 1.25,
+                            border: (p.quantity ?? 0) === 0 ? '1px solid #fecaca' : '1px solid #bbf7d0',
+                          }}
+                        />
+                        {isSupervisor && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleStartInventoryEdit(p)}
+                            sx={{
+                              width: 20,
+                              height: 20,
+                              '&:hover': { backgroundColor: '#f3f4f6' },
+                            }}
+                          >
+                            <Edit sx={{ fontSize: 12, color: '#6b7280' }} />
+                          </IconButton>
+                        )}
+                      </Box>
+                    )}
                   </Box>
                 </CardContent>
                 <CardActions
                   sx={{
                     px: 2.25,
                     pb: 2,
-                    pt: 0.5,
+                    pt: 1,
                     display: 'flex',
                     justifyContent: 'space-between',
+                    borderTop: '1px solid #f1f5f9',
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: '#9ca3af', fontStyle: 'italic' }}>
-                    {isSupervisor ? 'Editable' : 'View only'}
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.7rem' }}>
+                    {isSupervisor ? '● Editable' : 'View only'}
                   </Typography>
                   {isSupervisor ? (
                     <Button
@@ -822,138 +1045,259 @@ export default function Products() {
       {/* PAGINATION */}
       {totalPages > 1 && (
         <PaginationBox>
-          <StyledIconButton
-            disabled={currentPage === 0 || loading}
-            onClick={() => setCurrentPage((p) => p - 1)}
-          >
-            <ChevronLeft />
-          </StyledIconButton>
+          <Tooltip title="First Page">
+            <span>
+              <StyledIconButton
+                disabled={currentPage === 0 || loading}
+                onClick={() => setCurrentPage(0)}
+              >
+                <FirstPage />
+              </StyledIconButton>
+            </span>
+          </Tooltip>
+
+          <Tooltip title="Previous Page">
+            <span>
+              <StyledIconButton
+                disabled={currentPage === 0 || loading}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                <ChevronLeft />
+              </StyledIconButton>
+            </span>
+          </Tooltip>
 
           <Pagination
             count={totalPages}
             page={currentPage + 1}
             onChange={(_, v) => setCurrentPage(v - 1)}
             disabled={loading}
+            hidePrevButton
+            hideNextButton
           />
 
-          <StyledIconButton
-            disabled={currentPage >= totalPages - 1 || loading}
-            onClick={() => setCurrentPage((p) => p + 1)}
-          >
-            <ChevronRight />
-          </StyledIconButton>
+          <Tooltip title="Next Page">
+            <span>
+              <StyledIconButton
+                disabled={currentPage >= totalPages - 1 || loading}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                <ChevronRight />
+              </StyledIconButton>
+            </span>
+          </Tooltip>
+
+          <Tooltip title="Last Page">
+            <span>
+              <StyledIconButton
+                disabled={currentPage >= totalPages - 1 || loading}
+                onClick={() => setCurrentPage(totalPages - 1)}
+              >
+                <LastPage />
+              </StyledIconButton>
+            </span>
+          </Tooltip>
         </PaginationBox>
       )}
 
-      {/* DIALOG */}
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle>
-          {editingId ? 'Edit Product & Inventory' : 'Add Product'}
+      {/* EDIT PRODUCT DIALOG */}
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px rgba(15,23,42,0.15)',
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          pb: 1,
+          pt: 3,
+          px: 3,
+          borderBottom: '1px solid #f1f5f9',
+        }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>
+            {editingId ? 'Edit Product Details' : 'Add New Product'}
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#64748b', mt: 0.5, display: 'block' }}>
+            {editingId ? 'Update product information below' : 'Fill in the product details to add to catalog'}
+          </Typography>
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-            <TextField
-              fullWidth
-              label="Barcode"
-              value={form.barcode}
-              onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-              disabled={!!editingId}
-              required
-            />
-            <Autocomplete
-              fullWidth
-              options={clients}
-              loading={loadingClients}
-              value={clients.find(c => c.clientId === form.clientId) || null}
-              onChange={(event, newValue) => {
-                setForm({ ...form, clientId: newValue ? newValue.clientId : '' });
-              }}
-              getOptionLabel={(option) => `${option.name} (${option.clientId})`}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Client"
-                  required
-                  helperText={loadingClients ? 'Loading clients...' : clients.length === 0 ? 'No clients available. Please create clients first.' : 'Type to search by name or client ID'}
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {loadingClients ? <CircularProgress color="inherit" size={20} /> : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-              filterOptions={(options, { inputValue }) => {
-                const searchTerm = inputValue.toLowerCase();
-                return options.filter(
-                  (option) =>
-                    option.name.toLowerCase().includes(searchTerm) ||
-                    option.clientId.toLowerCase().includes(searchTerm)
-                );
-              }}
-              noOptionsText={loadingClients ? 'Loading...' : 'No clients found'}
-            />
-            <TextField
-              fullWidth
-              label="Product Name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-            <TextField
-              fullWidth
-              label="MRP"
-              type="number"
-              value={form.mrp}
-              onChange={(e) => setForm({ ...form, mrp: parseFloat(e.target.value) || 0 })}
-              required
-            />
-            <TextField
-              fullWidth
-              label="Image URL"
-              value={form.imageUrl}
-              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-            />
-            {editingId && (
+        <DialogContent sx={{ pt: 3, pb: 2, px: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            {/* Barcode */}
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.75, display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                Barcode {!editingId && <span style={{ color: 'red' }}>*</span>}
+              </Typography>
               <TextField
                 fullWidth
-                label="Inventory Quantity"
-                type="number"
-                value={inventoryForm.quantity}
-                onChange={(e) =>
-                  setInventoryForm({
-                    ...inventoryForm,
-                    quantity: parseInt(e.target.value) || 0,
-                  })
-                }
+                placeholder="Enter product barcode"
+                value={form.barcode}
+                onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                disabled={!!editingId}
                 required
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                    backgroundColor: editingId ? '#f8fafc' : '#ffffff',
+                  }
+                }}
               />
-            )}
+              {editingId && (
+                <Typography variant="caption" sx={{ color: '#94a3b8', mt: 0.5, display: 'block', fontSize: '0.7rem' }}>
+                  Barcode cannot be changed after creation
+                </Typography>
+              )}
+            </Box>
+
+            {/* Client */}
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
+                Client / Brand <span style={{ color: 'red' }}>*</span>
+              </Typography>
+              <Autocomplete
+                fullWidth
+                options={clients}
+                loading={loadingClients}
+                value={clients.find(c => c.clientId === form.clientId) || null}
+                onChange={(event, newValue) => {
+                  setForm({ ...form, clientId: newValue ? newValue.clientId : '' });
+                }}
+                getOptionLabel={(option) => `${option.name} (${option.clientId})`}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Select client or brand"
+                    required
+                    size="small"
+                    helperText={loadingClients ? 'Loading clients...' : clients.length === 0 ? 'No clients available' : 'Search by name or ID'}
+                    InputProps={{
+                      ...params.InputProps,
+                      sx: { borderRadius: '10px' },
+                      endAdornment: (
+                        <>
+                          {loadingClients ? <CircularProgress color="inherit" size={18} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
+                filterOptions={(options, { inputValue }) => {
+                  const searchTerm = inputValue.toLowerCase();
+                  return options.filter(
+                    (option) =>
+                      option.name.toLowerCase().includes(searchTerm) ||
+                      option.clientId.toLowerCase().includes(searchTerm)
+                  );
+                }}
+                noOptionsText={loadingClients ? 'Loading...' : 'No clients found'}
+              />
+            </Box>
+
+            {/* Product Name */}
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.75, display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                Product Name <span style={{ color: 'red' }}>*</span>
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="Enter product name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                  }
+                }}
+              />
+            </Box>
+
+            {/* MRP */}
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.75, display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                MRP (₹) <span style={{ color: 'red' }}>*</span>
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="0.00"
+                type="number"
+                value={form.mrp}
+                onChange={(e) => setForm({ ...form, mrp: parseFloat(e.target.value) || 0 })}
+                required
+                size="small"
+                inputProps={{ min: 0, step: 0.01 }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                  }
+                }}
+              />
+            </Box>
+
+            {/* Image URL */}
+            <Box>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mb: 0.75, display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                Image URL (Optional)
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="https://example.com/image.jpg"
+                value={form.imageUrl}
+                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                  }
+                }}
+              />
+              <Typography variant="caption" sx={{ color: '#94a3b8', mt: 0.5, display: 'block', fontSize: '0.7rem' }}>
+                Provide a URL to display product image
+              </Typography>
+            </Box>
+
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          {editingId ? (
-            <>
-              <Button
-                variant="contained"
-                onClick={handleInventorySubmit}
-                color="secondary"
-              >
-                Update Inventory Only
-              </Button>
-              <Button variant="contained" onClick={handleSubmit}>
-                Update Product
-              </Button>
-            </>
-          ) : (
-            <Button variant="contained" onClick={handleSubmit}>
-              Save
-            </Button>
-          )}
+        <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1.5, borderTop: '1px solid #f1f5f9' }}>
+          <Button
+            onClick={() => setOpen(false)}
+            sx={{
+              borderRadius: '10px',
+              px: 3,
+              textTransform: 'none',
+              fontWeight: 600,
+              color: '#64748b',
+              '&:hover': {
+                backgroundColor: '#f1f5f9',
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            sx={{
+              borderRadius: '10px',
+              px: 4,
+              textTransform: 'none',
+              fontWeight: 600,
+              boxShadow: '0 4px 12px rgba(59,130,246,0.25)',
+              '&:hover': {
+                boxShadow: '0 6px 16px rgba(59,130,246,0.35)',
+              }
+            }}
+          >
+            {editingId ? 'Save Changes' : 'Add Product'}
+          </Button>
         </DialogActions>
       </Dialog>
     </StyledContainer>

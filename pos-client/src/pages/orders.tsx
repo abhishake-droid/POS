@@ -27,15 +27,23 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
 } from '@mui/material';
 import {
   Add,
+  Search,
+  ExpandMore,
+  ExpandLess,
+  Receipt,
+  Cancel,
+  Download,
+  FirstPage,
+  LastPage,
+  NavigateBefore,
+  NavigateNext,
   ChevronLeft,
   ChevronRight,
-  Download,
-  ExpandLess,
-  ExpandMore,
-  Receipt,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { toast } from 'react-toastify';
@@ -50,6 +58,7 @@ import { orderService } from '../services/order.service';
 import { productService } from '../services/product.service';
 import { ProductData } from '../types/product.types';
 import { OrderItemsTable } from '../components/OrderItemsTable';
+import { formatDateTimeText } from '../utils/dateFormat';
 
 const PAGE_SIZE = 10;
 
@@ -126,7 +135,17 @@ export default function OrdersPage() {
 
   const [filters, setFilters] = useState<OrderSearchFilters>({});
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [viewOrderData, setViewOrderData] = useState<OrderData | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
+
+  // Cancel confirmation dialog state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
+
+  // Edit order state
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     // Load orders on mount and when page changes
@@ -326,6 +345,79 @@ export default function OrdersPage() {
     }
   };
 
+  const handleEditOrder = async (orderId: string) => {
+    try {
+      setEditingOrderId(orderId);
+
+      // Load products first to ensure they're available for the Autocomplete
+      await loadProducts();
+      console.log('Products loaded:', products.length);
+
+      const orderData = await orderService.getById(orderId);
+      console.log('Order data:', orderData);
+
+      // Convert order items to form format
+      const lines = (orderData.items || []).map(item => {
+        console.log('Order item:', item);
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+          mrp: item.mrp,
+          lineTotal: item.lineTotal,
+          productName: item.productName,
+          barcode: item.barcode,
+        };
+      });
+
+      console.log('Form lines:', lines);
+      setOrderForm({ lines });
+      setEditDialogOpen(true);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to load order details');
+    }
+  };
+
+  const handleUpdateOrder = async () => {
+    try {
+      if (!editingOrderId) return;
+
+      if (orderForm.lines.length === 0) {
+        toast.error('Add at least one product line');
+        return;
+      }
+      for (const line of orderForm.lines) {
+        if (!line.productId) {
+          toast.error('Please select a product for all lines');
+          return;
+        }
+        if (line.quantity <= 0) {
+          toast.error('Quantity must be positive');
+          return;
+        }
+        if (line.mrp < 0) {
+          toast.error('MRP cannot be negative');
+          return;
+        }
+      }
+
+      await orderService.update(editingOrderId, orderForm);
+      toast.success('Order updated successfully');
+      setEditDialogOpen(false);
+      setEditingOrderId(null);
+      setOrderForm({
+        lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+      });
+      setCurrentPage(0);
+      loadOrders(0, filters).catch((err) => {
+        console.error('Error reloading orders:', err);
+      });
+    } catch (e: any) {
+      const status = e.response?.status;
+      const errorMsg = e.response?.data?.message || e.message || 'Failed to update order';
+      toast.error(errorMsg);
+    }
+  };
+
   const handleFilterChange = (patch: Partial<OrderSearchFilters>) => {
     setFilters((prev) => ({ ...prev, ...patch }));
   };
@@ -346,30 +438,8 @@ export default function OrdersPage() {
     });
   };
 
-  const toggleExpand = async (orderId: string) => {
-    if (expandedOrderId === orderId) {
-      setExpandedOrderId(null);
-    } else {
-      setExpandedOrderId(orderId);
-      // Load order details if not already loaded
-      const order = orders.find((o) => o.orderId === orderId);
-      if (order && !order.items) {
-        try {
-          const orderDetails = await orderService.getById(orderId);
-          setOrders((prev) =>
-            prev.map((o) => (o.orderId === orderId ? orderDetails : o))
-          );
-        } catch (e: any) {
-          const status = e.response?.status;
-          if (status === 404 || status === 500 || !e.response) {
-            // Silently handle - endpoint not available
-            console.warn('Order details endpoint not available');
-          } else {
-            toast.error('Failed to load order details');
-          }
-        }
-      }
-    }
+  const toggleExpand = (orderId: string) => {
+    handleViewOrder(orderId);
   };
 
   const handleGenerateInvoice = async (orderId: string) => {
@@ -409,10 +479,29 @@ export default function OrdersPage() {
     }
   };
 
-  const handleCancelOrder = async (orderId: string) => {
+  const handleCancelOrder = (orderId: string) => {
+    setOrderToCancel(orderId);
+    setCancelDialogOpen(true);
+  };
+
+  const handleViewOrder = async (orderId: string) => {
     try {
-      await orderService.cancel(orderId);
+      const orderData = await orderService.getById(orderId);
+      setViewOrderData(orderData);
+      setViewDialogOpen(true);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to load order details');
+    }
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!orderToCancel) return;
+
+    try {
+      await orderService.cancel(orderToCancel);
       toast.success('Order cancelled');
+      setCancelDialogOpen(false);
+      setOrderToCancel(null);
       // Reload orders to get updated status
       loadOrders(currentPage, filters).catch((err) => {
         console.error('Error reloading orders:', err);
@@ -442,7 +531,13 @@ export default function OrdersPage() {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setCreateDialogOpen(true)}
+          onClick={() => {
+            setOrderForm({
+              lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+            });
+            loadProducts();
+            setCreateDialogOpen(true);
+          }}
           sx={{ borderRadius: '999px', px: 3, py: 1 }}
         >
           Create Order
@@ -478,9 +573,17 @@ export default function OrdersPage() {
               status: (e.target.value || '') as OrderStatus | '',
             })
           }
+          InputLabelProps={{ shrink: true }}
+          SelectProps={{
+            displayEmpty: true,
+            renderValue: (value) => {
+              if (!value) return 'All';
+              return value as string;
+            },
+          }}
         >
           <MenuItem value="">All</MenuItem>
-          <MenuItem value="CREATED">Created</MenuItem>
+          <MenuItem value="PLACED">Placed</MenuItem>
           <MenuItem value="INVOICED">Invoiced</MenuItem>
           <MenuItem value="CANCELLED">Cancelled</MenuItem>
         </TextField>
@@ -517,7 +620,7 @@ export default function OrdersPage() {
           <Box p={4} textAlign="center">
             <Typography variant="body1" color="text.secondary">
               {totalPages === 0 && currentPage === 0
-                ? 'No orders found. Create your first order to get started.'
+                ? 'No orders found.'
                 : 'No orders match the current filters.'}
             </Typography>
           </Box>
@@ -527,9 +630,7 @@ export default function OrdersPage() {
             <Grid container spacing={3}>
               {orders.map((order) => {
                 const isExpanded = expandedOrderId === order.orderId;
-                const createdAt = order.createdAt
-                  ? new Date(order.createdAt).toLocaleString()
-                  : '-';
+                const createdAt = formatDateTimeText(order.createdAt);
                 return (
                   <Grid item xs={12} md={6} key={order.id}>
                     <Card
@@ -584,14 +685,14 @@ export default function OrdersPage() {
                                 order.status === 'INVOICED'
                                   ? 'rgba(22,163,74,0.18)'
                                   : order.status === 'CANCELLED'
-                                  ? 'rgba(239,68,68,0.18)'
-                                  : 'rgba(30,64,175,0.25)',
+                                    ? 'rgba(239,68,68,0.18)'
+                                    : 'rgba(59,130,246,0.18)', // PLACED
                               color:
                                 order.status === 'INVOICED'
                                   ? '#4ade80'
                                   : order.status === 'CANCELLED'
-                                  ? '#f97373'
-                                  : '#93c5fd',
+                                    ? '#f97373'
+                                    : '#60a5fa', // PLACED
                             }}
                           />
                         }
@@ -642,49 +743,78 @@ export default function OrdersPage() {
                           gap: 1,
                         }}
                       >
-                        {order.status === 'CREATED' && (
+                        {order.status === 'PLACED' && (
                           <>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              startIcon={
-                                generatingInvoice === order.orderId ? (
-                                  <CircularProgress size={16} />
-                                ) : (
-                                  <Receipt />
-                                )
-                              }
-                              onClick={() => handleGenerateInvoice(order.orderId)}
-                              disabled={generatingInvoice === order.orderId}
-                              sx={{
-                                borderRadius: '999px',
-                                textTransform: 'none',
-                              }}
-                            >
-                              Invoice
-                            </Button>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="error"
-                              onClick={() => handleCancelOrder(order.orderId)}
-                              disabled={generatingInvoice === order.orderId}
-                              sx={{ borderRadius: '999px', textTransform: 'none' }}
-                            >
-                              Cancel
-                            </Button>
+                            <Tooltip title="Edit Order">
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => handleEditOrder(order.orderId)}
+                                  sx={{
+                                    border: '1px solid',
+                                    borderColor: 'primary.main',
+                                  }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip title="Generate Invoice">
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => handleGenerateInvoice(order.orderId)}
+                                  disabled={generatingInvoice === order.orderId}
+                                  sx={{
+                                    border: '1px solid',
+                                    borderColor: 'primary.main',
+                                  }}
+                                >
+                                  {generatingInvoice === order.orderId ? (
+                                    <CircularProgress size={16} />
+                                  ) : (
+                                    <Receipt fontSize="small" />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip title="Cancel Order">
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleCancelOrder(order.orderId)}
+                                  disabled={generatingInvoice === order.orderId}
+                                  sx={{
+                                    border: '1px solid',
+                                    borderColor: 'error.main',
+                                  }}
+                                >
+                                  <Cancel fontSize="small" />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
                           </>
                         )}
                         {order.status === 'INVOICED' && order.hasInvoice && (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<Download />}
-                            onClick={() => handleDownloadInvoice(order.orderId)}
-                            sx={{ borderRadius: '999px', textTransform: 'none' }}
-                          >
-                            Download
-                          </Button>
+                          <Tooltip title="Download Invoice">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleDownloadInvoice(order.orderId)}
+                              sx={{
+                                bgcolor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                  bgcolor: 'primary.dark',
+                                },
+                              }}
+                            >
+                              <Download fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         )}
                       </CardActions>
                       <Collapse in={isExpanded} timeout="auto" unmountOnExit>
@@ -700,26 +830,58 @@ export default function OrdersPage() {
 
             {totalPages > 1 && (
               <PaginationBox>
-                <StyledIconButton
-                  disabled={currentPage === 0 || loading}
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                >
-                  <ChevronLeft />
-                </StyledIconButton>
+                <Tooltip title="First Page">
+                  <span>
+                    <StyledIconButton
+                      disabled={currentPage === 0 || loading}
+                      onClick={() => setCurrentPage(0)}
+                    >
+                      <FirstPage />
+                    </StyledIconButton>
+                  </span>
+                </Tooltip>
+
+                <Tooltip title="Previous Page">
+                  <span>
+                    <StyledIconButton
+                      disabled={currentPage === 0 || loading}
+                      onClick={() => setCurrentPage((p) => p - 1)}
+                    >
+                      <ChevronLeft />
+                    </StyledIconButton>
+                  </span>
+                </Tooltip>
 
                 <Pagination
                   count={totalPages}
                   page={currentPage + 1}
                   onChange={(_, v) => setCurrentPage(v - 1)}
                   disabled={loading}
+                  hidePrevButton
+                  hideNextButton
                 />
 
-                <StyledIconButton
-                  disabled={currentPage >= totalPages - 1 || loading}
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                >
-                  <ChevronRight />
-                </StyledIconButton>
+                <Tooltip title="Next Page">
+                  <span>
+                    <StyledIconButton
+                      disabled={currentPage >= totalPages - 1 || loading}
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                    >
+                      <ChevronRight />
+                    </StyledIconButton>
+                  </span>
+                </Tooltip>
+
+                <Tooltip title="Last Page">
+                  <span>
+                    <StyledIconButton
+                      disabled={currentPage >= totalPages - 1 || loading}
+                      onClick={() => setCurrentPage(totalPages - 1)}
+                    >
+                      <LastPage />
+                    </StyledIconButton>
+                  </span>
+                </Tooltip>
               </PaginationBox>
             )}
           </>
@@ -889,6 +1051,300 @@ export default function OrdersPage() {
           </Button>
           <Button variant="contained" onClick={handleCreateOrder}>
             Create Order
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* EDIT ORDER DIALOG */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setEditingOrderId(null);
+          setOrderForm({
+            lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+          });
+        }}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Edit Order {editingOrderId}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            {orderForm.lines.map((line, index) => (
+              <Box
+                key={index}
+                sx={{
+                  display: 'flex',
+                  gap: 2,
+                  mb: 2,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <Autocomplete
+                  options={products}
+                  getOptionLabel={(option) => `${option.name} (${option.barcode})`}
+                  value={(() => {
+                    // Try to find the product in the products array
+                    const found = products.find((p) => p.id === line.productId);
+                    if (found) return found;
+
+                    // If not found but we have productName from the order data, create a virtual product
+                    if (line.productName && line.barcode) {
+                      return {
+                        id: line.productId,
+                        name: line.productName,
+                        barcode: line.barcode,
+                        clientId: '',
+                        mrp: line.mrp,
+                      };
+                    }
+
+                    return null;
+                  })()}
+                  onChange={(_, newValue) => handleProductSelect(index, newValue)}
+                  loading={loadingProducts}
+                  sx={{ flex: 2 }}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  filterOptions={(options, { inputValue }) => {
+                    const searchTerm = inputValue.toLowerCase();
+                    return options.filter(
+                      (option) =>
+                        option.name.toLowerCase().includes(searchTerm) ||
+                        option.barcode.toLowerCase().includes(searchTerm)
+                    );
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Product"
+                      size="small"
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {loadingProducts ? (
+                              <CircularProgress color="inherit" size={16} />
+                            ) : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
+                />
+                <TextField
+                  label="Quantity"
+                  type="number"
+                  size="small"
+                  value={line.quantity}
+                  onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
+                  sx={{ width: 100 }}
+                />
+                <TextField
+                  label="MRP"
+                  type="number"
+                  size="small"
+                  value={line.mrp}
+                  onChange={(e) => handleMrpChange(index, parseFloat(e.target.value) || 0)}
+                  sx={{ width: 120 }}
+                  InputProps={{ startAdornment: '₹' }}
+                />
+                <TextField
+                  label="Line Total"
+                  size="small"
+                  value={line.lineTotal.toFixed(2)}
+                  InputProps={{ readOnly: true, startAdornment: '₹' }}
+                  sx={{ width: 120 }}
+                />
+                <IconButton
+                  onClick={() => handleRemoveLine(index)}
+                  disabled={orderForm.lines.length === 1}
+                  color="error"
+                >
+                  <Cancel />
+                </IconButton>
+              </Box>
+            ))}
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <Button variant="outlined" onClick={handleAddLine}>
+                Add Product Line
+              </Button>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setEditDialogOpen(false);
+              setEditingOrderId(null);
+              setOrderForm({
+                lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+              });
+            }}
+          >
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleUpdateOrder}>
+            Update Order
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* VIEW ORDER DETAILS DIALOG */}
+      <Dialog
+        open={viewDialogOpen}
+        onClose={() => {
+          setViewDialogOpen(false);
+          setViewOrderData(null);
+        }}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Order Details - {viewOrderData?.orderId}</DialogTitle>
+        <DialogContent>
+          {viewOrderData && (
+            <Box sx={{ mt: 2 }}>
+              {/* Order Summary */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Order Summary
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Order ID
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      {viewOrderData.orderId}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Status
+                    </Typography>
+                    <Box>
+                      <Chip
+                        label={viewOrderData.status}
+                        size="small"
+                        sx={{
+                          mt: 0.5,
+                          bgcolor:
+                            viewOrderData.status === 'INVOICED'
+                              ? 'rgba(22,163,74,0.18)'
+                              : viewOrderData.status === 'CANCELLED'
+                                ? 'rgba(239,68,68,0.18)'
+                                : 'rgba(59,130,246,0.18)',
+                          color:
+                            viewOrderData.status === 'INVOICED'
+                              ? '#4ade80'
+                              : viewOrderData.status === 'CANCELLED'
+                                ? '#f97373'
+                                : '#60a5fa',
+                        }}
+                      />
+                    </Box>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Order Date
+                    </Typography>
+                    <Typography variant="body1">
+                      {viewOrderData.createdAt
+                        ? formatDateTimeText(new Date(viewOrderData.createdAt))
+                        : '-'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Total Items
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      {viewOrderData.totalItems || 0}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="caption" color="text.secondary">
+                      Total Amount
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      ₹{viewOrderData.totalAmount?.toFixed(2) || '0.00'}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              {/* Order Items */}
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Order Items
+                </Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 600 }}>Product</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Barcode</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>Quantity</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>MRP</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>Line Total</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(viewOrderData.items || []).map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.productName || '-'}</TableCell>
+                          <TableCell>{item.barcode || '-'}</TableCell>
+                          <TableCell align="right">{item.quantity}</TableCell>
+                          <TableCell align="right">₹{item.mrp?.toFixed(2)}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>
+                            ₹{item.lineTotal?.toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setViewDialogOpen(false);
+              setViewOrderData(null);
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* CANCEL CONFIRMATION DIALOG */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={() => setCancelDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Cancel Order</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to cancel this order? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelDialogOpen(false)}>
+            No, Keep Order
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmCancelOrder}
+          >
+            Yes, Cancel Order
           </Button>
         </DialogActions>
       </Dialog>

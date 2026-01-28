@@ -19,6 +19,7 @@ import java.util.List;
 public class UserDto {
 
     private final UserApi userApi;
+
     public UserDto(UserApi userApi) {
         this.userApi = userApi;
     }
@@ -27,20 +28,25 @@ public class UserDto {
 
     public UserData create(UserForm userForm) throws ApiException {
         ValidationUtil.validateUserForm(userForm);
-        
-        // Prevent creating supervisor users via API - supervisors are auto-created from properties
+
+        // Prevent creating supervisor users via API - supervisors are auto-created from
+        // properties
         if (userForm.getRole() != null && "SUPERVISOR".equals(userForm.getRole())) {
-            throw new ApiException("Supervisor users cannot be created via API. They are automatically created from application properties.");
+            throw new ApiException(
+                    "Supervisor users cannot be created via API. They are automatically created from application properties.");
         }
-        
+
         UserPojo userPojo = UserHelper.convertToEntity(userForm);
-        
-        // Operators don't need passwords - they login with email only
-        // No password hashing needed for operators
-        
-        // Force role to be USER (OPERATOR) - supervisors can only be created via initialization
+
+        // Hash password for operators
+        if (userForm.getPassword() != null && !userForm.getPassword().isEmpty()) {
+            userPojo.setPassword(passwordEncoder.encode(userForm.getPassword()));
+        }
+
+        // Force role to be USER (OPERATOR) - supervisors can only be created via
+        // initialization
         userPojo.setRole("USER");
-        
+
         UserPojo savedUserPojo = userApi.add(userPojo);
         return UserHelper.convertToDto(savedUserPojo);
     }
@@ -55,4 +61,4 @@ public class UserDto {
         Page<UserPojo> userPage = userApi.getAll(form.getPage(), form.getSize());
         return userPage.map(UserHelper::convertToDto);
     }
-} 
+}
