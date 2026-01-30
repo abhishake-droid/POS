@@ -11,9 +11,4 @@ export const auditLogService = {
     const response = await apiClient.get('/audit-log/get-all');
     return response.data;
   },
-
-  getByOperator: async (operatorEmail: string): Promise<AuditLogData[]> => {
-    const response = await apiClient.get(`/audit-log/get-by-operator/${operatorEmail}`);
-    return response.data;
-  },
 };

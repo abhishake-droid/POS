@@ -6,14 +6,14 @@ import com.increff.pos.model.data.OrderData;
 import com.increff.pos.model.data.OrderItemData;
 import com.increff.pos.model.form.OrderLineForm;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class OrderHelper {
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     public static OrderItemPojo convertLineFormToEntity(OrderLineForm form, String orderId) {
         OrderItemPojo pojo = new OrderItemPojo();
@@ -33,7 +33,7 @@ public class OrderHelper {
         data.setTotalItems(pojo.getTotalItems());
         data.setTotalAmount(pojo.getTotalAmount());
         if (pojo.getOrderDate() != null) {
-            data.setCreatedAt(pojo.getOrderDate().toString());
+            data.setCreatedAt(pojo.getOrderDate().format(DATE_FORMATTER));
         }
         data.setHasInvoice(hasInvoice);
         return data;

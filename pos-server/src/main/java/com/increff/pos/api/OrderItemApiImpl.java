@@ -3,8 +3,6 @@ package com.increff.pos.api;
 import com.increff.pos.dao.OrderItemDao;
 import com.increff.pos.db.OrderItemPojo;
 import com.increff.pos.exception.ApiException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,7 +10,6 @@ import java.util.List;
 
 @Service
 public class OrderItemApiImpl implements OrderItemApi {
-    private static final Logger logger = LoggerFactory.getLogger(OrderItemApiImpl.class);
 
     private final OrderItemDao orderItemDao;
 
@@ -23,20 +20,18 @@ public class OrderItemApiImpl implements OrderItemApi {
     @Override
     @Transactional(rollbackFor = ApiException.class)
     public OrderItemPojo add(OrderItemPojo orderItemPojo) throws ApiException {
-        logger.info("Creating order item for orderId: {}", orderItemPojo.getOrderId());
         return orderItemDao.save(orderItemPojo);
     }
 
     @Override
-    public OrderItemPojo get(String id) throws ApiException {
-        OrderItemPojo orderItemPojo = orderItemDao.findById(id).orElse(null);
-        if (orderItemPojo == null) {
-            throw new ApiException("OrderItem with ID " + id + " does not exist");
-        }
-        return orderItemPojo;
+    @Transactional(readOnly = true)
+    public OrderItemPojo getCheck(String id) throws ApiException {
+        return orderItemDao.findById(id)
+                .orElseThrow(() -> new ApiException("OrderItem with ID " + id + " does not exist"));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrderItemPojo> getByOrderId(String orderId) {
         return orderItemDao.findByOrderId(orderId);
     }
@@ -44,17 +39,12 @@ public class OrderItemApiImpl implements OrderItemApi {
     @Override
     @Transactional(rollbackFor = ApiException.class)
     public List<OrderItemPojo> addBulk(List<OrderItemPojo> orderItemPojos) throws ApiException {
-        logger.info("Creating {} order items", orderItemPojos.size());
         return orderItemDao.saveAll(orderItemPojos);
     }
 
     @Override
     @Transactional(rollbackFor = ApiException.class)
     public void delete(String id) throws ApiException {
-        if (id == null || id.trim().isEmpty()) {
-            throw new ApiException("Order item ID cannot be empty");
-        }
-        logger.info("Deleting order item with ID: {}", id);
         orderItemDao.deleteById(id);
     }
 }

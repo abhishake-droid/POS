@@ -66,5 +66,10 @@ export const orderService = {
     const response = await apiClient.put(`/order/update/${orderId}`, form);
     return response.data;
   },
+
+  retry: async (orderId: string, form?: CreateOrderForm): Promise<OrderData> => {
+    const response = await apiClient.post(`/order/retry/${orderId}`, form || null);
+    return response.data;
+  },
 };
 

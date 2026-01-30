@@ -8,7 +8,7 @@ import java.util.List;
 public interface OrderItemApi {
     OrderItemPojo add(OrderItemPojo orderItemPojo) throws ApiException;
 
-    OrderItemPojo get(String id) throws ApiException;
+    OrderItemPojo getCheck(String id) throws ApiException;
 
     List<OrderItemPojo> getByOrderId(String orderId);
 

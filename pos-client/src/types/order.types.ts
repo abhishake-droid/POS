@@ -1,4 +1,4 @@
-export type OrderStatus = 'PLACED' | 'INVOICED' | 'CANCELLED';
+export type OrderStatus = 'PLACED' | 'INVOICED' | 'CANCELLED' | 'UNFULFILLABLE';
 
 export interface OrderLineForm {
   productId: string;
@@ -11,6 +11,13 @@ export interface OrderLineForm {
 
 export interface CreateOrderForm {
   lines: OrderLineForm[];
+}
+
+export interface UnfulfillableItem {
+  productId: string;
+  productName: string;
+  requestedQuantity: number;
+  availableQuantity: number;
 }
 
 export interface OrderItemData {
@@ -32,6 +39,8 @@ export interface OrderData {
   totalAmount: number;
   hasInvoice: boolean;
   items?: OrderItemData[];
+  fulfillable?: boolean;
+  unfulfillableItems?: UnfulfillableItem[];
 }
 
 export interface OrderSearchFilters {

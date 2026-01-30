@@ -1,4 +1,4 @@
-package com.increff.invoice.db;
+package com.increff.pos.db;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.index.Indexed;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -21,15 +21,9 @@ public class InvoicePojo extends AbstractPojo {
     @Field("orderId")
     private String orderId;
 
-    @Field("billingAddress")
-    private String billingAddress;
-
-    @Field("totalAmount")
-    private Double totalAmount;
-
     @Field("pdfPath")
     private String pdfPath;
 
     @Field("invoiceDate")
-    private Instant invoiceDate;
+    private ZonedDateTime invoiceDate;
 }

@@ -8,9 +8,16 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class AppRestControllerAdvice {
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public MessageData handle(ConstraintViolationException e) {
+        return new MessageData(e.getMessage());
+    }
 
     @ExceptionHandler(ApiException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -21,6 +28,7 @@ public class AppRestControllerAdvice {
     @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public MessageData handle(Throwable e) {
+        e.printStackTrace();
         return new MessageData("An internal error occurred");
     }
 

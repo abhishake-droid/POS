@@ -12,26 +12,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class ProductDao extends AbstractDao<ProductPojo> {
+
     public ProductDao(MongoOperations mongoOperations) {
         super(
-            new MongoRepositoryFactory(mongoOperations)
-                .getEntityInformation(ProductPojo.class),
-            mongoOperations
-        );
+                new MongoRepositoryFactory(mongoOperations)
+                        .getEntityInformation(ProductPojo.class),
+                mongoOperations);
     }
 
-    public ProductPojo findByBarcode(String barcode) {
+    public Optional<ProductPojo> findByBarcode(String barcode) {
         Query query = Query.query(Criteria.where("barcode").is(barcode));
-        return mongoOperations.findOne(query, ProductPojo.class);
+        return Optional.ofNullable(mongoOperations.findOne(query, ProductPojo.class));
     }
 
-    /**
-     * Atomically updates a subset of fields for an existing product.
-     * This guarantees an in-place update (won't accidentally insert a new product).
-     */
     public ProductPojo updateFieldsById(String id, String clientId, String name, Double mrp, String imageUrl) {
         Query query = Query.query(Criteria.where("_id").is(id));
         Update update = new Update();

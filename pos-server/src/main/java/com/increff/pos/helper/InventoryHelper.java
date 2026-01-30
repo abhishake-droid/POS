@@ -4,14 +4,21 @@ import com.increff.pos.db.InventoryPojo;
 import com.increff.pos.model.data.InventoryData;
 import com.increff.pos.model.form.InventoryForm;
 
-
 public class InventoryHelper {
 
     public static InventoryPojo convertToEntity(InventoryForm form) {
         InventoryPojo pojo = new InventoryPojo();
-        pojo.setProductId(form.getProductId() != null ? form.getProductId().trim() : null);
+        pojo.setProductId(form.getProductId());
         pojo.setQuantity(form.getQuantity());
         return pojo;
+    }
+
+    public static InventoryData convertToDto(InventoryPojo pojo) {
+        InventoryData data = new InventoryData();
+        data.setId(pojo.getId());
+        data.setProductId(pojo.getProductId());
+        data.setQuantity(pojo.getQuantity());
+        return data;
     }
 
     public static InventoryData convertToDto(InventoryPojo pojo, String barcode) {
@@ -19,14 +26,6 @@ public class InventoryHelper {
         data.setId(pojo.getId());
         data.setProductId(pojo.getProductId());
         data.setBarcode(barcode);
-        data.setQuantity(pojo.getQuantity());
-        return data;
-    }
-
-    public static InventoryData convertToDto(InventoryPojo pojo) {
-        InventoryData data = new InventoryData();
-        data.setId(pojo.getId());
-        data.setProductId(pojo.getProductId());
         data.setQuantity(pojo.getQuantity());
         return data;
     }

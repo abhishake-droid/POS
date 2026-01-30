@@ -18,6 +18,19 @@ if ! pgrep -x "mongod" > /dev/null; then
     echo ""
 fi
 
+
+# ---------- BUILD STEP ----------
+echo -e "${BLUE}🔨 Building project (mvn clean install)...${NC}"
+mvn clean install
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Build failed. Aborting startup.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Build successful${NC}"
+echo ""
+# --------------------------------
+
 # Kill any existing processes on ports 8080 and 8081
 echo -e "${BLUE}Checking for existing processes...${NC}"
 PID_8081=$(lsof -ti:8081)

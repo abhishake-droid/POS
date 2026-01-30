@@ -44,6 +44,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit as EditIcon,
+  Refresh as RetryIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { toast } from 'react-toastify';
@@ -59,6 +60,7 @@ import { productService } from '../services/product.service';
 import { ProductData } from '../types/product.types';
 import { OrderItemsTable } from '../components/OrderItemsTable';
 import { formatDateTimeText } from '../utils/dateFormat';
+import { formatINR } from '../utils/formatNumber';
 
 const PAGE_SIZE = 10;
 
@@ -134,6 +136,7 @@ export default function OrdersPage() {
   const [loadingProducts, setLoadingProducts] = useState(false);
 
   const [filters, setFilters] = useState<OrderSearchFilters>({});
+  const [filterType, setFilterType] = useState<'orderId' | 'dateStatus'>('dateStatus');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [viewOrderData, setViewOrderData] = useState<OrderData | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -146,6 +149,10 @@ export default function OrdersPage() {
   // Edit order state
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Retry order state
+  const [retryDialogOpen, setRetryDialogOpen] = useState(false);
+  const [retryingOrderId, setRetryingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     // Load orders on mount and when page changes
@@ -171,6 +178,21 @@ export default function OrdersPage() {
       loadProducts();
     }
   }, [createDialogOpen]);
+
+  // Auto-search for Order ID with debounce
+  useEffect(() => {
+    if (filterType === 'orderId' && filters.orderId !== undefined) {
+      const timer = setTimeout(() => {
+        setCurrentPage(0);
+        loadOrders(0, filters).catch((err) => {
+          console.error('Error in auto-search:', err);
+        });
+      }, 200); // 500ms debounce
+
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.orderId, filterType]);
 
   const loadOrders = async (page: number, currentFilters: OrderSearchFilters) => {
     setLoading(true);
@@ -311,7 +333,7 @@ export default function OrdersPage() {
       }
       for (const line of orderForm.lines) {
         if (!line.productId) {
-          toast.error('Please select a product for all lines');
+          toast.error('Please select a product.');
           return;
         }
         if (line.quantity <= 0) {
@@ -387,7 +409,7 @@ export default function OrdersPage() {
       }
       for (const line of orderForm.lines) {
         if (!line.productId) {
-          toast.error('Please select a product for all lines');
+          toast.error('Please select a product.');
           return;
         }
         if (line.quantity <= 0) {
@@ -419,7 +441,15 @@ export default function OrdersPage() {
   };
 
   const handleFilterChange = (patch: Partial<OrderSearchFilters>) => {
-    setFilters((prev) => ({ ...prev, ...patch }));
+    setFilters((prev) => {
+      // When in orderId mode, only keep orderId filter
+      if (filterType === 'orderId') {
+        return { orderId: patch.orderId };
+      }
+      // When in dateStatus mode, exclude orderId
+      const { orderId, ...rest } = prev;
+      return { ...rest, ...patch };
+    });
   };
 
   const applyFilters = () => {
@@ -517,6 +547,80 @@ export default function OrdersPage() {
     }
   };
 
+  const handleRetryOrder = async (orderId: string) => {
+    try {
+      setRetryingOrderId(orderId);
+
+      // Load products first
+      await loadProducts();
+
+      const orderData = await orderService.getById(orderId);
+
+      // Convert order items to form format
+      const lines = (orderData.items || []).map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        mrp: item.mrp,
+        lineTotal: item.lineTotal,
+        productName: item.productName,
+        barcode: item.barcode,
+      }));
+
+      setOrderForm({ lines });
+      setRetryDialogOpen(true);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to load order details');
+    }
+  };
+
+  const handleRetrySubmit = async () => {
+    try {
+      if (!retryingOrderId) return;
+
+      if (orderForm.lines.length === 0) {
+        toast.error('Add at least one product line');
+        return;
+      }
+      for (const line of orderForm.lines) {
+        if (!line.productId) {
+          toast.error('Please select a product.');
+          return;
+        }
+        if (line.quantity <= 0) {
+          toast.error('Quantity must be positive');
+          return;
+        }
+        if (line.mrp < 0) {
+          toast.error('MRP cannot be negative');
+          return;
+        }
+      }
+
+      const result = await orderService.retry(retryingOrderId, orderForm);
+
+      if (result.status === 'PLACED') {
+        toast.success('Order retry successful! Order is now PLACED.');
+      } else if (result.status === 'UNFULFILLABLE') {
+        toast.warning('Order is still unfulfillable. Check inventory.');
+      }
+
+      setRetryDialogOpen(false);
+      setRetryingOrderId(null);
+      setOrderForm({
+        lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+      });
+      setCurrentPage(0);
+      loadOrders(0, filters).catch((err) => {
+        console.error('Error reloading orders:', err);
+      });
+    } catch (e: any) {
+      const status = e.response?.status;
+      const errorMsg = e.response?.data?.message || e.message || 'Failed to retry order';
+      toast.error(errorMsg);
+    }
+  };
+
+
   return (
     <StyledContainer maxWidth="lg">
       <HeaderBox>
@@ -546,64 +650,109 @@ export default function OrdersPage() {
 
       {/* FILTERS */}
       <SearchBox>
+        {/* Filter Type Selector */}
         <TextField
-          label="Start Date"
-          type="date"
-          size="small"
-          InputLabelProps={{ shrink: true }}
-          value={filters.fromDate || ''}
-          onChange={(e) => handleFilterChange({ fromDate: e.target.value })}
-        />
-        <TextField
-          label="End Date"
-          type="date"
-          size="small"
-          InputLabelProps={{ shrink: true }}
-          value={filters.toDate || ''}
-          onChange={(e) => handleFilterChange({ toDate: e.target.value })}
-        />
-        <TextField
-          label="Status"
+          label="Filter By"
           select
           size="small"
-          sx={{ minWidth: 140 }}
-          value={filters.status || ''}
-          onChange={(e) =>
-            handleFilterChange({
-              status: (e.target.value || '') as OrderStatus | '',
-            })
-          }
-          InputLabelProps={{ shrink: true }}
-          SelectProps={{
-            displayEmpty: true,
-            renderValue: (value) => {
-              if (!value) return 'All';
-              return value as string;
-            },
+          value={filterType}
+          onChange={(e) => {
+            const newType = e.target.value as 'orderId' | 'dateStatus';
+            setFilterType(newType);
+            // Clear filters when switching types
+            setFilters({});
+            setCurrentPage(0);
+            // Load all orders when switching
+            loadOrders(0, {}).catch((err) => {
+              console.error('Error loading orders:', err);
+            });
           }}
+          sx={{ minWidth: 180 }}
         >
-          <MenuItem value="">All</MenuItem>
-          <MenuItem value="PLACED">Placed</MenuItem>
-          <MenuItem value="INVOICED">Invoiced</MenuItem>
-          <MenuItem value="CANCELLED">Cancelled</MenuItem>
+          <MenuItem value="dateStatus">Date Range</MenuItem>
+          <MenuItem value="orderId">Order ID</MenuItem>
         </TextField>
-        <TextField
-          label="Order ID"
-          size="small"
-          value={filters.orderId || ''}
-          onChange={(e) => handleFilterChange({ orderId: e.target.value })}
-        />
-        <Button
-          variant="contained"
-          onClick={applyFilters}
-          disabled={loading}
-          sx={{ borderRadius: '999px' }}
-        >
-          Apply
-        </Button>
-        <Button variant="text" onClick={clearFilters} disabled={loading}>
-          Clear
-        </Button>
+
+        {/* Conditional Filters */}
+        {filterType === 'dateStatus' ? (
+          <>
+            <TextField
+              label="Start Date"
+              type="date"
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              value={filters.fromDate || ''}
+              onChange={(e) => handleFilterChange({ fromDate: e.target.value })}
+            />
+            <TextField
+              label="End Date"
+              type="date"
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              value={filters.toDate || ''}
+              onChange={(e) => handleFilterChange({ toDate: e.target.value })}
+            />
+            <TextField
+              label="Status"
+              select
+              size="small"
+              sx={{ minWidth: 140 }}
+              value={filters.status || ''}
+              onChange={(e) =>
+                handleFilterChange({
+                  status: (e.target.value || '') as OrderStatus | '',
+                })
+              }
+              InputLabelProps={{ shrink: true }}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (value) => {
+                  if (!value) return 'All';
+                  return value as string;
+                },
+              }}
+            >
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="PLACED">Placed</MenuItem>
+              <MenuItem value="INVOICED">Invoiced</MenuItem>
+              <MenuItem value="CANCELLED">Cancelled</MenuItem>
+              <MenuItem value="UNFULFILLABLE">Unfulfillable</MenuItem>
+            </TextField>
+            <Button
+              variant="contained"
+              onClick={applyFilters}
+              disabled={loading}
+              sx={{ borderRadius: '999px' }}
+            >
+              Apply
+            </Button>
+            <Button
+              variant="text"
+              onClick={clearFilters}
+              disabled={loading || (!filters.fromDate && !filters.toDate && !filters.status)}
+            >
+              Clear
+            </Button>
+          </>
+        ) : (
+          <>
+            <TextField
+              label="Order ID"
+              size="small"
+              placeholder="Type to search..."
+              value={filters.orderId || ''}
+              onChange={(e) => handleFilterChange({ orderId: e.target.value })}
+              sx={{ minWidth: 250 }}
+            />
+            <Button
+              variant="text"
+              onClick={clearFilters}
+              disabled={loading || !filters.orderId}
+            >
+              Clear
+            </Button>
+          </>
+        )}
       </SearchBox>
 
       {/* ORDERS LIST */}
@@ -686,13 +835,17 @@ export default function OrdersPage() {
                                   ? 'rgba(22,163,74,0.18)'
                                   : order.status === 'CANCELLED'
                                     ? 'rgba(239,68,68,0.18)'
-                                    : 'rgba(59,130,246,0.18)', // PLACED
+                                    : order.status === 'UNFULFILLABLE'
+                                      ? 'rgba(234,179,8,0.18)'
+                                      : 'rgba(59,130,246,0.18)', // PLACED
                               color:
                                 order.status === 'INVOICED'
-                                  ? '#4ade80'
+                                  ? '#16a34a'  // Darker green for better readability
                                   : order.status === 'CANCELLED'
-                                    ? '#f97373'
-                                    : '#60a5fa', // PLACED
+                                    ? '#dc2626'  // Darker red
+                                    : order.status === 'UNFULFILLABLE'
+                                      ? '#ca8a04'  // Darker yellow
+                                      : '#2563eb', // Darker blue for PLACED
                             }}
                           />
                         }
@@ -727,9 +880,9 @@ export default function OrdersPage() {
                           </Typography>
                           <Typography
                             variant="body2"
-                            sx={{ fontWeight: 600, color: '#e5e7eb' }}
+                            sx={{ fontWeight: 600, color: '#111827' }}
                           >
-                            ₹{order.totalAmount?.toFixed(2) || '0.00'}
+                            {formatINR(order.totalAmount || 0)}
                           </Typography>
                         </Box>
                       </CardContent>
@@ -813,6 +966,24 @@ export default function OrdersPage() {
                               }}
                             >
                               <Download fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {order.status === 'UNFULFILLABLE' && (
+                          <Tooltip title="Retry Order">
+                            <IconButton
+                              size="small"
+                              sx={{
+                                border: '1px solid',
+                                borderColor: '#eab308',
+                                color: '#eab308',
+                                '&:hover': {
+                                  bgcolor: 'rgba(234,179,8,0.08)',
+                                },
+                              }}
+                              onClick={() => handleRetryOrder(order.orderId)}
+                            >
+                              <RetryIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -916,6 +1087,7 @@ export default function OrdersPage() {
                     <TableCell>Product</TableCell>
                     <TableCell width={120}>Quantity</TableCell>
                     <TableCell width={120}>MRP</TableCell>
+                    <TableCell width={120}>Selling Price</TableCell>
                     <TableCell width={120} align="right">Line Total</TableCell>
                     <TableCell width={100} align="right">Actions</TableCell>
                   </TableRow>
@@ -981,20 +1153,31 @@ export default function OrdersPage() {
                           />
                         </TableCell>
                         <TableCell>
+                          <Typography variant="body2" sx={{ color: '#1976d2', fontWeight: 600 }}>
+                            {selectedProduct ? formatINR(selectedProduct.mrp) : '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
                           <TextField
                             size="small"
                             type="number"
                             fullWidth
                             inputProps={{ min: 0, step: 0.01 }}
                             value={line.mrp}
-                            onChange={(e) =>
-                              handleMrpChange(index, Number(e.target.value) || 0)
-                            }
+                            onChange={(e) => {
+                              const newPrice = Number(e.target.value) || 0;
+                              const productMRP = selectedProduct?.mrp || 0;
+                              if (newPrice > productMRP) {
+                                toast.error(`Selling price cannot exceed MRP (${formatINR(productMRP)})`);
+                                return;
+                              }
+                              handleMrpChange(index, newPrice);
+                            }}
                           />
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            ₹{line.lineTotal.toFixed(2)}
+                            {formatINR(line.lineTotal)}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
@@ -1192,6 +1375,112 @@ export default function OrdersPage() {
         </DialogActions>
       </Dialog>
 
+      {/* RETRY ORDER DIALOG */}
+      <Dialog
+        open={retryDialogOpen}
+        onClose={() => {
+          setRetryDialogOpen(false);
+          setRetryingOrderId(null);
+          setOrderForm({
+            lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+          });
+        }}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Retry Order {retryingOrderId}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            {orderForm.lines.map((line, index) => (
+              <Box
+                key={index}
+                sx={{
+                  display: 'flex',
+                  gap: 2,
+                  mb: 2,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <Autocomplete
+                  options={products}
+                  getOptionLabel={(option) =>
+                    `${option.name} (${option.barcode})`
+                  }
+                  value={
+                    products.find((p) => p.id === line.productId) || null
+                  }
+                  onChange={(_, newValue) =>
+                    handleProductSelect(index, newValue)
+                  }
+                  renderInput={(params) => (
+                    <TextField {...params} label="Product" required />
+                  )}
+                  sx={{ flex: 2 }}
+                  loading={loadingProducts}
+                />
+                <TextField
+                  label="Quantity"
+                  type="number"
+                  value={line.quantity}
+                  onChange={(e) =>
+                    handleQuantityChange(index, parseInt(e.target.value) || 1)
+                  }
+                  required
+                  sx={{ flex: 1 }}
+                />
+                <TextField
+                  label="MRP"
+                  type="number"
+                  value={line.mrp}
+                  onChange={(e) =>
+                    handleMrpChange(index, parseFloat(e.target.value) || 0)
+                  }
+                  required
+                  sx={{ flex: 1 }}
+                />
+                <TextField
+                  label="Line Total"
+                  value={line.lineTotal.toFixed(2)}
+                  disabled
+                  sx={{ flex: 1 }}
+                />
+                <IconButton
+                  color="error"
+                  onClick={() => handleRemoveLine(index)}
+                  disabled={orderForm.lines.length === 1}
+                >
+                  <Cancel />
+                </IconButton>
+              </Box>
+            ))}
+            <Button
+              variant="outlined"
+              startIcon={<Add />}
+              onClick={handleAddLine}
+              sx={{ mt: 1 }}
+            >
+              Add Line
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setRetryDialogOpen(false);
+              setRetryingOrderId(null);
+              setOrderForm({
+                lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+              });
+            }}
+          >
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleRetrySubmit}>
+            Retry Order
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* VIEW ORDER DETAILS DIALOG */}
       <Dialog
         open={viewDialogOpen}
@@ -1235,13 +1524,17 @@ export default function OrdersPage() {
                               ? 'rgba(22,163,74,0.18)'
                               : viewOrderData.status === 'CANCELLED'
                                 ? 'rgba(239,68,68,0.18)'
-                                : 'rgba(59,130,246,0.18)',
+                                : viewOrderData.status === 'UNFULFILLABLE'
+                                  ? 'rgba(234,179,8,0.18)'
+                                  : 'rgba(59,130,246,0.18)', // PLACED,
                           color:
                             viewOrderData.status === 'INVOICED'
-                              ? '#4ade80'
+                              ? '#16a34a'  // Darker green for better readability
                               : viewOrderData.status === 'CANCELLED'
-                                ? '#f97373'
-                                : '#60a5fa',
+                                ? '#dc2626'  // Darker red
+                                : viewOrderData.status === 'UNFULFILLABLE'
+                                  ? '#ca8a04'  // Darker yellow
+                                  : '#2563eb', // Darker blue for PLACED
                         }}
                       />
                     </Box>
@@ -1269,7 +1562,7 @@ export default function OrdersPage() {
                       Total Amount
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                      ₹{viewOrderData.totalAmount?.toFixed(2) || '0.00'}
+                      {formatINR(viewOrderData.totalAmount || 0)}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -1297,9 +1590,9 @@ export default function OrdersPage() {
                           <TableCell>{item.productName || '-'}</TableCell>
                           <TableCell>{item.barcode || '-'}</TableCell>
                           <TableCell align="right">{item.quantity}</TableCell>
-                          <TableCell align="right">₹{item.mrp?.toFixed(2)}</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600, color: '#1976d2' }}>{formatINR(item.mrp)}</TableCell>
                           <TableCell align="right" sx={{ fontWeight: 600 }}>
-                            ₹{item.lineTotal?.toFixed(2)}
+                            {formatINR(item.lineTotal || 0)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1348,6 +1641,6 @@ export default function OrdersPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </StyledContainer>
+    </StyledContainer >
   );
 }

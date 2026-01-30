@@ -1,8 +1,26 @@
-import { AppBar, Toolbar, Typography, Button, Box, Chip } from '@mui/material';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  Chip,
+  Menu,
+  MenuItem,
+  IconButton,
+  Divider,
+} from '@mui/material';
 import { useRouter } from 'next/router';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
-import { Logout } from '@mui/icons-material';
+import {
+  Logout,
+  Dashboard,
+  SupervisorAccount,
+  ExpandMore,
+  AccountCircle,
+} from '@mui/icons-material';
+import { useState } from 'react';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   backgroundColor: '#1976d2',
@@ -15,19 +33,20 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'space-between',
-  padding: '0.75rem 2rem',
+  padding: '0.75rem 2.5rem',
+  minHeight: '64px',
 }));
 
 const NavButton = styled(Button)(({ theme }) => ({
   color: 'white',
   fontWeight: 500,
   textTransform: 'none',
-  fontSize: '1rem',
-  padding: '0.5rem 1.5rem',
+  fontSize: '0.95rem',
+  padding: '0.5rem 1.2rem',
   borderRadius: '8px',
   transition: 'all 0.3s ease',
   '&:hover': {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     transform: 'translateY(-2px)',
   },
 }));
@@ -35,9 +54,32 @@ const NavButton = styled(Button)(({ theme }) => ({
 export default function Navbar() {
   const router = useRouter();
   const { user, logout, isSupervisor } = useAuth();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setUserMenuAnchor(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setUserMenuAnchor(null);
+  };
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
+    handleMenuClose();
+  };
 
   return (
-    <StyledAppBar position="sticky">
+    <StyledAppBar position="fixed">
       <StyledToolbar>
         <Typography
           variant="h5"
@@ -51,7 +93,8 @@ export default function Navbar() {
         >
           POS System
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <NavButton onClick={() => router.push('/')}>
             Home
           </NavButton>
@@ -64,34 +107,121 @@ export default function Navbar() {
           <NavButton onClick={() => router.push('/orders')}>
             Orders
           </NavButton>
-          <NavButton onClick={() => router.push('/sales-report')}>
-            Sales Report
-          </NavButton>
+          {isSupervisor && (
+            <NavButton onClick={() => router.push('/sales-report')}>
+              Sales Report
+            </NavButton>
+          )}
+
           {isSupervisor && (
             <>
-              <NavButton onClick={() => router.push('/supervisor-dashboard')}>
-                Dashboard
+              <NavButton
+                endIcon={<ExpandMore />}
+                onClick={handleMenuOpen}
+              >
+                Supervisor
               </NavButton>
-              <NavButton onClick={() => router.push('/operators')}>
-                Operators
-              </NavButton>
+
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    minWidth: 180,
+                  }
+                }}
+              >
+                <MenuItem
+                  onClick={() => handleNavigation('/supervisor-dashboard')}
+                  sx={{ py: 1.25, px: 2 }}
+                >
+                  <Dashboard sx={{ mr: 1.5, fontSize: 20, color: '#1976d2' }} />
+                  Dashboard
+                </MenuItem>
+                <MenuItem
+                  onClick={() => handleNavigation('/operators')}
+                  sx={{ py: 1.25, px: 2 }}
+                >
+                  <SupervisorAccount sx={{ mr: 1.5, fontSize: 20, color: '#1976d2' }} />
+                  Operators
+                </MenuItem>
+              </Menu>
             </>
           )}
+
           {user && (
             <>
-              <Chip
-                label={user.role}
-                color={isSupervisor ? 'secondary' : 'default'}
-                sx={{ color: 'white', fontWeight: 600 }}
-              />
-              <NavButton
-                startIcon={<Logout />}
+              <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.3)', mx: 1 }} />
+
+              <IconButton
+                onClick={handleUserMenuOpen}
+                sx={{
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.15)',
+                  }
+                }}
+              >
+                <AccountCircle sx={{ fontSize: 32 }} />
+              </IconButton>
+
+              <Menu
+                anchorEl={userMenuAnchor}
+                open={Boolean(userMenuAnchor)}
+                onClose={handleUserMenuClose}
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    minWidth: 220,
+                  }
+                }}
+              >
+                <Box sx={{ px: 2, py: 1.5 }}>
+                  <Chip
+                    label={isSupervisor ? 'SUPERVISOR' : 'OPERATOR'}
+                    color={isSupervisor ? 'secondary' : 'primary'}
+                    size="small"
+                    sx={{ fontWeight: 600, mb: 1 }}
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                    {user.name || 'User'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#666' }}>
+                    {user.email}
+                  </Typography>
+                </Box>
+                <Divider />
+                <MenuItem
+                  onClick={() => {
+                    handleUserMenuClose();
+                    logout().catch(console.error);
+                  }}
+                  sx={{ py: 1.25, px: 2, color: '#d32f2f' }}
+                >
+                  <Logout sx={{ mr: 1.5, fontSize: 20 }} />
+                  Logout
+                </MenuItem>
+              </Menu>
+
+              {/* <IconButton
                 onClick={() => {
                   logout().catch(console.error);
                 }}
+                sx={{
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  },
+                }}
               >
-                Logout
-              </NavButton>
+                <Logout />
+              </IconButton> */}
             </>
           )}
         </Box>

@@ -3,9 +3,7 @@ package com.increff.pos.api;
 import com.increff.pos.dao.UserDao;
 import com.increff.pos.db.UserPojo;
 import com.increff.pos.exception.ApiException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.increff.pos.model.form.PageForm;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -17,54 +15,50 @@ import java.util.Objects;
 
 @Service
 public class UserApiImpl implements UserApi {
-    private static final Logger logger = LoggerFactory.getLogger(UserApiImpl.class);
 
     private final UserDao dao;
-    public UserApiImpl(UserDao dao){
+
+    public UserApiImpl(UserDao dao) {
         this.dao = dao;
     }
-
 
     @Override
     @Transactional(rollbackFor = ApiException.class)
     public UserPojo add(UserPojo userPojo) throws ApiException {
-        logger.info("Creating user with email: {}", userPojo.getEmail());
         checkIfEmailExists(userPojo.getEmail());
-        UserPojo saved = dao.save(userPojo);
-        logger.info("Created user with id: {}", saved.getId());
-        return saved;
+        return dao.save(userPojo);
     }
 
     @Override
-    public UserPojo get(String id) throws ApiException {
-        UserPojo userPojo = dao.findById(id).orElse(null);
-        if(Objects.isNull(userPojo)) {
-            throw new ApiException("User not found with id: " + id);
-        }
-        return userPojo;
+    @Transactional(readOnly = true)
+    public UserPojo getCheck(String id) throws ApiException {
+        return dao.findById(id).orElseThrow(() -> new ApiException("User not found with id: " + id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserPojo> getAll() {
         return dao.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserPojo getByEmail(String email) {
         return dao.findByEmail(email);
     }
 
     @Override
-    public Page<UserPojo> getAll(int page, int size) {
-        logger.info("Fetching users page {} with size {}", page, size);
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+    @Transactional(readOnly = true)
+    public Page<UserPojo> getAll(PageForm form) {
+        PageRequest pageRequest = PageRequest.of(form.getPage(), form.getSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
         return dao.findAll(pageRequest);
     }
 
     private void checkIfEmailExists(String email) throws ApiException {
         UserPojo existingUserPojo = dao.findByEmail(email);
-        if(Objects.nonNull(existingUserPojo)) {
+        if (Objects.nonNull(existingUserPojo)) {
             throw new ApiException("User already exists with email: " + email);
         }
     }
-} 
+}

@@ -11,25 +11,20 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class ClientDao extends AbstractDao<ClientPojo> {
+
     public ClientDao(MongoOperations mongoOperations) {
         super(
-            new MongoRepositoryFactory(mongoOperations)
-                .getEntityInformation(ClientPojo.class),
-            mongoOperations
-        );
+                new MongoRepositoryFactory(mongoOperations)
+                        .getEntityInformation(ClientPojo.class),
+                mongoOperations);
     }
 
     public ClientPojo findByClientIdAndName(String clientId, String name) {
         Query query = Query.query(
-            Criteria.where("clientId").is(clientId)
-                .and("name").is(name)
-        );
+                Criteria.where("clientId").is(clientId).and("name").is(name));
         return mongoOperations.findOne(query, ClientPojo.class);
     }
 
-    /**
-     * Find client by clientId
-     */
     public ClientPojo findByClientId(String clientId) {
         Query query = Query.query(Criteria.where("clientId").is(clientId));
         return mongoOperations.findOne(query, ClientPojo.class);
@@ -40,7 +35,6 @@ public class ClientDao extends AbstractDao<ClientPojo> {
         return mongoOperations.findOne(query, ClientPojo.class);
     }
 
-
     public ClientPojo findByEmail(String email) {
         Query query = Query.query(Criteria.where("email").is(email));
         return mongoOperations.findOne(query, ClientPojo.class);
@@ -50,7 +44,6 @@ public class ClientDao extends AbstractDao<ClientPojo> {
         Query query = Query.query(Criteria.where("name").is(name));
         return mongoOperations.findOne(query, ClientPojo.class);
     }
-
 
     @Override
     public Page<ClientPojo> findAll(Pageable pageable) {

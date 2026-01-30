@@ -1,7 +1,8 @@
 package com.increff.pos.controller;
 
 import com.increff.pos.dto.ReportDto;
-import com.increff.pos.model.data.SalesReportData;
+import com.increff.pos.model.data.ClientSalesReportData;
+import com.increff.pos.model.data.DailySalesData;
 import com.increff.pos.exception.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,12 +21,20 @@ public class ReportController {
         this.reportDto = reportDto;
     }
 
-    @Operation(summary = "Get sales report with date range and optional brand filter")
-    @GetMapping("/sales")
-    public List<SalesReportData> getSalesReport(
+    @Operation(summary = "Get daily aggregated sales report for a specific date")
+    @GetMapping("/daily-sales")
+    public List<DailySalesData> getDailySalesReport(
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String clientId) throws ApiException {
+        return reportDto.getDailySalesReport(date, clientId);
+    }
+
+    @Operation(summary = "Get detailed sales report with client and product-level aggregation")
+    @GetMapping("/sales-report")
+    public List<ClientSalesReportData> getSalesReport(
             @RequestParam String fromDate,
             @RequestParam String toDate,
-            @RequestParam(required = false) String brand) throws ApiException {
-        return reportDto.getSalesReport(fromDate, toDate, brand);
+            @RequestParam(required = false) String clientId) throws ApiException {
+        return reportDto.getSalesReport(fromDate, toDate, clientId);
     }
 }

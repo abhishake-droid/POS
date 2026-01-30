@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class InventoryDao extends AbstractDao<InventoryPojo> {
+
     public InventoryDao(MongoOperations mongoOperations) {
         super(
                 new MongoRepositoryFactory(mongoOperations)
@@ -23,16 +24,20 @@ public class InventoryDao extends AbstractDao<InventoryPojo> {
         return mongoOperations.findOne(query, InventoryPojo.class);
     }
 
-    /**
-     * Atomically updates quantity for a productId; creates inventory row if
-     * missing.
-     * This avoids "duplicate key" errors caused by insert-vs-update races.
-     */
     public InventoryPojo upsertQuantityByProductId(String productId, Integer quantity) {
         Query query = Query.query(Criteria.where("productId").is(productId));
         Update update = new Update()
                 .setOnInsert("productId", productId)
                 .set("quantity", quantity);
+        FindAndModifyOptions options = FindAndModifyOptions.options().upsert(true).returnNew(true);
+        return mongoOperations.findAndModify(query, update, options, InventoryPojo.class);
+    }
+
+    public InventoryPojo incrementQuantityByProductId(String productId, Integer quantityToAdd) {
+        Query query = Query.query(Criteria.where("productId").is(productId));
+        Update update = new Update()
+                .setOnInsert("productId", productId)
+                .inc("quantity", quantityToAdd);
         FindAndModifyOptions options = FindAndModifyOptions.options().upsert(true).returnNew(true);
         return mongoOperations.findAndModify(query, update, options, InventoryPojo.class);
     }

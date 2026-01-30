@@ -50,4 +50,11 @@ public class OrderController {
     public OrderData update(@PathVariable String orderId, @RequestBody OrderForm form) throws ApiException {
         return orderDto.update(orderId, form);
     }
+
+    @Operation(summary = "Retry an UNFULFILLABLE order (with optional item updates)")
+    @PostMapping("/retry/{orderId}")
+    public OrderData retry(@PathVariable String orderId, @RequestBody(required = false) OrderForm form)
+            throws ApiException {
+        return orderDto.retry(orderId, form);
+    }
 }

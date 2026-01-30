@@ -28,6 +28,7 @@ import { styled } from '@mui/material/styles';
 import { productService } from '../services/product.service';
 import { clientService } from '../services/client.service';
 import { ProductData, ProductForm, ProductSearchFilter, InventoryForm } from '../types/product.types';
+import { formatINR } from '../utils/formatNumber';
 import { ClientData } from '../types/client.types';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
@@ -310,7 +311,7 @@ export default function Products() {
       const columns = line.split('\t');
       if (columns.length > 1) {
         const status = columns[1].trim();
-        if (status === 'FAILED') {
+        if (status === 'FAILED' || status === 'SKIPPED') {
           return true;
         }
       }
@@ -329,9 +330,10 @@ export default function Products() {
     if (lines.length < 2) return failures;
 
     const header = lines[0].split('\t');
+    const rowNumberIndex = header.findIndex(h => h.trim().toLowerCase().includes('row'));
     const statusIndex = header.findIndex(h => h.trim().toLowerCase() === 'status');
-    const errorIndex = header.findIndex(h => h.trim().toLowerCase() === 'error');
-    const barcodeIndex = header.findIndex(h => h.trim().toLowerCase() === 'barcode');
+    const errorIndex = header.findIndex(h => h.trim().toLowerCase().includes('error'));
+    const dataIndex = header.findIndex(h => h.trim().toLowerCase().includes('data'));
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -340,14 +342,15 @@ export default function Products() {
       const columns = line.split('\t');
       const status = statusIndex >= 0 ? columns[statusIndex]?.trim() : '';
 
-      if (status === 'FAILED') {
-        const error = errorIndex >= 0 ? columns[errorIndex]?.trim() : 'Unknown error';
-        const barcode = barcodeIndex >= 0 ? columns[barcodeIndex]?.trim() : 'N/A';
+      if (status === 'FAILED' || status === 'SKIPPED') {
+        const rowNum = rowNumberIndex >= 0 ? columns[rowNumberIndex]?.trim() : String(i);
+        const error = errorIndex >= 0 ? columns[errorIndex]?.trim() : '';
+        const data = dataIndex >= 0 ? columns[dataIndex]?.trim() : '';
 
         failures.push({
-          rowNumber: String(i),
-          error: error || 'Unknown error',
-          data: `Barcode: ${barcode}`,
+          rowNumber: rowNum,
+          error: error || (status === 'SKIPPED' ? 'Product already exists' : 'Unknown error'),
+          data: data || 'N/A',
         });
       }
     }
@@ -459,7 +462,7 @@ export default function Products() {
         setUploadFailures(failures);
 
         if (hasErrors) {
-          toast.error('Upload completed with some errors. See details below.');
+          toast.error('Upload completed with some errors.');
         } else {
           toast.success(
             uploadType === 'inventory'
@@ -518,7 +521,13 @@ export default function Products() {
   };
 
   const handleInventoryIncrement = () => {
-    setTempInventoryValue((prev) => prev + 1);
+    setTempInventoryValue((prev) => {
+      if (prev >= 5000) {
+        toast.error('Inventory cannot exceed 5000');
+        return prev;
+      }
+      return prev + 1;
+    });
   };
 
   const handleInventoryDecrement = () => {
@@ -527,6 +536,11 @@ export default function Products() {
 
   const handleInventoryManualChange = (value: string) => {
     const numValue = parseInt(value) || 0;
+    if (numValue > 5000) {
+      toast.error('Inventory cannot exceed 5000');
+      setTempInventoryValue(5000);
+      return;
+    }
     setTempInventoryValue(Math.max(0, numValue));
   };
 
@@ -560,7 +574,7 @@ export default function Products() {
             Products
           </Typography>
           <Typography variant="body2" sx={{ color: '#6b7280' }}>
-            Manage product catalog and inventory in a clean, card-based view.
+            Manage product catalog and inventory.
           </Typography>
         </Box>
 
@@ -605,20 +619,22 @@ export default function Products() {
             </>
           )}
 
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => {
-              setEditingId(null);
-              setForm({ barcode: '', clientId: '', name: '', mrp: 0, imageUrl: '' });
-              setInventoryForm({ productId: '', quantity: 0 });
-              loadClients();
-              setOpen(true);
-            }}
-            sx={{ borderRadius: '999px', px: 3, py: 1 }}
-          >
-            Add Product
-          </Button>
+          {isSupervisor && (
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => {
+                setEditingId(null);
+                setForm({ barcode: '', clientId: '', name: '', mrp: 0, imageUrl: '' });
+                setInventoryForm({ productId: '', quantity: 0 });
+                loadClients();
+                setOpen(true);
+              }}
+              sx={{ borderRadius: '999px', px: 3, py: 1 }}
+            >
+              Add Product
+            </Button>
+          )}
         </ActionBox>
       </HeaderBox>
 
@@ -668,6 +684,7 @@ export default function Products() {
             setSearchFilter('barcode');
             loadProducts(0);
           }}
+          disabled={!searchValue}
         >
           Clear
         </Button>
@@ -878,7 +895,7 @@ export default function Products() {
                       variant="body2"
                       sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}
                     >
-                      ₹{p.mrp.toFixed(2)}
+                      {formatINR(p.mrp)}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -912,7 +929,7 @@ export default function Products() {
                               fontSize: 13,
                             },
                           }}
-                          inputProps={{ min: 0 }}
+                          inputProps={{ min: 0, max: 5000 }}
                         />
                         <IconButton
                           size="small"

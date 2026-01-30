@@ -198,11 +198,29 @@ export default function Clients() {
 
       // Filter across all clients
       const value = searchValue.toLowerCase();
-      const filtered = allClients.filter((c) =>
-        c[searchFilter]
-          .toLowerCase()
-          .includes(value)
-      );
+      // const filtered = allClients.filter((c) =>
+      //   c[searchFilter]
+      //     .toLowerCase()
+      //     .includes(value)
+      // );
+
+      const filtered = allClients.filter((c) => {
+        switch (searchFilter) {
+          case 'name':
+            return c.name.toLowerCase().includes(value);
+
+          case 'email':
+            return c.email.toLowerCase().includes(value);
+
+          case 'phone':
+            return c.phone.toLowerCase().includes(value);
+
+          default:
+            return true;
+        }
+      });
+
+
 
       setClients(filtered);
       setTotalPages(1);
@@ -252,18 +270,20 @@ export default function Clients() {
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => {
-            setEditingId(null);
-            setForm({ name: '', email: '', phone: '' });
-            setOpen(true);
-          }}
-          sx={{ borderRadius: '999px', px: 3, py: 1 }}
-        >
-          Add Client
-        </Button>
+        {isSupervisor && (
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => {
+              setEditingId(null);
+              setForm({ name: '', email: '', phone: '' });
+              setOpen(true);
+            }}
+            sx={{ borderRadius: '999px', px: 3, py: 1 }}
+          >
+            Add Client
+          </Button>
+        )}
       </HeaderBox>
 
       {/* SEARCH BAR (BELOW HEADER) */}

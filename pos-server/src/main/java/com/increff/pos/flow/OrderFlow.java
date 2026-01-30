@@ -7,14 +7,10 @@ import com.increff.pos.util.SequenceGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Flow layer for Order operations - orchestrates OrderApi, OrderItemApi,
- * InventoryApi, ProductApi, ClientApi
- */
 @Service
 public class OrderFlow {
 
@@ -22,7 +18,6 @@ public class OrderFlow {
     private final OrderItemApi orderItemApi;
     private final InventoryApi inventoryApi;
     private final ProductApi productApi;
-
     private final SequenceGenerator sequenceGenerator;
 
     public OrderFlow(
@@ -39,72 +34,113 @@ public class OrderFlow {
     }
 
     @Transactional(rollbackFor = ApiException.class)
-    public OrderPojo createOrder(List<OrderItemPojo> orderItems) throws ApiException {
+    public com.increff.pos.model.data.OrderCreationResult createOrder(List<OrderItemPojo> orderItems)
+            throws ApiException {
 
-        // Generate orderId
         long orderNumber = sequenceGenerator.getNextSequence("order");
         String orderId = "ORD-" + String.format("%06d", orderNumber);
 
-        // Calculate totals
+        com.increff.pos.model.data.InventoryCheckResult checkResult = checkAllInventoryAvailable(orderItems);
+
         int totalItems = 0;
         double totalAmount = 0.0;
 
-        // Validate products and reduce inventory
+        String orderStatus;
         List<OrderItemPojo> savedItems = new ArrayList<>();
-        for (OrderItemPojo item : orderItems) {
-            // Validate product exists
-            ProductPojo product = productApi.get(item.getProductId());
-            if (product == null) {
-                throw new ApiException("Product with ID " + item.getProductId() + " does not exist");
+
+        if (checkResult.isAllAvailable()) {
+            orderStatus = "PLACED";
+
+            for (OrderItemPojo item : orderItems) {
+                ProductPojo product = productApi.getCheck(item.getProductId());
+                InventoryPojo inventory = inventoryApi.getCheckByProductId(item.getProductId());
+
+                int newQuantity = inventory.getQuantity() - item.getQuantity();
+                inventoryApi.updateByProductId(item.getProductId(), newQuantity);
+
+                item.setOrderId(orderId);
+                item.setBarcode(product.getBarcode());
+                item.setProductName(product.getName());
+                item.setLineTotal(item.getQuantity() * item.getMrp());
+
+                OrderItemPojo savedItem = orderItemApi.add(item);
+                savedItems.add(savedItem);
+
+                totalItems += item.getQuantity();
+                totalAmount += item.getLineTotal();
             }
+        } else {
+            orderStatus = "UNFULFILLABLE";
 
-            // Check inventory
-            InventoryPojo inventory = inventoryApi.getByProductId(item.getProductId());
-            if (inventory == null || inventory.getQuantity() < item.getQuantity()) {
-                throw new ApiException("Insufficient inventory for product " + product.getName() +
-                        ". Available: " + (inventory != null ? inventory.getQuantity() : 0) +
-                        ", Required: " + item.getQuantity());
+            for (OrderItemPojo item : orderItems) {
+                ProductPojo product = productApi.getCheck(item.getProductId());
+
+                item.setOrderId(orderId);
+                item.setBarcode(product.getBarcode());
+                item.setProductName(product.getName());
+                item.setLineTotal(item.getQuantity() * item.getMrp());
+
+                OrderItemPojo savedItem = orderItemApi.add(item);
+                savedItems.add(savedItem);
+
+                totalItems += item.getQuantity();
+                totalAmount += item.getLineTotal();
             }
-
-            // Reduce inventory
-            int newQuantity = inventory.getQuantity() - item.getQuantity();
-            inventoryApi.updateByProductId(item.getProductId(), newQuantity);
-
-            // Set order item details
-            item.setOrderId(orderId);
-            item.setBarcode(product.getBarcode());
-            item.setProductName(product.getName());
-            item.setLineTotal(item.getQuantity() * item.getMrp());
-
-            // Save order item
-            OrderItemPojo savedItem = orderItemApi.add(item);
-            savedItems.add(savedItem);
-
-            // Update totals
-            totalItems += item.getQuantity();
-            totalAmount += item.getLineTotal();
         }
 
-        // Create order
         OrderPojo order = new OrderPojo();
         order.setOrderId(orderId);
-        order.setStatus("PLACED");
+        order.setStatus(orderStatus);
         order.setTotalItems(totalItems);
         order.setTotalAmount(totalAmount);
-        order.setOrderDate(Instant.now());
+        order.setOrderDate(ZonedDateTime.now());
 
-        return orderApi.add(order);
+        OrderPojo savedOrder = orderApi.add(order);
+
+        com.increff.pos.model.data.OrderCreationResult result = new com.increff.pos.model.data.OrderCreationResult();
+        result.setOrderId(savedOrder.getOrderId());
+        result.setFulfillable(checkResult.isAllAvailable());
+        result.setUnfulfillableItems(checkResult.getUnfulfillableItems());
+
+        return result;
+    }
+
+    private com.increff.pos.model.data.InventoryCheckResult checkAllInventoryAvailable(List<OrderItemPojo> orderItems)
+            throws ApiException {
+        com.increff.pos.model.data.InventoryCheckResult result = new com.increff.pos.model.data.InventoryCheckResult();
+        List<com.increff.pos.model.data.UnfulfillableItemData> unfulfillableItems = new ArrayList<>();
+
+        for (OrderItemPojo item : orderItems) {
+            ProductPojo product = productApi.getCheck(item.getProductId());
+            InventoryPojo inventory = inventoryApi.getByProductId(item.getProductId());
+            int availableQty = (inventory != null && inventory.getQuantity() != null) ? inventory.getQuantity() : 0;
+
+            if (availableQty < item.getQuantity()) {
+                com.increff.pos.model.data.UnfulfillableItemData unfulfillable = new com.increff.pos.model.data.UnfulfillableItemData();
+                unfulfillable.setBarcode(product.getBarcode());
+                unfulfillable.setProductName(product.getName());
+                unfulfillable.setRequestedQuantity(item.getQuantity());
+                unfulfillable.setAvailableQuantity(availableQty);
+                unfulfillable.setReason(availableQty == 0 ? "OUT_OF_STOCK" : "INSUFFICIENT_QUANTITY");
+                unfulfillableItems.add(unfulfillable);
+            }
+        }
+
+        result.setAllAvailable(unfulfillableItems.isEmpty());
+        result.setUnfulfillableItems(unfulfillableItems);
+        return result;
     }
 
     public OrderPojo getOrderWithItems(String orderId) throws ApiException {
-        return orderApi.getByOrderId(orderId);
+        return orderApi.getCheckByOrderId(orderId);
     }
 
     public List<OrderItemPojo> getOrderItems(String orderId) {
         return orderItemApi.getByOrderId(orderId);
     }
 
-    public List<OrderPojo> getOrderWithFilters(String orderId, String status, Instant fromDate, Instant toDate) {
+    public List<OrderPojo> getOrderWithFilters(String orderId, String status, ZonedDateTime fromDate,
+            ZonedDateTime toDate) {
         return orderApi.getWithFilters(orderId, status, fromDate, toDate);
     }
 
@@ -115,33 +151,28 @@ public class OrderFlow {
         }
         orderId = orderId.trim();
 
-        OrderPojo order = orderApi.getByOrderId(orderId);
+        OrderPojo order = orderApi.getCheckByOrderId(orderId);
 
         if ("INVOICED".equals(order.getStatus())) {
             throw new ApiException("Order " + orderId + " is already invoiced and cannot be cancelled");
         }
         if ("CANCELLED".equals(order.getStatus())) {
-            return order; // idempotent
+            return order;
         }
 
-        // Invoice check is done by status - if INVOICED, cannot cancel
-
-        // Restore inventory for all order items
         List<OrderItemPojo> items = orderItemApi.getByOrderId(orderId);
         for (OrderItemPojo item : items) {
             Integer currentQty = 0;
             try {
-                InventoryPojo inv = inventoryApi.getByProductId(item.getProductId());
+                InventoryPojo inv = inventoryApi.getCheckByProductId(item.getProductId());
                 currentQty = inv != null && inv.getQuantity() != null ? inv.getQuantity() : 0;
             } catch (ApiException e) {
-                // inventory row missing => treat as 0, upsert will create
                 currentQty = 0;
             }
             int newQty = currentQty + (item.getQuantity() != null ? item.getQuantity() : 0);
             inventoryApi.updateByProductId(item.getProductId(), newQty);
         }
 
-        // Mark order cancelled
         OrderPojo patch = new OrderPojo();
         patch.setStatus("CANCELLED");
         return orderApi.update(order.getId(), patch);
@@ -154,25 +185,21 @@ public class OrderFlow {
         }
         orderId = orderId.trim();
 
-        // Get existing order
-        OrderPojo order = orderApi.getByOrderId(orderId);
+        OrderPojo order = orderApi.getCheckByOrderId(orderId);
         if (order == null) {
             throw new ApiException("Order " + orderId + " not found");
         }
 
-        // Only PLACED orders can be edited
         if (!"PLACED".equals(order.getStatus())) {
             throw new ApiException("Only PLACED orders can be edited. Current status: " + order.getStatus());
         }
 
-        // Get existing order items
         List<OrderItemPojo> existingItems = orderItemApi.getByOrderId(orderId);
 
-        // Restore inventory for all existing items
         for (OrderItemPojo item : existingItems) {
             Integer currentQty = 0;
             try {
-                InventoryPojo inv = inventoryApi.getByProductId(item.getProductId());
+                InventoryPojo inv = inventoryApi.getCheckByProductId(item.getProductId());
                 currentQty = inv != null && inv.getQuantity() != null ? inv.getQuantity() : 0;
             } catch (ApiException e) {
                 currentQty = 0;
@@ -181,55 +208,141 @@ public class OrderFlow {
             inventoryApi.updateByProductId(item.getProductId(), restoredQty);
         }
 
-        // Delete all existing order items
         for (OrderItemPojo item : existingItems) {
             orderItemApi.delete(item.getId());
         }
 
-        // Calculate new totals
         int totalItems = 0;
         double totalAmount = 0.0;
 
-        // Validate new items and reduce inventory
         List<OrderItemPojo> savedItems = new ArrayList<>();
         for (OrderItemPojo item : newOrderItems) {
-            // Validate product exists
-            ProductPojo product = productApi.get(item.getProductId());
-            if (product == null) {
-                throw new ApiException("Product with ID " + item.getProductId() + " does not exist");
-            }
+            ProductPojo product = productApi.getCheck(item.getProductId());
 
-            // Check inventory
-            InventoryPojo inventory = inventoryApi.getByProductId(item.getProductId());
+            InventoryPojo inventory = inventoryApi.getCheckByProductId(item.getProductId());
             if (inventory == null || inventory.getQuantity() < item.getQuantity()) {
                 throw new ApiException("Insufficient inventory for product " + product.getName() +
                         ". Available: " + (inventory != null ? inventory.getQuantity() : 0) +
                         ", Required: " + item.getQuantity());
             }
 
-            // Reduce inventory
             int newQuantity = inventory.getQuantity() - item.getQuantity();
             inventoryApi.updateByProductId(item.getProductId(), newQuantity);
 
-            // Set order item details
             item.setOrderId(orderId);
             item.setBarcode(product.getBarcode());
             item.setProductName(product.getName());
             item.setLineTotal(item.getQuantity() * item.getMrp());
 
-            // Save order item
             OrderItemPojo savedItem = orderItemApi.add(item);
             savedItems.add(savedItem);
 
-            // Update totals
             totalItems += item.getQuantity();
             totalAmount += item.getLineTotal();
         }
 
-        // Update order totals
         OrderPojo patch = new OrderPojo();
         patch.setTotalItems(totalItems);
         patch.setTotalAmount(totalAmount);
         return orderApi.update(order.getId(), patch);
+    }
+
+    @Transactional(rollbackFor = ApiException.class)
+    public com.increff.pos.model.data.OrderCreationResult retryOrder(String orderId, List<OrderItemPojo> updatedItems)
+            throws ApiException {
+        if (orderId == null || orderId.trim().isEmpty()) {
+            throw new ApiException("Order ID cannot be empty");
+        }
+        orderId = orderId.trim();
+
+        OrderPojo order = orderApi.getCheckByOrderId(orderId);
+        if (order == null) {
+            throw new ApiException("Order " + orderId + " not found");
+        }
+
+        if (!"UNFULFILLABLE".equals(order.getStatus())) {
+            throw new ApiException("Only UNFULFILLABLE orders can be retried. Current status: " + order.getStatus());
+        }
+
+        List<OrderItemPojo> itemsToCheck;
+        if (updatedItems != null && !updatedItems.isEmpty()) {
+            List<OrderItemPojo> existingItems = orderItemApi.getByOrderId(orderId);
+            for (OrderItemPojo existingItem : existingItems) {
+                orderItemApi.delete(existingItem.getId());
+            }
+
+            for (OrderItemPojo item : updatedItems) {
+                item.setOrderId(orderId);
+            }
+            itemsToCheck = updatedItems;
+        } else {
+            itemsToCheck = orderItemApi.getByOrderId(orderId);
+        }
+
+        com.increff.pos.model.data.InventoryCheckResult checkResult = checkAllInventoryAvailable(itemsToCheck);
+
+        int totalItems = 0;
+        double totalAmount = 0.0;
+
+        if (checkResult.isAllAvailable()) {
+            List<OrderItemPojo> savedItems = new ArrayList<>();
+
+            for (OrderItemPojo item : itemsToCheck) {
+                ProductPojo product = productApi.getCheck(item.getProductId());
+                InventoryPojo inventory = inventoryApi.getCheckByProductId(item.getProductId());
+
+                int newQuantity = inventory.getQuantity() - item.getQuantity();
+                inventoryApi.updateByProductId(item.getProductId(), newQuantity);
+
+                if (item.getId() == null) {
+                    item.setOrderId(orderId);
+                    item.setBarcode(product.getBarcode());
+                    item.setProductName(product.getName());
+                    item.setLineTotal(item.getQuantity() * item.getMrp());
+                    OrderItemPojo savedItem = orderItemApi.add(item);
+                    savedItems.add(savedItem);
+                }
+
+                totalItems += item.getQuantity();
+                totalAmount += item.getLineTotal();
+            }
+
+            OrderPojo patch = new OrderPojo();
+            patch.setStatus("PLACED");
+            patch.setTotalItems(totalItems);
+            patch.setTotalAmount(totalAmount);
+            OrderPojo updatedOrder = orderApi.update(order.getId(), patch);
+
+            com.increff.pos.model.data.OrderCreationResult result = new com.increff.pos.model.data.OrderCreationResult();
+            result.setOrderId(updatedOrder.getOrderId());
+            result.setFulfillable(true);
+            result.setUnfulfillableItems(new ArrayList<>());
+            return result;
+
+        } else {
+            if (updatedItems != null && !updatedItems.isEmpty()) {
+                for (OrderItemPojo item : updatedItems) {
+                    ProductPojo product = productApi.getCheck(item.getProductId());
+                    item.setBarcode(product.getBarcode());
+                    item.setProductName(product.getName());
+                    item.setLineTotal(item.getQuantity() * item.getMrp());
+                    orderItemApi.add(item);
+
+                    totalItems += item.getQuantity();
+                    totalAmount += item.getLineTotal();
+                }
+
+                OrderPojo patch = new OrderPojo();
+                patch.setTotalItems(totalItems);
+                patch.setTotalAmount(totalAmount);
+                orderApi.update(order.getId(), patch);
+            }
+
+            com.increff.pos.model.data.OrderCreationResult result = new com.increff.pos.model.data.OrderCreationResult();
+            result.setOrderId(order.getOrderId());
+            result.setFulfillable(false);
+            result.setUnfulfillableItems(checkResult.getUnfulfillableItems());
+            return result;
+        }
     }
 }

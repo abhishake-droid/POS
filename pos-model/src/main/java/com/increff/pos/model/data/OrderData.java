@@ -16,4 +16,8 @@ public class OrderData {
     private String createdAt;
     private Boolean hasInvoice;
     private List<OrderItemData> items;
+
+    // Unfulfillable order tracking
+    private Boolean fulfillable; // true if all items were fulfilled
+    private List<UnfulfillableItemData> unfulfillableItems; // items that couldn't be fulfilled
 }

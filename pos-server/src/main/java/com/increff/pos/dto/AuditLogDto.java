@@ -5,7 +5,8 @@ import com.increff.pos.helper.AuditLogHelper;
 import com.increff.pos.model.data.AuditLogData;
 import com.increff.pos.model.form.PageForm;
 import com.increff.pos.util.ValidationUtil;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.increff.pos.db.AuditLogPojo;
+import com.increff.pos.exception.ApiException;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -21,18 +22,18 @@ public class AuditLogDto {
     }
 
     public List<AuditLogData> getByOperatorEmail(String operatorEmail) {
-        List<com.increff.pos.db.AuditLogPojo> pojoList = auditLogApi.getByOperatorEmail(operatorEmail);
+        List<AuditLogPojo> pojoList = auditLogApi.getByOperatorEmail(operatorEmail);
         return AuditLogHelper.convertToDataList(pojoList);
     }
 
-    public Page<AuditLogData> getAll(PageForm form) throws com.increff.pos.exception.ApiException {
+    public Page<AuditLogData> getAll(PageForm form) throws ApiException {
         ValidationUtil.validatePageForm(form);
-        Page<com.increff.pos.db.AuditLogPojo> pojoPage = auditLogApi.getAll(form.getPage(), form.getSize());
+        Page<AuditLogPojo> pojoPage = auditLogApi.getAll(form);
         return pojoPage.map(AuditLogHelper::convertToDto);
     }
 
     public List<AuditLogData> getAll() {
-        List<com.increff.pos.db.AuditLogPojo> pojoList = auditLogApi.getAll();
+        List<AuditLogPojo> pojoList = auditLogApi.getAll();
         return AuditLogHelper.convertToDataList(pojoList);
     }
 }

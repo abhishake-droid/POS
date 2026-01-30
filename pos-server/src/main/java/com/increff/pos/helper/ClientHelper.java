@@ -11,9 +11,9 @@ public class ClientHelper {
 
     public static ClientPojo convertToEntity(ClientForm form) {
         ClientPojo pojo = new ClientPojo();
-        pojo.setName(form.getName().trim().toLowerCase());
-        pojo.setEmail(form.getEmail().trim().toLowerCase());
-        pojo.setPhone(form.getPhone().trim());
+        pojo.setName(form.getName());
+        pojo.setEmail(form.getEmail());
+        pojo.setPhone(form.getPhone());
         return pojo;
     }
 
@@ -26,7 +26,6 @@ public class ClientHelper {
         data.setPhone(pojo.getPhone());
         return data;
     }
-
 
     public static List<ClientData> convertToDataList(List<ClientPojo> pojoList) {
         return pojoList.stream().map(ClientHelper::convertToDto).collect(Collectors.toList());

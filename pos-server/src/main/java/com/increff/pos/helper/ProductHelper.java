@@ -11,11 +11,11 @@ public class ProductHelper {
 
     public static ProductPojo convertToEntity(ProductForm form) {
         ProductPojo pojo = new ProductPojo();
-        pojo.setBarcode(form.getBarcode() != null ? form.getBarcode().trim().toLowerCase() : null);
-        pojo.setClientId(form.getClientId() != null ? form.getClientId().trim() : null);
-        pojo.setName(form.getName() != null ? form.getName().trim().toLowerCase() : null);
+        pojo.setBarcode(form.getBarcode());
+        pojo.setClientId(form.getClientId());
+        pojo.setName(form.getName());
         pojo.setMrp(form.getMrp());
-        pojo.setImageUrl(form.getImageUrl() != null ? form.getImageUrl().trim() : null);
+        pojo.setImageUrl(form.getImageUrl());
         return pojo;
     }
 

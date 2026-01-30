@@ -3,7 +3,7 @@ package com.increff.invoice.model;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Getter
@@ -13,10 +13,9 @@ public class InvoiceRequest {
     private String orderId;
     private String customerName;
     private String billingAddress;
-    private Instant orderDate;
+    private ZonedDateTime orderDate;
     private List<InvoiceLineItem> items;
     private Double subTotal;
     private Double taxAmount;
     private Double totalAmount;
 }
-

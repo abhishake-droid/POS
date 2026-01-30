@@ -47,16 +47,16 @@ const HeaderBox = styled(Box)({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  marginBottom: '1.5rem',
-  padding: '1.25rem 1.5rem',
-  borderRadius: '16px',
+  marginBottom: '2rem',
+  padding: '1.5rem',
+  borderRadius: '12px',
   backgroundColor: '#ffffff',
   border: '1px solid #e5e7eb',
   boxShadow: '0 2px 8px rgba(15,23,42,0.08)',
 });
 
 const StyledTableContainer = styled(TableContainer)({
-  borderRadius: '12px',
+  borderRadius: '8px',
   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
 });
 
@@ -65,6 +65,7 @@ const StyledTableHead = styled(TableHead)({
   '& .MuiTableCell-head': {
     color: 'white',
     fontWeight: 600,
+    padding: '1rem',
   },
 });
 
@@ -75,6 +76,9 @@ const StyledTableRow = styled(TableRow)({
   '&:hover': {
     backgroundColor: '#e3f2fd',
   },
+  '& .MuiTableCell-root': {
+    padding: '1rem',
+  },
 });
 
 const PaginationBox = styled(Box)({
@@ -82,14 +86,6 @@ const PaginationBox = styled(Box)({
   justifyContent: 'center',
   gap: '1rem',
   marginTop: '2rem',
-});
-
-const StyledIconButton = styled(IconButton)({
-  backgroundColor: '#1d4ed8',
-  color: 'white',
-  '&:hover': {
-    backgroundColor: '#1e40af',
-  },
 });
 
 export default function Operators() {
@@ -200,23 +196,23 @@ export default function Operators() {
               <PaginationBox>
                 <Tooltip title="First Page">
                   <span>
-                    <StyledIconButton
+                    <IconButton
                       disabled={currentPage === 0 || loading}
                       onClick={() => setCurrentPage(0)}
                     >
                       <FirstPage />
-                    </StyledIconButton>
+                    </IconButton>
                   </span>
                 </Tooltip>
 
                 <Tooltip title="Previous Page">
                   <span>
-                    <StyledIconButton
+                    <IconButton
                       disabled={currentPage === 0 || loading}
                       onClick={() => setCurrentPage((p) => p - 1)}
                     >
                       <ChevronLeft />
-                    </StyledIconButton>
+                    </IconButton>
                   </span>
                 </Tooltip>
 
@@ -231,23 +227,23 @@ export default function Operators() {
 
                 <Tooltip title="Next Page">
                   <span>
-                    <StyledIconButton
+                    <IconButton
                       disabled={currentPage >= totalPages - 1 || loading}
                       onClick={() => setCurrentPage((p) => p + 1)}
                     >
                       <ChevronRight />
-                    </StyledIconButton>
+                    </IconButton>
                   </span>
                 </Tooltip>
 
                 <Tooltip title="Last Page">
                   <span>
-                    <StyledIconButton
+                    <IconButton
                       disabled={currentPage >= totalPages - 1 || loading}
                       onClick={() => setCurrentPage(totalPages - 1)}
                     >
                       <LastPage />
-                    </StyledIconButton>
+                    </IconButton>
                   </span>
                 </Tooltip>
               </PaginationBox>
@@ -259,16 +255,16 @@ export default function Operators() {
           <DialogTitle>Add Operator</DialogTitle>
           <DialogContent>
             <TextField
-                fullWidth
-                label={
-                  <>
-                    Email <Box component="span" sx={{ color: 'error.main' }}>*</Box>
-                  </>
-                }
-                type="email"
-                margin="normal"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              fullWidth
+              label={
+                <>
+                  Email <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+                </>
+              }
+              type="email"
+              margin="normal"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
             <TextField
               fullWidth

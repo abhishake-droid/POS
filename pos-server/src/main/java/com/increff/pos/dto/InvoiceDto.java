@@ -2,85 +2,85 @@ package com.increff.pos.dto;
 
 import com.increff.invoice.model.InvoiceLineItem;
 import com.increff.invoice.model.InvoiceRequest;
-import com.increff.pos.api.OrderApi;
-import com.increff.pos.api.OrderItemApi;
+import com.increff.pos.flow.InvoiceFlow;
 import com.increff.pos.wrapper.InvoiceClientWrapper;
 import com.increff.pos.db.OrderItemPojo;
 import com.increff.pos.db.OrderPojo;
 import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.data.OrderData;
 import com.increff.pos.util.SequenceGenerator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class InvoiceDto {
 
-    // Dependencies
     private final InvoiceClientWrapper invoiceClientWrapper;
-    private final OrderDto orderDto;
-    private final OrderApi orderApi;
-    private final OrderItemApi orderItemApi;
+    private final InvoiceFlow invoiceFlow;
     private final SequenceGenerator sequenceGenerator;
 
+    @Value("${invoice.storage.path:./invoices}")
+    private String storagePath;
+
     public InvoiceDto(
-            OrderDto orderDto,
             InvoiceClientWrapper invoiceClientWrapper,
-            OrderApi orderApi,
-            OrderItemApi orderItemApi,
+            InvoiceFlow invoiceFlow,
             SequenceGenerator sequenceGenerator) {
-        this.orderDto = orderDto;
         this.invoiceClientWrapper = invoiceClientWrapper;
-        this.orderApi = orderApi;
-        this.orderItemApi = orderItemApi;
+        this.invoiceFlow = invoiceFlow;
         this.sequenceGenerator = sequenceGenerator;
     }
 
     @Transactional(rollbackFor = ApiException.class)
     public OrderData generateInvoice(String orderId) throws ApiException {
+        InvoiceFlow.OrderWithItems orderWithItems = invoiceFlow.validateAndGetOrderForInvoice(orderId);
+        OrderPojo order = orderWithItems.order;
+        List<OrderItemPojo> orderItems = orderWithItems.items;
 
-        OrderPojo order = orderApi.getByOrderId(orderId);
-        if (order == null) {
-            throw new ApiException("Order with ID " + orderId + " does not exist");
-        }
-
-        if ("INVOICED".equals(order.getStatus())) {
-            throw new ApiException("Order " + orderId + " is already invoiced");
-        }
-
-        if ("CANCELLED".equals(order.getStatus())) {
-            throw new ApiException("Order " + orderId + " is cancelled and cannot be invoiced");
-        }
-
-        // Get order items
-        List<OrderItemPojo> orderItems = orderItemApi.getByOrderId(orderId);
-
-        // Prepare invoice request
         InvoiceRequest invoiceRequest = prepareInvoiceRequest(order, orderItems);
+        String invoiceId = invoiceRequest.getInvoiceId();
 
-        // Call invoice microservice via wrapper
+        byte[] pdfBytes;
         try {
-            invoiceClientWrapper.generateInvoice(invoiceRequest);
+            pdfBytes = invoiceClientWrapper.generateInvoicePdf(invoiceRequest);
         } catch (Exception e) {
-            throw new ApiException("Failed to generate invoice: " + e.getMessage());
+            throw new ApiException("Failed to generate invoice PDF: " + e.getMessage());
         }
 
-        order.setStatus("INVOICED");
-        orderApi.update(order.getId(), order);
+        String pdfPath = savePdfToFileSystem(invoiceId, pdfBytes);
+        invoiceFlow.saveInvoiceAndUpdateOrder(invoiceId, orderId, pdfPath);
 
-        // Return updated order
-        return orderDto.getById(orderId);
+        return invoiceFlow.getUpdatedOrderData(order);
+    }
+
+    private String savePdfToFileSystem(String invoiceId, byte[] pdfBytes) throws ApiException {
+        try {
+            Path invoicesDir = Paths.get(storagePath);
+            if (!Files.exists(invoicesDir)) {
+                Files.createDirectories(invoicesDir);
+            }
+
+            String fileName = invoiceId + ".pdf";
+            Path filePath = invoicesDir.resolve(fileName);
+            Files.write(filePath, pdfBytes);
+
+            return filePath.toString();
+        } catch (IOException e) {
+            throw new ApiException("Failed to save invoice PDF: " + e.getMessage());
+        }
     }
 
     private InvoiceRequest prepareInvoiceRequest(OrderPojo order, List<OrderItemPojo> orderItems) {
         InvoiceRequest request = new InvoiceRequest();
 
-        // Generate invoice ID
         long invoiceNumber = sequenceGenerator.getNextSequence("invoice");
         String invoiceId = "INV-" + String.format("%06d", invoiceNumber);
 
@@ -90,7 +90,6 @@ public class InvoiceDto {
         request.setBillingAddress("");
         request.setOrderDate(order.getOrderDate());
 
-        // Convert order items to invoice line items
         List<InvoiceLineItem> lineItems = orderItems.stream().map(item -> {
             InvoiceLineItem lineItem = new InvoiceLineItem();
             lineItem.setSku(item.getBarcode());
@@ -110,10 +109,17 @@ public class InvoiceDto {
     }
 
     public byte[] downloadInvoice(String orderId) throws ApiException {
+        String pdfPath = invoiceFlow.getInvoicePdfPath(orderId);
+
         try {
-            return invoiceClientWrapper.downloadInvoicePdf(orderId);
-        } catch (Exception e) {
-            throw new ApiException("Failed to download invoice: " + e.getMessage());
+            Path filePath = Paths.get(pdfPath);
+            if (!Files.exists(filePath)) {
+                throw new ApiException("Invoice PDF file not found at " + pdfPath);
+            }
+
+            return Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            throw new ApiException("Failed to read invoice PDF: " + e.getMessage());
         }
     }
 }

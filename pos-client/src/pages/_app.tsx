@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/globals.css';
+import { Box } from '@mui/material';
 import Navbar from '../components/Navbar';
 import AuthGuard from '../components/AuthGuard';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
@@ -53,7 +54,9 @@ function AppContent({ Component, pageProps }: AppProps) {
   return (
     <AuthGuard>
       <Navbar />
-      <Component {...pageProps} />
+      <Box sx={{ paddingTop: '64px' }}>
+        <Component {...pageProps} />
+      </Box>
       <ToastContainer position="top-right" />
     </AuthGuard>
   );

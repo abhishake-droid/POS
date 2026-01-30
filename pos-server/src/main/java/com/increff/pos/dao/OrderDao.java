@@ -9,7 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Repository
@@ -31,13 +31,14 @@ public class OrderDao extends AbstractDao<OrderPojo> {
         return mongoOperations.find(query, OrderPojo.class);
     }
 
-    public List<OrderPojo> findByDateRange(Instant fromDate, Instant toDate) {
+    public List<OrderPojo> findByDateRange(ZonedDateTime fromDate, ZonedDateTime toDate) {
         Query query = Query.query(
                 Criteria.where("orderDate").gte(fromDate).lte(toDate));
         return mongoOperations.find(query, OrderPojo.class);
     }
 
-    public List<OrderPojo> findWithFilters(String orderId, String status, Instant fromDate, Instant toDate) {
+    public List<OrderPojo> findWithFilters(String orderId, String status, ZonedDateTime fromDate,
+            ZonedDateTime toDate) {
         Criteria criteria = new Criteria();
 
         if (orderId != null && !orderId.trim().isEmpty()) {

@@ -12,32 +12,13 @@
 [INFO] Copying 0 resource from src/main/resources to target/classes
 [INFO] 
 [INFO] --- compiler:3.11.0:compile (default-compile) @ pos-server ---
-[INFO] Changes detected - recompiling the module! :source
-[INFO] Compiling 69 source files with javac [debug release 21] to target/classes
-[INFO] Annotation processing is enabled because one or more processors were found
-  on the class path. A future release of javac may disable annotation processing
-  unless at least one processor is specified by name (-processor), or a search
-  path is specified (--processor-path, --processor-module-path), or annotation
-  processing is enabled explicitly (-proc:only, -proc:full).
-  Use -Xlint:-options to suppress this message.
-  Use -proc:none to disable annotation processing.
-[WARNING] /Users/abhisheksudhir/Downloads/POS_v2/pos-server/src/main/java/com/increff/pos/db/UserPojo.java:[9,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-[WARNING] /Users/abhisheksudhir/Downloads/POS_v2/pos-server/src/main/java/com/increff/pos/db/AuditLogPojo.java:[10,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
-[WARNING] /Users/abhisheksudhir/Downloads/POS_v2/pos-server/src/main/java/com/increff/pos/db/ClientPojo.java:[9,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[INFO] Nothing to compile - all classes are up to date
 [INFO] 
 [INFO] --- resources:3.3.1:testResources (default-testResources) @ pos-server ---
 [INFO] Copying 1 resource from src/test/resources to target/test-classes
 [INFO] 
 [INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ pos-server ---
-[INFO] Changes detected - recompiling the module! :dependency
-[INFO] Compiling 3 source files with javac [debug release 21] to target/test-classes
-[INFO] Annotation processing is enabled because one or more processors were found
-  on the class path. A future release of javac may disable annotation processing
-  unless at least one processor is specified by name (-processor), or a search
-  path is specified (--processor-path, --processor-module-path), or annotation
-  processing is enabled explicitly (-proc:only, -proc:full).
-  Use -Xlint:-options to suppress this message.
-  Use -proc:none to disable annotation processing.
+[INFO] Nothing to compile - all classes are up to date
 [INFO] 
 [INFO] <<< spring-boot:3.2.3:run (default-cli) < test-compile @ pos-server <<<
 [INFO] 
@@ -54,22 +35,27 @@ Standard Commons Logging discovery in action with spring-jcl: please remove comm
  =========|_|==============|___/=/_/_/_/
  :: Spring Boot ::                (v3.2.3)
 
-2026-01-28T11:43:59.233+05:30  INFO 11682 --- [POS] [           main] com.increff.pos.config.SpringConfig      : Starting SpringConfig using Java 21.0.9 with PID 11682 (/Users/abhisheksudhir/Downloads/POS_v2/pos-server/target/classes started by abhisheksudhir in /Users/abhisheksudhir/Downloads/POS_v2/pos-server)
-2026-01-28T11:43:59.234+05:30  INFO 11682 --- [POS] [           main] com.increff.pos.config.SpringConfig      : No active profile set, falling back to 1 default profile: "default"
-2026-01-28T11:43:59.586+05:30  INFO 11682 --- [POS] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
-2026-01-28T11:43:59.596+05:30  INFO 11682 --- [POS] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 5 ms. Found 0 MongoDB repository interfaces.
-2026-01-28T11:43:59.943+05:30  INFO 11682 --- [POS] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
-2026-01-28T11:43:59.949+05:30  INFO 11682 --- [POS] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2026-01-28T11:43:59.949+05:30  INFO 11682 --- [POS] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
-2026-01-28T11:43:59.977+05:30  INFO 11682 --- [POS] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-2026-01-28T11:43:59.978+05:30  INFO 11682 --- [POS] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 718 ms
+2026-01-31T00:50:08.167+05:30  INFO 29859 --- [POS] [           main] com.increff.pos.config.SpringConfig      : Starting SpringConfig using Java 21.0.9 with PID 29859 (/Users/abhisheksudhir/Downloads/POS_v2/pos-server/target/classes started by abhisheksudhir in /Users/abhisheksudhir/Downloads/POS_v2/pos-server)
+2026-01-31T00:50:08.167+05:30  INFO 29859 --- [POS] [           main] com.increff.pos.config.SpringConfig      : No active profile set, falling back to 1 default profile: "default"
+2026-01-31T00:50:08.394+05:30  INFO 29859 --- [POS] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2026-01-31T00:50:08.417+05:30  INFO 29859 --- [POS] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 21 ms. Found 3 MongoDB repository interfaces.
+2026-01-31T00:50:08.697+05:30  INFO 29859 --- [POS] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-01-31T00:50:08.702+05:30  INFO 29859 --- [POS] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-31T00:50:08.702+05:30  INFO 29859 --- [POS] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-01-31T00:50:08.728+05:30  INFO 29859 --- [POS] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-01-31T00:50:08.729+05:30  INFO 29859 --- [POS] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 545 ms
 Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
-2026-01-28T11:44:00.059+05:30  INFO 11682 --- [POS] [           main] org.mongodb.driver.client                : MongoClient with metadata {"driver": {"name": "mongo-java-driver|sync|spring-boot", "version": "4.11.1"}, "os": {"type": "Darwin", "name": "Mac OS X", "architecture": "aarch64", "version": "26.2"}, "platform": "Java/Eclipse Adoptium/21.0.9+10-LTS"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=null, transportSettings=null, streamFactoryFactory=null, commandListeners=[], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@461c3709, com.mongodb.Jep395RecordCodecProvider@7e3d7dd, com.mongodb.KotlinCodecProvider@3f63a513]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=JAVA_LEGACY, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null}
-2026-01-28T11:44:00.082+05:30  INFO 11682 --- [POS] [localhost:27017] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=21, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=15240667}
-2026-01-28T11:44:00.452+05:30  INFO 11682 --- [POS] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
-2026-01-28T11:44:00.457+05:30  INFO 11682 --- [POS] [           main] com.increff.pos.config.SpringConfig      : Started SpringConfig in 1.534 seconds (process running for 1.891)
-2026-01-28T11:44:00.504+05:30  INFO 11682 --- [POS] [           main] c.increff.pos.config.UserInitialization  : Supervisor user already exists and is properly configured: supervisor@pos.com
-2026-01-28T13:53:54.195+05:30  INFO 11682 --- [POS] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-01-28T13:53:54.196+05:30  INFO 11682 --- [POS] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
-2026-01-28T13:53:54.201+05:30  INFO 11682 --- [POS] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 5 ms
-2026-01-28T13:53:55.445+05:30  INFO 11682 --- [POS] [nio-8080-exec-2] c.increff.invoice.client.InvoiceClient   : Downloading invoice PDF from: http://localhost:8081/api/invoice/download/ORD-000001
+2026-01-31T00:50:08.807+05:30  INFO 29859 --- [POS] [           main] org.mongodb.driver.client                : MongoClient with metadata {"driver": {"name": "mongo-java-driver|sync|spring-boot", "version": "4.11.1"}, "os": {"type": "Darwin", "name": "Mac OS X", "architecture": "aarch64", "version": "26.2"}, "platform": "Java/Eclipse Adoptium/21.0.9+10-LTS"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=null, transportSettings=null, streamFactoryFactory=null, commandListeners=[], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@49edcb30, com.mongodb.Jep395RecordCodecProvider@59303963, com.mongodb.KotlinCodecProvider@61e86192]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=JAVA_LEGACY, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null}
+2026-01-31T00:50:08.885+05:30  INFO 29859 --- [POS] [localhost:27017] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=21, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=55930084}
+2026-01-31T00:50:09.213+05:30  WARN 29859 --- [POS] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: c9055c7f-a657-48d8-a95f-f81fce3cc3be
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-01-31T00:50:09.328+05:30  INFO 29859 --- [POS] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@37806be6, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@7bce9ce4, org.springframework.security.web.context.SecurityContextHolderFilter@7856f41a, org.springframework.security.web.header.HeaderWriterFilter@7b79ff1c, org.springframework.web.filter.CorsFilter@1d2046bb, org.springframework.security.web.authentication.logout.LogoutFilter@6e3b2dd3, com.increff.pos.config.TokenAuthenticationFilter@3b33fff9, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@2c08c787, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@67f591c2, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@fd87c22, org.springframework.security.web.session.SessionManagementFilter@83ebdc5, org.springframework.security.web.access.ExceptionTranslationFilter@246de37e, org.springframework.security.web.access.intercept.AuthorizationFilter@1bdafb01]
+2026-01-31T00:50:09.438+05:30  INFO 29859 --- [POS] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2026-01-31T00:50:09.446+05:30  INFO 29859 --- [POS] [           main] com.increff.pos.config.SpringConfig      : Started SpringConfig in 1.429 seconds (process running for 1.571)
+2026-01-31T00:50:11.731+05:30  INFO 29859 --- [POS] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-01-31T00:50:11.731+05:30  INFO 29859 --- [POS] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-01-31T00:50:11.732+05:30  INFO 29859 --- [POS] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms

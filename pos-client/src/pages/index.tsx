@@ -5,37 +5,34 @@ import { People, Inventory, Dashboard, SupervisorAccount, ShoppingCart, Assessme
 import { useAuth } from '../contexts/AuthContext';
 
 const StyledContainer = styled(Container)(({ theme }) => ({
-  paddingTop: '4rem',
-  paddingBottom: '4rem',
+  paddingTop: '3rem',
+  paddingBottom: '3rem',
   minHeight: 'calc(100vh - 64px)',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
 }));
 
 const StyledCard = styled(Card)(({ theme }) => ({
-  maxWidth: 600,
-  borderRadius: '16px',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+  height: '100%',
+  borderRadius: '12px',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
   transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  display: 'flex',
+  flexDirection: 'column',
   '&:hover': {
     transform: 'translateY(-8px)',
-    boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
   },
 }));
 
 const StyledButton = styled(Button)(({ theme }) => ({
-  borderRadius: '12px',
+  borderRadius: '8px',
   textTransform: 'none',
   fontWeight: 600,
-  padding: '1rem 2rem',
-  fontSize: '1.1rem',
-  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+  padding: '0.75rem 1.5rem',
+  fontSize: '0.95rem',
+  boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
   '&:hover': {
-    boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
+    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)',
     transform: 'translateY(-2px)',
-    transition: 'all 0.2s ease',
   },
 }));
 
@@ -44,8 +41,8 @@ export default function Home() {
   const { isSupervisor } = useAuth();
 
   return (
-    <StyledContainer>
-      <Box sx={{ textAlign: 'center', mb: 4 }}>
+    <StyledContainer maxWidth="lg">
+      <Box sx={{ textAlign: 'center', mb: 5 }}>
         <Typography
           variant="h2"
           sx={{
@@ -58,178 +55,208 @@ export default function Home() {
         >
           POS System
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+        <Typography variant="h6" color="text.secondary">
           Point of Sale Management System
         </Typography>
       </Box>
 
       {isSupervisor && (
-        <Grid container spacing={3} sx={{ maxWidth: 1000, mt: 2, mb: 3 }}>
-          <Grid item xs={12} sm={6}>
-            <StyledCard>
-              <CardContent sx={{ padding: '2.5rem !important' }}>
-                <Box sx={{ textAlign: 'center', mb: 3 }}>
-                  <Dashboard sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
+        <Box sx={{ mb: 5 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#1976d2' }}>
+            Supervisor Tools
+          </Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6}>
+              <StyledCard>
+                <CardContent sx={{
+                  padding: '2.5rem !important',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }}>
+                  <Box sx={{ mb: 2 }}>
+                    <Dashboard sx={{ fontSize: 56, color: '#1976d2' }} />
+                  </Box>
                   <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
                     Supervisor Dashboard
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    View operators and activity logs
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>
+                    Monitor operators and system activity
                   </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                   <StyledButton
                     variant="contained"
-                    size="large"
+                    fullWidth
                     onClick={() => router.push('/supervisor-dashboard')}
                     startIcon={<Dashboard />}
-                    fullWidth
                   >
-                    Go to Dashboard
+                    Open Dashboard
                   </StyledButton>
-                </Box>
-              </CardContent>
-            </StyledCard>
-          </Grid>
+                </CardContent>
+              </StyledCard>
+            </Grid>
 
-          <Grid item xs={12} sm={6}>
-            <StyledCard>
-              <CardContent sx={{ padding: '2.5rem !important' }}>
-                <Box sx={{ textAlign: 'center', mb: 3 }}>
-                  <SupervisorAccount sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
+            <Grid item xs={12} sm={6}>
+              <StyledCard>
+                <CardContent sx={{
+                  padding: '2.5rem !important',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }}>
+                  <Box sx={{ mb: 2 }}>
+                    <SupervisorAccount sx={{ fontSize: 56, color: '#1976d2' }} />
+                  </Box>
                   <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
                     Operator Management
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Create and manage operators
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>
+                    Create and manage system operators
                   </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                   <StyledButton
                     variant="contained"
-                    size="large"
+                    fullWidth
                     onClick={() => router.push('/operators')}
                     startIcon={<SupervisorAccount />}
-                    fullWidth
                   >
                     Manage Operators
                   </StyledButton>
+                </CardContent>
+              </StyledCard>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      <Box>
+        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#1976d2' }}>
+          Core Modules
+        </Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={4}>
+            <StyledCard>
+              <CardContent sx={{
+                padding: '2rem !important',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+              }}>
+                <Box sx={{ mb: 2 }}>
+                  <People sx={{ fontSize: 56, color: '#1976d2' }} />
                 </Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, minHeight: 48 }}>
+                  Client Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>
+                  Manage customer information
+                </Typography>
+                <StyledButton
+                  variant="contained"
+                  fullWidth
+                  onClick={() => router.push('/clients')}
+                  startIcon={<People />}
+                >
+                  Open
+                </StyledButton>
               </CardContent>
             </StyledCard>
           </Grid>
-        </Grid>
-      )}
 
-      <Grid container spacing={3} sx={{ maxWidth: 1200, mt: 2 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StyledCard>
-            <CardContent sx={{ padding: '2.5rem !important' }}>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <People sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                  Client Management
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Manage your clients and customer information
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                <StyledButton
-                  variant="contained"
-                  size="large"
-                  onClick={() => router.push('/clients')}
-                  startIcon={<People />}
-                  fullWidth
-                >
-                  Go to Clients
-                </StyledButton>
-              </Box>
-            </CardContent>
-          </StyledCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StyledCard>
-            <CardContent sx={{ padding: '2.5rem !important' }}>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Inventory sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+          <Grid item xs={12} sm={6} md={4}>
+            <StyledCard>
+              <CardContent sx={{
+                padding: '2rem !important',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+              }}>
+                <Box sx={{ mb: 2 }}>
+                  <Inventory sx={{ fontSize: 56, color: '#1976d2' }} />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, minHeight: 48 }}>
                   Product Management
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Manage products, inventory, and upload via TSV
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>
+                  Manage inventory and products
                 </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                 <StyledButton
                   variant="contained"
-                  size="large"
+                  fullWidth
                   onClick={() => router.push('/products')}
                   startIcon={<Inventory />}
-                  fullWidth
                 >
-                  Go to Products
+                  Open
                 </StyledButton>
-              </Box>
-            </CardContent>
-          </StyledCard>
-        </Grid>
+              </CardContent>
+            </StyledCard>
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <StyledCard>
-            <CardContent sx={{ padding: '2.5rem !important' }}>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <ShoppingCart sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+          <Grid item xs={12} sm={6} md={4}>
+            <StyledCard>
+              <CardContent sx={{
+                padding: '2rem !important',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+              }}>
+                <Box sx={{ mb: 2 }}>
+                  <ShoppingCart sx={{ fontSize: 56, color: '#1976d2' }} />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, minHeight: 48 }}>
                   Order Management
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Create orders, generate and download invoices
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>
+                  Create orders and generate invoices
                 </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                 <StyledButton
                   variant="contained"
-                  size="large"
+                  fullWidth
                   onClick={() => router.push('/orders')}
                   startIcon={<ShoppingCart />}
-                  fullWidth
                 >
-                  Go to Orders
+                  Open
                 </StyledButton>
-              </Box>
-            </CardContent>
-          </StyledCard>
-        </Grid>
+              </CardContent>
+            </StyledCard>
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <StyledCard>
-            <CardContent sx={{ padding: '2.5rem !important' }}>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Assessment sx={{ fontSize: 56, color: '#1976d2', mb: 2 }} />
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                  Sales Report
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  View sales reports by date range and brand
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                <StyledButton
-                  variant="contained"
-                  size="large"
-                  onClick={() => router.push('/sales-report')}
-                  startIcon={<Assessment />}
-                  fullWidth
-                >
-                  View Reports
-                </StyledButton>
-              </Box>
-            </CardContent>
-          </StyledCard>
+          {isSupervisor && (
+            <Grid item xs={12} sm={6} md={3}>
+              <StyledCard>
+                <CardContent sx={{
+                  padding: '2rem !important',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }}>
+                  <Box sx={{ mb: 2 }}>
+                    <Assessment sx={{ fontSize: 56, color: '#1976d2' }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, minHeight: 48 }}>
+                    Sales Report
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flexGrow: 1 }}>
+                    View comprehensive sales analytics
+                  </Typography>
+                  <StyledButton
+                    variant="contained"
+                    fullWidth
+                    onClick={() => router.push('/sales-report')}
+                    startIcon={<Assessment />}
+                  >
+                    Open
+                  </StyledButton>
+                </CardContent>
+              </StyledCard>
+            </Grid>
+          )}
         </Grid>
-      </Grid>
+      </Box>
     </StyledContainer>
   );
 }

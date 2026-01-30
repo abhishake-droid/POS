@@ -7,9 +7,16 @@ import java.util.List;
 
 public interface InventoryApi {
     InventoryPojo add(InventoryPojo inventoryPojo) throws ApiException;
-    InventoryPojo get(String id) throws ApiException;
-    InventoryPojo getByProductId(String productId) throws ApiException;
+
+    InventoryPojo getCheck(String id) throws ApiException;
+
+    InventoryPojo getCheckByProductId(String productId) throws ApiException;
+
+    InventoryPojo getByProductId(String productId);
+
     InventoryPojo update(String id, InventoryPojo inventoryPojo) throws ApiException;
+
     InventoryPojo updateByProductId(String productId, Integer quantity) throws ApiException;
+
     List<InventoryPojo> updateBulk(List<InventoryPojo> inventoryPojos) throws ApiException;
 }

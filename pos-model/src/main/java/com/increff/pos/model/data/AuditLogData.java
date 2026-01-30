@@ -3,7 +3,7 @@ package com.increff.pos.model.data;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 
 @Getter
 @Setter
@@ -12,5 +12,5 @@ public class AuditLogData {
     private String operatorEmail;
     private String operatorName;
     private String action; // "LOGIN" or "LOGOUT"
-    private Instant timestamp;
+    private ZonedDateTime timestamp;
 }

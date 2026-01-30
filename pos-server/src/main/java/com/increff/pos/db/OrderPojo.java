@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.index.Indexed;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -18,7 +18,7 @@ public class OrderPojo extends AbstractPojo {
     private String orderId;
 
     @Field("status")
-    private String status; // PLACED, INVOICED, CANCELLED
+    private String status;
 
     @Field("totalItems")
     private Integer totalItems;
@@ -27,5 +27,5 @@ public class OrderPojo extends AbstractPojo {
     private Double totalAmount;
 
     @Field("orderDate")
-    private Instant orderDate;
+    private ZonedDateTime orderDate;
 }
