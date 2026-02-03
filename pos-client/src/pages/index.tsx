@@ -225,7 +225,7 @@ export default function Home() {
           </Grid>
 
           {isSupervisor && (
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={4}>
               <StyledCard>
                 <CardContent sx={{
                   padding: '2rem !important',

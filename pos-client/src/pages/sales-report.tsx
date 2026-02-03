@@ -33,6 +33,7 @@ import { DailySalesData, ClientSalesReport } from '../types/report.types';
 import { reportService } from '../services/report.service';
 import { clientService } from '../services/client.service';
 import { ClientData } from '../types/client.types';
+import { formatINR } from '../utils/formatNumber';
 
 const StyledContainer = styled(Container)({
   paddingTop: '2rem',
@@ -100,7 +101,7 @@ interface ProductDetailsModalProps {
 
 function ProductDetailsModal({ open, onClose, client }: ProductDetailsModalProps) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={(event, reason) => { if (reason === 'backdropClick') return; onClose(); }} maxWidth="md" fullWidth>
       <DialogTitle>
         <Typography variant="h5" sx={{ fontWeight: 600 }}>
           {client.clientName} - Product Details
@@ -116,7 +117,7 @@ function ProductDetailsModal({ open, onClose, client }: ProductDetailsModalProps
             <Grid item xs={6}>
               <Typography variant="body2" color="text.secondary">Total Revenue</Typography>
               <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2' }}>
-                ₹{client.totalRevenue.toFixed(2)}
+                {formatINR(client.totalRevenue)}
               </Typography>
             </Grid>
           </Grid>
@@ -139,7 +140,7 @@ function ProductDetailsModal({ open, onClose, client }: ProductDetailsModalProps
                   <TableCell>{product.barcode}</TableCell>
                   <TableCell>{product.productName}</TableCell>
                   <TableCell align="right">{product.quantity}</TableCell>
-                  <TableCell align="right">₹{product.revenue.toFixed(2)}</TableCell>
+                  <TableCell align="right">{formatINR(product.revenue)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -244,7 +245,7 @@ export default function SalesReportPage() {
       if (data.length === 0) {
         toast.info('No sales data found for this date');
       } else {
-        toast.success(`Loaded sales data for ${selectedDate}`);
+        toast.success(`Loaded sales data.`);
       }
     } catch (e: any) {
       const errorMsg = e.response?.data?.message || e.message || 'Failed to load daily sales';
@@ -390,7 +391,7 @@ export default function SalesReportPage() {
                     <CardContent>
                       <Typography color="text.secondary" variant="body2">Total Revenue</Typography>
                       <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
-                        ₹{dailyTotalRevenue.toFixed(2)}
+                        {formatINR(dailyTotalRevenue)}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -417,7 +418,7 @@ export default function SalesReportPage() {
                           <TableCell>{row.clientName}</TableCell>
                           <TableCell align="right">{row.invoicedOrdersCount}</TableCell>
                           <TableCell align="right">{row.invoicedItemsCount}</TableCell>
-                          <TableCell align="right">₹{row.totalRevenue.toFixed(2)}</TableCell>
+                          <TableCell align="right">{formatINR(row.totalRevenue)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -521,7 +522,7 @@ export default function SalesReportPage() {
                     <CardContent>
                       <Typography color="text.secondary" variant="body2">Total Revenue</Typography>
                       <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
-                        ₹{rangeTotalRevenue.toFixed(2)}
+                        {formatINR(rangeTotalRevenue)}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -549,7 +550,7 @@ export default function SalesReportPage() {
                           <TableCell>{client.clientName}</TableCell>
                           <TableCell align="right">{client.invoicedOrdersCount}</TableCell>
                           <TableCell align="right">{client.totalQuantity}</TableCell>
-                          <TableCell align="right">₹{client.totalRevenue.toFixed(2)}</TableCell>
+                          <TableCell align="right">{formatINR(client.totalRevenue)}</TableCell>
                           <TableCell align="center">
                             <Button
                               variant="outlined"

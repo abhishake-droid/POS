@@ -9,17 +9,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Tag(name = "Order Management", description = "APIs for managing orders")
 @RestController
 @RequestMapping("/api/order")
 public class OrderController {
 
-    private final OrderDto orderDto;
-
-    public OrderController(OrderDto orderDto) {
-        this.orderDto = orderDto;
-    }
+    @Autowired
+    private OrderDto orderDto;
 
     @Operation(summary = "Create a new order")
     @PostMapping("/create")

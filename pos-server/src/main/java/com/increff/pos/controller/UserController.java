@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
@@ -17,11 +18,8 @@ import java.util.List;
 @RequestMapping("/api/user")
 public class UserController {
 
-    private final UserDto userDto;
-
-    public UserController(UserDto userDto) {
-        this.userDto = userDto;
-    }
+    @Autowired
+    private UserDto userDto;
 
     @Operation(summary = "Create a new operator (Supervisor only)")
     @RequestMapping(path = "/add", method = RequestMethod.POST)

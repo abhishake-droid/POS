@@ -1,26 +1,37 @@
 package com.increff.pos.scheduler;
 
-import com.increff.pos.flow.DailySalesFlow;
+import com.increff.pos.dto.DailySalesDto;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDate;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Component
 public class DailySalesScheduler {
 
-    private final DailySalesFlow dailySalesFlow;
+    @Value("${scheduler.enabled:true}")
+    private boolean schedulerEnabled;
 
-    public DailySalesScheduler(DailySalesFlow dailySalesFlow) {
-        this.dailySalesFlow = dailySalesFlow;
-    }
+    @Autowired
+    private Environment environment;
+    @Autowired
+    private DailySalesDto dailySalesDto;
 
     @Scheduled(cron = "0 0 0 * * *")
     public void aggregateDailySales() {
-        dailySalesFlow.aggregateDailySales();
+        if (shouldSkipExecution()) {
+            return;
+        }
+        dailySalesDto.aggregateDailySales();
     }
 
-    public void aggregateSalesForDate(LocalDate date) {
-        dailySalesFlow.aggregateSalesForDate(date);
+    private boolean shouldSkipExecution() {
+        return !schedulerEnabled || isTestEnvironment();
+    }
+
+    private boolean isTestEnvironment() {
+        return environment.getActiveProfiles().length > 0 &&
+                environment.getActiveProfiles()[0].equals("test");
     }
 }

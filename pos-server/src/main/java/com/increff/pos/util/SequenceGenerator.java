@@ -13,11 +13,8 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
 @Component
 public class SequenceGenerator {
 
-    private final MongoOperations mongoOperations;
-
-    public SequenceGenerator(MongoOperations mongoOperations) {
-        this.mongoOperations = mongoOperations;
-    }
+    @Autowired
+    private MongoOperations mongoOperations;
 
     public long getNextSequence(String key) {
 

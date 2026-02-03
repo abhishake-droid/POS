@@ -9,6 +9,7 @@ import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.form.PageForm;
 import com.increff.pos.util.ValidationUtil;
 import com.increff.pos.util.NormalizeUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,15 +17,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserDto {
 
-    private final UserApi userApi;
+    @Autowired
+    private UserApi userApi;
+
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public UserDto(UserApi userApi) {
-        this.userApi = userApi;
-    }
-
     public UserData create(UserForm userForm) throws ApiException {
-        ValidationUtil.validateUserForm(userForm);
+        ValidationUtil.validate(userForm);
         NormalizeUtil.normalizeUserForm(userForm);
 
         if (userForm.getRole() != null && "SUPERVISOR".equals(userForm.getRole())) {
@@ -41,17 +40,17 @@ public class UserDto {
         userPojo.setRole("USER");
 
         UserPojo savedUserPojo = userApi.add(userPojo);
-        return UserHelper.convertToDto(savedUserPojo);
+        return UserHelper.convertToData(savedUserPojo);
     }
 
     public UserData getById(String id) throws ApiException {
         UserPojo userPojo = userApi.getCheck(id);
-        return UserHelper.convertToDto(userPojo);
+        return UserHelper.convertToData(userPojo);
     }
 
     public Page<UserData> getAll(PageForm form) throws ApiException {
-        ValidationUtil.validatePageForm(form);
+        ValidationUtil.validate(form);
         Page<UserPojo> userPage = userApi.getAll(form);
-        return userPage.map(UserHelper::convertToDto);
+        return userPage.map(UserHelper::convertToData);
     }
 }

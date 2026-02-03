@@ -9,18 +9,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.Collections;
 
+@Component
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
-    private final AuthDto authDto;
-
-    public TokenAuthenticationFilter(AuthDto authDto) {
-        this.authDto = authDto;
-    }
+    @Autowired
+    private AuthDto authDto;
 
     @Override
     protected void doFilterInternal(@org.springframework.lang.NonNull HttpServletRequest request,

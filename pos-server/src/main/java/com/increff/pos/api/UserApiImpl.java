@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Objects;
@@ -16,11 +17,8 @@ import java.util.Objects;
 @Service
 public class UserApiImpl implements UserApi {
 
-    private final UserDao dao;
-
-    public UserApiImpl(UserDao dao) {
-        this.dao = dao;
-    }
+    @Autowired
+    private UserDao dao;
 
     @Override
     @Transactional(rollbackFor = ApiException.class)

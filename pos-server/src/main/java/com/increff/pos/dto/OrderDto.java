@@ -8,10 +8,14 @@ import com.increff.pos.helper.OrderHelper;
 import com.increff.pos.model.data.OrderData;
 import com.increff.pos.model.form.OrderForm;
 import com.increff.pos.model.form.OrderSearchForm;
+import com.increff.pos.model.data.OrderCreationResult;
 import com.increff.pos.util.ValidationUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import com.increff.pos.model.form.PageForm;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -22,20 +26,17 @@ import java.util.stream.Collectors;
 @Service
 public class OrderDto {
 
-    private final OrderFlow orderFlow;
-
-    public OrderDto(OrderFlow orderFlow) {
-        this.orderFlow = orderFlow;
-    }
+    @Autowired
+    private OrderFlow orderFlow;
 
     public OrderData create(OrderForm form) throws ApiException {
-        ValidationUtil.validateOrderForm(form);
+        ValidationUtil.validate(form);
         List<OrderItemPojo> orderItems = convertToOrderItems(form);
-        com.increff.pos.model.data.OrderCreationResult creationResult = orderFlow.createOrder(orderItems);
+        OrderCreationResult creationResult = orderFlow.createOrder(orderItems);
         String orderId = creationResult.getOrderId();
         OrderPojo order = orderFlow.getOrderWithItems(orderId);
         List<OrderItemPojo> savedItems = orderFlow.getOrderItems(orderId);
-        OrderData orderData = OrderHelper.convertToDto(order, false);
+        OrderData orderData = OrderHelper.convertToData(order, false);
         orderData.setItems(OrderHelper.convertItemsToDtoList(savedItems));
         orderData.setFulfillable(creationResult.isFulfillable());
         orderData.setUnfulfillableItems(creationResult.getUnfulfillableItems());
@@ -46,16 +47,16 @@ public class OrderDto {
         OrderPojo order = orderFlow.getOrderWithItems(orderId);
         List<OrderItemPojo> items = orderFlow.getOrderItems(orderId);
         boolean hasInvoice = "INVOICED".equals(order.getStatus());
-        OrderData orderData = OrderHelper.convertToDto(order, hasInvoice);
+        OrderData orderData = OrderHelper.convertToData(order, hasInvoice);
         orderData.setItems(OrderHelper.convertItemsToDtoList(items));
         return orderData;
     }
 
     public Page<OrderData> getAll(OrderSearchForm form) throws ApiException {
-        com.increff.pos.model.form.PageForm pageForm = new com.increff.pos.model.form.PageForm();
+        PageForm pageForm = new PageForm();
         pageForm.setPage(form.getPage());
         pageForm.setSize(form.getSize());
-        ValidationUtil.validatePageForm(pageForm);
+        ValidationUtil.validate(pageForm);
 
         ZonedDateTime fromDate = null;
         ZonedDateTime toDate = null;
@@ -79,44 +80,43 @@ public class OrderDto {
             throw new ApiException("Invalid date format. Use yyyy-MM-dd format (e.g., 2024-01-01)");
         }
 
-        List<OrderPojo> orders = orderFlow.getOrderWithFilters(
+        int page = form.getPage() != null ? form.getPage() : 0;
+        int size = form.getSize() != null ? form.getSize() : 10;
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<OrderPojo> orderPage = orderFlow.getOrderWithFilters(
                 form.getOrderId(),
                 form.getStatus() != null && !form.getStatus().isEmpty() ? form.getStatus() : null,
                 fromDate,
-                toDate);
+                toDate,
+                pageable);
 
-        List<OrderData> orderDataList = orders.stream()
+        List<OrderData> orderDataList = orderPage.getContent().stream()
                 .map(order -> {
                     boolean hasInvoice = "INVOICED".equals(order.getStatus());
-                    return OrderHelper.convertToDto(order, hasInvoice);
+                    return OrderHelper.convertToData(order, hasInvoice);
                 })
                 .collect(Collectors.toList());
 
-        int page = form.getPage() != null ? form.getPage() : 0;
-        int size = form.getSize() != null ? form.getSize() : 10;
-        int start = page * size;
-        int end = Math.min(start + size, orderDataList.size());
-        List<OrderData> pageContent = orderDataList.subList(start, end);
-
-        return new PageImpl<>(pageContent, PageRequest.of(page, size), orderDataList.size());
+        return new PageImpl<>(orderDataList, pageable, orderPage.getTotalElements());
     }
 
     public OrderData cancel(String orderId) throws ApiException {
         OrderPojo cancelled = orderFlow.cancelOrder(orderId);
         boolean hasInvoice = "INVOICED".equals(cancelled.getStatus());
         List<OrderItemPojo> items = orderFlow.getOrderItems(orderId);
-        OrderData orderData = OrderHelper.convertToDto(cancelled, hasInvoice);
+        OrderData orderData = OrderHelper.convertToData(cancelled, hasInvoice);
         orderData.setItems(OrderHelper.convertItemsToDtoList(items));
         return orderData;
     }
 
     public OrderData update(String orderId, OrderForm form) throws ApiException {
-        ValidationUtil.validateOrderForm(form);
+        ValidationUtil.validate(form);
         List<OrderItemPojo> orderItems = convertToOrderItems(form);
         OrderPojo order = orderFlow.updateOrder(orderId, orderItems);
         List<OrderItemPojo> savedItems = orderFlow.getOrderItems(order.getOrderId());
         boolean hasInvoice = "INVOICED".equals(order.getStatus());
-        OrderData orderData = OrderHelper.convertToDto(order, hasInvoice);
+        OrderData orderData = OrderHelper.convertToData(order, hasInvoice);
         orderData.setItems(OrderHelper.convertItemsToDtoList(savedItems));
         return orderData;
     }
@@ -136,16 +136,16 @@ public class OrderDto {
     public OrderData retry(String orderId, OrderForm form) throws ApiException {
         List<OrderItemPojo> orderItems = null;
         if (form != null && form.getLines() != null && !form.getLines().isEmpty()) {
-            ValidationUtil.validateOrderForm(form);
+            ValidationUtil.validate(form);
             orderItems = convertToOrderItems(form);
         }
 
-        com.increff.pos.model.data.OrderCreationResult creationResult = orderFlow.retryOrder(orderId, orderItems);
+        OrderCreationResult creationResult = orderFlow.retryOrder(orderId, orderItems);
         String resultOrderId = creationResult.getOrderId();
         OrderPojo order = orderFlow.getOrderWithItems(resultOrderId);
         List<OrderItemPojo> savedItems = orderFlow.getOrderItems(resultOrderId);
         boolean hasInvoice = "INVOICED".equals(order.getStatus());
-        OrderData orderData = OrderHelper.convertToDto(order, hasInvoice);
+        OrderData orderData = OrderHelper.convertToData(order, hasInvoice);
         orderData.setItems(OrderHelper.convertItemsToDtoList(savedItems));
         orderData.setFulfillable(creationResult.isFulfillable());
         orderData.setUnfulfillableItems(creationResult.getUnfulfillableItems());

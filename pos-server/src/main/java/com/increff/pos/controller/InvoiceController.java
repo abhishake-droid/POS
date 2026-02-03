@@ -8,21 +8,21 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Tag(name = "Invoice Management", description = "APIs for managing invoices")
 @RestController
 @RequestMapping("/api/invoice")
 public class InvoiceController {
 
-    private final InvoiceDto invoiceDto;
-
-    public InvoiceController(InvoiceDto invoiceDto) {
-        this.invoiceDto = invoiceDto;
-    }
+    @Autowired
+    private InvoiceDto invoiceDto;
 
     @Operation(summary = "Generate invoice for an order")
     @PostMapping("/generate/{orderId}")
+    @Secured("ROLE_SUPERVISOR")
     public OrderData generateInvoice(@PathVariable String orderId) throws ApiException {
         return invoiceDto.generateInvoice(orderId);
     }
@@ -31,12 +31,12 @@ public class InvoiceController {
     @GetMapping("/download/{orderId}")
     public ResponseEntity<byte[]> downloadInvoice(@PathVariable String orderId) throws ApiException {
         byte[] pdfBytes = invoiceDto.downloadInvoice(orderId);
-        
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", "invoice-" + orderId + ".pdf");
         headers.setContentLength(pdfBytes.length);
-        
+
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(pdfBytes);

@@ -22,7 +22,6 @@ public class InvoiceService {
     public byte[] generateInvoicePdf(InvoiceRequest request) throws InvoiceException {
         logger.info("Generating PDF for order: {}", request.getOrderId());
 
-        // Just generate and return PDF bytes - no database, no file storage
         String pdfBase64 = invoiceGenerator.generateInvoicePdfBase64(request);
         byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
 

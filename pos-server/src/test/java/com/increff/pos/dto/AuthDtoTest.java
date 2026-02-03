@@ -71,31 +71,98 @@ public class AuthDtoTest extends AbstractUnitTest {
     }
 
     @Test
-    public void testSupervisorLogin() throws ApiException {
-        // Create supervisor
+    public void testLoginWithInvalidPassword() throws ApiException {
+        // Create user
         UserForm userForm = new UserForm();
-        userForm.setEmail(supervisorEmail);
-        userForm.setName("Supervisor");
-        userForm.setPassword("superpass");
-        try {
-            userDto.create(userForm);
-        } catch (ApiException e) {
-            if (!e.getMessage().contains("already exists")) {
-                throw e;
-            }
-        }
+        userForm.setEmail("wrongpass@example.com");
+        userForm.setName("Wrong Pass User");
+        userForm.setPassword("correctpass");
+        userDto.create(userForm);
 
-        // Login
+        // Try to login with wrong password
         LoginForm loginForm = new LoginForm();
-        loginForm.setEmail(supervisorEmail);
-        loginForm.setPassword(supervisorPassword);
+        loginForm.setEmail("wrongpass@example.com");
+        loginForm.setPassword("wrongpassword");
+
+        ApiException exception = assertThrows(ApiException.class, () -> authDto.login(loginForm));
+        assertTrue(exception.getMessage().contains("Invalid email or password"));
+    }
+
+    @Test
+    public void testLoginWithNonExistentUser() {
+        LoginForm loginForm = new LoginForm();
+        loginForm.setEmail("nonexistent@example.com");
+        loginForm.setPassword("anypassword");
+
+        ApiException exception = assertThrows(ApiException.class, () -> authDto.login(loginForm));
+        assertTrue(exception.getMessage().contains("not found") || exception.getMessage().contains("Invalid"));
+    }
+
+    @Test
+    public void testValidateTokenWithMalformedToken() {
+        String malformedToken = "not-a-valid-base64-token-format";
+
+        ApiException exception = assertThrows(ApiException.class, () -> authDto.validateToken(malformedToken));
+        assertEquals("Invalid token", exception.getMessage());
+    }
+
+    @Test
+    public void testValidateTokenWithInvalidFormat() {
+        // Token with only 2 parts instead of 3
+        String tokenPayload = "email@example.com:USER"; // Missing server ID
+        String invalidToken = Base64.getEncoder().encodeToString(tokenPayload.getBytes());
+
+        ApiException exception = assertThrows(ApiException.class, () -> authDto.validateToken(invalidToken));
+        assertEquals("Invalid token", exception.getMessage());
+    }
+
+    @Test
+    public void testValidateTokenForDeletedUser() throws ApiException {
+        // Create user and get token
+        UserForm userForm = new UserForm();
+        userForm.setEmail("tobedeleted@example.com");
+        userForm.setName("To Be Deleted");
+        userForm.setPassword("password123");
+        userDto.create(userForm);
+
+        LoginForm loginForm = new LoginForm();
+        loginForm.setEmail("tobedeleted@example.com");
+        loginForm.setPassword("password123");
         AuthData authData = authDto.login(loginForm);
 
-        assertNotNull(authData.getToken());
-        assertEquals("SUPERVISOR", authData.getRole());
+        // Note: We can't actually delete the user in this test setup,
+        // but we can test with a token for a non-existent user
+        String nonExistentUserToken = Base64.getEncoder().encodeToString(
+                ("nonexistent@example.com:USER:" + extractServerIdFromToken(authData.getToken())).getBytes());
 
-        // Validate
-        AuthData validated = authDto.validateToken(authData.getToken());
-        assertEquals("SUPERVISOR", validated.getRole());
+        ApiException exception = assertThrows(ApiException.class, () -> authDto.validateToken(nonExistentUserToken));
+        assertEquals("User not found", exception.getMessage());
+    }
+
+    @Test
+    public void testLoginWithEmptyEmail() {
+        LoginForm loginForm = new LoginForm();
+        loginForm.setEmail("");
+        loginForm.setPassword("password");
+
+        ApiException exception = assertThrows(ApiException.class, () -> authDto.login(loginForm));
+        assertTrue(exception.getMessage().contains("Email"));
+    }
+
+    @Test
+    public void testLoginWithEmptyPassword() {
+        LoginForm loginForm = new LoginForm();
+        loginForm.setEmail("test@example.com");
+        loginForm.setPassword("");
+
+        ApiException exception = assertThrows(ApiException.class, () -> authDto.login(loginForm));
+        assertTrue(exception.getMessage().contains("Password"));
+    }
+
+    // Helper method to extract server ID from token
+    private String extractServerIdFromToken(String token) {
+        String decoded = new String(Base64.getDecoder().decode(token));
+        String[] parts = decoded.split(":");
+        return parts.length >= 3 ? parts[2] : "";
     }
 }

@@ -18,4 +18,10 @@ public interface ProductApi {
     ProductPojo update(String id, ProductPojo productPojo) throws ApiException;
 
     List<ProductPojo> addBulk(List<ProductPojo> productPojos) throws ApiException;
+
+    List<ProductPojo> getByIds(List<String> ids);
+
+    boolean existsByBarcode(String barcode);
+
+    List<String> getExistingBarcodes(List<String> barcodes);
 }

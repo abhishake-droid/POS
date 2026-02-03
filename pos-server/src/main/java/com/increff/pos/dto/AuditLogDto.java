@@ -7,6 +7,7 @@ import com.increff.pos.model.form.PageForm;
 import com.increff.pos.util.ValidationUtil;
 import com.increff.pos.db.AuditLogPojo;
 import com.increff.pos.exception.ApiException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -15,11 +16,8 @@ import java.util.List;
 @Service
 public class AuditLogDto {
 
-    private final AuditLogApi auditLogApi;
-
-    public AuditLogDto(AuditLogApi auditLogApi) {
-        this.auditLogApi = auditLogApi;
-    }
+    @Autowired
+    private AuditLogApi auditLogApi;
 
     public List<AuditLogData> getByOperatorEmail(String operatorEmail) {
         List<AuditLogPojo> pojoList = auditLogApi.getByOperatorEmail(operatorEmail);
@@ -27,9 +25,9 @@ public class AuditLogDto {
     }
 
     public Page<AuditLogData> getAll(PageForm form) throws ApiException {
-        ValidationUtil.validatePageForm(form);
+        ValidationUtil.validate(form);
         Page<AuditLogPojo> pojoPage = auditLogApi.getAll(form);
-        return pojoPage.map(AuditLogHelper::convertToDto);
+        return pojoPage.map(AuditLogHelper::convertToData);
     }
 
     public List<AuditLogData> getAll() {

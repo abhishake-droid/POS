@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
@@ -17,11 +18,8 @@ import java.util.List;
 @RequestMapping("/api/product")
 public class ProductController {
 
-    private final ProductDto productDto;
-
-    public ProductController(ProductDto productDto) {
-        this.productDto = productDto;
-    }
+    @Autowired
+    private ProductDto productDto;
 
     @Operation(summary = "Adds a product")
     @PostMapping("/add")

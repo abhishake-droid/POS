@@ -9,16 +9,17 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final AuthDto authDto;
+    @Autowired
+    private AuthDto authDto;
 
-    public SecurityConfig(AuthDto authDto) {
-        this.authDto = authDto;
-    }
+    @Autowired
+    private TokenAuthenticationFilter tokenAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,7 +32,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/user/**").hasRole("SUPERVISOR")
                         .requestMatchers("/api/report/**").hasRole("SUPERVISOR")
                         .requestMatchers("/api/audit-log/**").hasRole("SUPERVISOR")
-                        .requestMatchers("/api/scheduler/**").hasRole("SUPERVISOR")
                         .requestMatchers(HttpMethod.POST, "/api/client/add").hasRole("SUPERVISOR")
                         .requestMatchers(HttpMethod.PUT, "/api/client/update/**").hasRole("SUPERVISOR")
                         .requestMatchers(HttpMethod.POST, "/api/product/add").hasRole("SUPERVISOR")
@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/product/get-by-barcode/**")
                         .hasAnyRole("USER", "SUPERVISOR")
                         .anyRequest().authenticated())
-                .addFilterBefore(new TokenAuthenticationFilter(authDto), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

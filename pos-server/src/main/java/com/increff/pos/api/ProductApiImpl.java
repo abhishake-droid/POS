@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
@@ -17,11 +18,8 @@ import java.util.List;
 @Transactional(rollbackFor = ApiException.class)
 public class ProductApiImpl implements ProductApi {
 
-    private final ProductDao productDao;
-
-    public ProductApiImpl(ProductDao productDao) {
-        this.productDao = productDao;
-    }
+    @Autowired
+    private ProductDao productDao;
 
     @Override
     public ProductPojo add(ProductPojo pojo) throws ApiException {
@@ -61,5 +59,26 @@ public class ProductApiImpl implements ProductApi {
         existing.setMrp(pojo.getMrp());
         existing.setImageUrl(pojo.getImageUrl());
         return productDao.save(existing);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductPojo> getByIds(List<String> ids) {
+        return productDao.findByIds(ids);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByBarcode(String barcode) {
+        return productDao.findByBarcode(barcode).isPresent();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getExistingBarcodes(List<String> barcodes) {
+        if (barcodes == null || barcodes.isEmpty()) {
+            return List.of();
+        }
+        return productDao.findBarcodesByBarcodes(barcodes);
     }
 }

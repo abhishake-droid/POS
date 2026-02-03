@@ -14,11 +14,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthDto authDto;
-
-    public AuthController(AuthDto authDto) {
-        this.authDto = authDto;
-    }
+    @Autowired
+    private AuthDto authDto;
 
     @Operation(summary = "Login user")
     @RequestMapping(path = "/login", method = RequestMethod.POST)

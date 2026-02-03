@@ -375,11 +375,6 @@ export default function Clients() {
                       Edit
                     </Button>
                   )}
-                  {!isSupervisor && (
-                    <Typography variant="body2" color="text.secondary">
-                      View Only
-                    </Typography>
-                  )}
                 </TableCell>
               </StyledTableRow>
             ))}
@@ -446,7 +441,7 @@ export default function Clients() {
       )}
 
       {/* DIALOG */}
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+      <Dialog open={open} onClose={(event, reason) => { if (reason === 'backdropClick') return; setOpen(false); }} fullWidth maxWidth="sm">
         <DialogTitle>
           {editingId ? 'Edit Client' : 'Add Client'}
         </DialogTitle>

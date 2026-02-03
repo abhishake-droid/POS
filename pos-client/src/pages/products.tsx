@@ -21,6 +21,12 @@ import {
   CardHeader,
   CardActions,
   Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import { ChevronLeft, ChevronRight, FirstPage, LastPage, Edit, CloudUpload, Add, Remove, Check, Close } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
@@ -698,78 +704,246 @@ export default function Products() {
       )}
 
       {/* TSV UPLOAD DIALOG */}
-      <Dialog open={uploadDialogOpen} onClose={handleCloseUploadDialog} fullWidth maxWidth="sm">
-        <DialogTitle>
-          {uploadType === 'inventory'
-            ? 'Upload Inventory TSV'
-            : uploadType === 'products'
-              ? 'Upload Products TSV'
-              : 'Upload TSV'}
+      <Dialog 
+        open={uploadDialogOpen} 
+        onClose={(event, reason) => { if (reason === 'backdropClick') return; handleCloseUploadDialog(); }} 
+        fullWidth 
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          pb: 1, 
+          pt: 3, 
+          px: 3,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827' }}>
+            {uploadType === 'inventory'
+              ? 'Bulk Upload Inventory'
+              : uploadType === 'products'
+                ? 'Bulk Upload Products'
+                : 'Bulk Upload'}
+          </Typography>
+          <IconButton 
+            onClick={handleCloseUploadDialog} 
+            disabled={uploading}
+            size="small"
+            sx={{ 
+              color: '#6b7280',
+              '&:hover': { bgcolor: '#f3f4f6' }
+            }}
+          >
+            <Close fontSize="small" />
+          </IconButton>
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              Select a TSV file in the expected format. You can download a ready-to-use template
-              below.
-            </Typography>
+        
+        <DialogContent sx={{ px: 3, pb: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+            
+            {/* Download Template Section */}
+            <Box sx={{ 
+              bgcolor: '#f9fafb', 
+              borderRadius: 2, 
+              p: 2,
+              border: '1px solid #e5e7eb'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ 
+                  bgcolor: 'white', 
+                  borderRadius: 1.5, 
+                  p: 1, 
+                  display: 'flex',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <CloudUpload sx={{ fontSize: 20, color: '#6b7280' }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#111827', mb: 0.5 }}>
+                    Download template
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mb: 1.5 }}>
+                    Use this TSV template to ensure correct formatting.
+                  </Typography>
+                  <Tooltip
+                    title={
+                      <TableContainer sx={{ maxWidth: 400 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 1, px: 1 }}>
+                          Template Preview:
+                        </Typography>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              {uploadType === 'inventory' ? (
+                                <>
+                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>barcode</TableCell>
+                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>quantity</TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>barcode</TableCell>
+                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>name</TableCell>
+                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>mrp</TableCell>
+                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>clientId</TableCell>
+                                </>
+                              )}
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {uploadType === 'inventory' ? (
+                              <>
+                                <TableRow>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>BC001</TableCell>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>100</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>BC002</TableCell>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>50</TableCell>
+                                </TableRow>
+                              </>
+                            ) : (
+                              <>
+                                <TableRow>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>BC001</TableCell>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>Product 1</TableCell>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>99.99</TableCell>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>CLIENT001</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>BC002</TableCell>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>Product 2</TableCell>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>149.99</TableCell>
+                                  <TableCell sx={{ color: 'rgba(255,255,255,0.9)', border: 'none' }}>CLIENT001</TableCell>
+                                </TableRow>
+                              </>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    }
+                    placement="right"
+                    arrow
+                  >
+                    <Button
+                      variant="text"
+                      size="small"
+                      startIcon={<CloudUpload sx={{ fontSize: 16 }} />}
+                      onClick={() =>
+                        uploadType && downloadTemplateTsv(uploadType === 'inventory' ? 'inventory' : 'products')
+                      }
+                      sx={{
+                        color: '#3b82f6',
+                        fontWeight: 600,
+                        fontSize: '0.8125rem',
+                        textTransform: 'none',
+                        px: 0,
+                        '&:hover': {
+                          bgcolor: 'transparent',
+                          color: '#2563eb',
+                        },
+                      }}
+                    >
+                      Download TSV Template
+                    </Button>
+                  </Tooltip>
+                </Box>
+              </Box>
+            </Box>
 
-            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() =>
-                  uploadType && downloadTemplateTsv(uploadType === 'inventory' ? 'inventory' : 'products')
-                }
+            {/* Choose TSV File Section */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#111827', mb: 1.5 }}>
+                Choose TSV file
+              </Typography>
+              <Box
+                sx={{
+                  border: '2px solid',
+                  borderColor: uploadFile ? '#3b82f6' : '#e5e7eb',
+                  borderRadius: 2,
+                  p: 2.5,
+                  textAlign: 'center',
+                  bgcolor: uploadFile ? '#eff6ff' : '#fafafa',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    borderColor: '#3b82f6',
+                    bgcolor: '#f5f9ff',
+                  },
+                }}
+                onClick={() => document.getElementById('tsv-file-input')?.click()}
               >
-                Download template
-              </Button>
-
-              <Button
-                variant="outlined"
-                size="small"
-                component="label"
-                disabled={uploading}
-              >
-                {uploadFile ? uploadFile.name : 'Select TSV file'}
                 <input
                   type="file"
                   accept=".tsv,.txt"
-                  hidden
+                  id="tsv-file-input"
+                  style={{ display: 'none' }}
                   onChange={(e) => {
                     const file = (e.target as HTMLInputElement).files?.[0] || null;
                     setUploadFile(file);
                   }}
                 />
-              </Button>
+                {uploadFile ? (
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827', mb: 0.5 }}>
+                      {uploadFile.name}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                      {(uploadFile.size / 1024).toFixed(2)} KB • Click to change file
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box>
+                    <CloudUpload sx={{ fontSize: 40, color: '#9ca3af', mb: 1 }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827', mb: 0.5 }}>
+                      Click to select TSV file
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                      or drag and drop
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+              <Typography variant="caption" sx={{ color: '#ef4444', display: 'block', mt: 1 }}>
+                Only .tsv files are supported (Maximum Limit: 5000 rows per file)
+              </Typography>
             </Box>
 
+            {/* Failed Rows Section */}
             {uploadFailures.length > 0 && (
               <Box
                 sx={{
-                  mt: 2,
-                  p: 1.5,
-                  borderRadius: 1,
-                  border: '1px solid rgba(248,113,113,0.4)',
-                  bgcolor: 'rgba(127,29,29,0.1)',
+                  p: 2,
+                  borderRadius: 2,
+                  border: '1px solid #fecaca',
+                  bgcolor: '#fef2f2',
                   maxHeight: 220,
                   overflowY: 'auto',
                 }}
               >
                 <Typography
                   variant="subtitle2"
-                  sx={{ fontWeight: 600, mb: 1, color: '#fecaca' }}
+                  sx={{ fontWeight: 600, mb: 1.5, color: '#dc2626' }}
                 >
-                  Failed rows
+                  Failed rows ({uploadFailures.length})
                 </Typography>
                 {uploadFailures.map((f) => (
-                  <Box key={f.rowNumber + f.data} sx={{ mb: 1 }}>
-                    <Typography variant="caption" sx={{ color: '#fecaca' }}>
-                      Row {f.rowNumber}: {f.error}
+                  <Box key={f.rowNumber + f.data} sx={{ mb: 1.5, pb: 1.5, borderBottom: '1px solid #fee2e2', '&:last-child': { borderBottom: 'none', mb: 0, pb: 0 } }}>
+                    <Typography variant="caption" sx={{ color: '#991b1b', fontWeight: 600, display: 'block', mb: 0.5 }}>
+                      Row {f.rowNumber}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#dc2626', display: 'block' }}>
+                      {f.error}
                     </Typography>
                     {f.data && (
                       <Typography
                         variant="caption"
-                        sx={{ display: 'block', color: '#f97373' }}
+                        sx={{ display: 'block', color: '#b91c1c', fontFamily: 'monospace', mt: 0.5 }}
                       >
                         {f.data}
                       </Typography>
@@ -780,7 +954,8 @@ export default function Products() {
             )}
           </Box>
         </DialogContent>
-        <DialogActions>
+        
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1.5 }}>
           {uploadResultTsv && (
             <Button
               onClick={() =>
@@ -792,20 +967,55 @@ export default function Products() {
                 )
               }
               size="small"
+              sx={{
+                textTransform: 'none',
+                color: '#6b7280',
+                fontWeight: 600,
+              }}
             >
-              Download results TSV
+              Download Results
             </Button>
           )}
           <Box sx={{ flex: 1 }} />
-          <Button onClick={handleCloseUploadDialog} disabled={uploading}>
-            Close
+          <Button 
+            onClick={handleCloseUploadDialog} 
+            disabled={uploading}
+            sx={{
+              textTransform: 'none',
+              color: '#6b7280',
+              fontWeight: 600,
+              px: 2.5,
+              '&:hover': {
+                bgcolor: '#f3f4f6',
+              }
+            }}
+          >
+            Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleUploadConfirm}
             disabled={uploading || !uploadFile || !uploadType}
+            sx={{
+              textTransform: 'none',
+              bgcolor: '#111827',
+              color: 'white',
+              fontWeight: 600,
+              px: 3,
+              py: 1,
+              borderRadius: 2,
+              boxShadow: 'none',
+              '&:hover': {
+                bgcolor: '#1f2937',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              },
+              '&:disabled': {
+                bgcolor: '#e5e7eb',
+                color: '#9ca3af',
+              }
+            }}
           >
-            {uploading ? 'Uploading...' : 'Upload'}
+            {uploading ? 'Uploading...' : 'Upload & Process'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1018,9 +1228,6 @@ export default function Products() {
                     borderTop: '1px solid #f1f5f9',
                   }}
                 >
-                  <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.7rem' }}>
-                    {isSupervisor ? '● Editable' : 'View only'}
-                  </Typography>
                   {isSupervisor ? (
                     <Button
                       size="small"
@@ -1120,7 +1327,10 @@ export default function Products() {
       {/* EDIT PRODUCT DIALOG */}
       <Dialog
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={(event, reason) => {
+          if (reason === 'backdropClick') return;
+          setOpen(false);
+        }}
         fullWidth
         maxWidth="sm"
         PaperProps={{

@@ -7,6 +7,7 @@ import com.increff.pos.model.form.PageForm;
 import com.increff.pos.exception.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,11 +16,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/client")
 public class ClientController {
 
-    private final ClientDto clientDto;
-
-    public ClientController(ClientDto clientDto) {
-        this.clientDto = clientDto;
-    }
+    @Autowired
+    private ClientDto clientDto;
 
     @Operation(summary = "Create a new client")
     @PostMapping("/add")

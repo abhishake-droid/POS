@@ -4,6 +4,7 @@ import com.increff.pos.dao.DailySalesDao;
 import com.increff.pos.db.DailySalesPojo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -11,11 +12,8 @@ import java.util.List;
 @Service
 public class DailySalesApiImpl implements DailySalesApi {
 
-    private final DailySalesDao dao;
-
-    public DailySalesApiImpl(DailySalesDao dao) {
-        this.dao = dao;
-    }
+    @Autowired
+    private DailySalesDao dao;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -28,18 +26,6 @@ public class DailySalesApiImpl implements DailySalesApi {
     public DailySalesPojo update(String id, DailySalesPojo pojo) {
         pojo.setId(id);
         return dao.save(pojo);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<DailySalesPojo> getByDateRange(LocalDate startDate, LocalDate endDate) {
-        return dao.findByDateRange(startDate, endDate);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<DailySalesPojo> getByDateRangeAndClient(LocalDate startDate, LocalDate endDate, String clientId) {
-        return dao.findByDateRangeAndClientId(startDate, endDate, clientId);
     }
 
     @Override

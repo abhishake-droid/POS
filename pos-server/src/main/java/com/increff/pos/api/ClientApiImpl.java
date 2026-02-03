@@ -9,30 +9,35 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Objects;
 
 @Service
 public class ClientApiImpl implements ClientApi {
 
-    private final ClientDao dao;
-    private final SequenceGenerator sequenceGenerator;
-
-    public ClientApiImpl(ClientDao dao, SequenceGenerator sequenceGenerator) {
-        this.dao = dao;
-        this.sequenceGenerator = sequenceGenerator;
-    }
+    @Autowired
+    private ClientDao dao;
+    @Autowired
+    private SequenceGenerator sequenceGenerator;
 
     @Override
     @Transactional(rollbackFor = ApiException.class)
     public ClientPojo add(ClientPojo clientPojo) throws ApiException {
-        if (dao.findByName(clientPojo.getName()) != null) {
-            throw new ApiException("Client name already exists");
-        }
-        if (dao.findByPhone(clientPojo.getPhone()) != null) {
-            throw new ApiException("Phone number already exists");
-        }
-        if (dao.findByEmail(clientPojo.getEmail()) != null) {
-            throw new ApiException("Email already exists");
+        ClientPojo duplicate = dao.findByNameOrPhoneOrEmail(
+                clientPojo.getName(),
+                clientPojo.getPhone(),
+                clientPojo.getEmail());
+
+        if (duplicate != null) {
+            if (duplicate.getName().equals(clientPojo.getName())) {
+                throw new ApiException("Client name already exists");
+            }
+            if (duplicate.getPhone().equals(clientPojo.getPhone())) {
+                throw new ApiException("Phone number already exists");
+            }
+            if (duplicate.getEmail().equals(clientPojo.getEmail())) {
+                throw new ApiException("Email already exists");
+            }
         }
 
         long sequence = sequenceGenerator.getNextSequence("client");
@@ -69,18 +74,21 @@ public class ClientApiImpl implements ClientApi {
     public ClientPojo update(String id, ClientPojo clientPojo) throws ApiException {
         ClientPojo existing = getCheck(id);
 
-        if (dao.findByName(clientPojo.getName()) != null && !dao.findByName(clientPojo.getName()).getId().equals(id)) {
-            throw new ApiException("Client name already exists");
-        }
+        ClientPojo duplicate = dao.findByNameOrPhoneOrEmail(
+                clientPojo.getName(),
+                clientPojo.getPhone(),
+                clientPojo.getEmail());
 
-        ClientPojo phoneDuplicate = dao.findByPhone(clientPojo.getPhone());
-        if (phoneDuplicate != null && !phoneDuplicate.getId().equals(id)) {
-            throw new ApiException("Phone number already exists");
-        }
-
-        ClientPojo emailDuplicate = dao.findByEmail(clientPojo.getEmail());
-        if (emailDuplicate != null && !emailDuplicate.getId().equals(id)) {
-            throw new ApiException("Email already exists");
+        if (duplicate != null && !duplicate.getId().equals(id)) {
+            if (duplicate.getName().equals(clientPojo.getName())) {
+                throw new ApiException("Client with name " + clientPojo.getName() + " already exists");
+            }
+            if (duplicate.getPhone().equals(clientPojo.getPhone())) {
+                throw new ApiException("Client with phone " + clientPojo.getPhone() + " already exists");
+            }
+            if (duplicate.getEmail().equals(clientPojo.getEmail())) {
+                throw new ApiException("Client with email " + clientPojo.getEmail() + " already exists");
+            }
         }
 
         existing.setName(clientPojo.getName());

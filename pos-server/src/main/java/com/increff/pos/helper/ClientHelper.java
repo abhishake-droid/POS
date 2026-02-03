@@ -4,9 +4,6 @@ import com.increff.pos.db.ClientPojo;
 import com.increff.pos.model.data.ClientData;
 import com.increff.pos.model.form.ClientForm;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class ClientHelper {
 
     public static ClientPojo convertToEntity(ClientForm form) {
@@ -17,7 +14,7 @@ public class ClientHelper {
         return pojo;
     }
 
-    public static ClientData convertToDto(ClientPojo pojo) {
+    public static ClientData convertToData(ClientPojo pojo) {
         ClientData data = new ClientData();
         data.setId(pojo.getId());
         data.setClientId(pojo.getClientId());
@@ -25,9 +22,5 @@ public class ClientHelper {
         data.setEmail(pojo.getEmail());
         data.setPhone(pojo.getPhone());
         return data;
-    }
-
-    public static List<ClientData> convertToDataList(List<ClientPojo> pojoList) {
-        return pojoList.stream().map(ClientHelper::convertToDto).collect(Collectors.toList());
     }
 }

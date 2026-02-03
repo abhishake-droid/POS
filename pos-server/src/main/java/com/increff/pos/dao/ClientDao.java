@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.repository.support.MongoRepositoryFactor
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Repository
 public class ClientDao extends AbstractDao<ClientPojo> {
@@ -17,12 +18,6 @@ public class ClientDao extends AbstractDao<ClientPojo> {
                 new MongoRepositoryFactory(mongoOperations)
                         .getEntityInformation(ClientPojo.class),
                 mongoOperations);
-    }
-
-    public ClientPojo findByClientIdAndName(String clientId, String name) {
-        Query query = Query.query(
-                Criteria.where("clientId").is(clientId).and("name").is(name));
-        return mongoOperations.findOne(query, ClientPojo.class);
     }
 
     public ClientPojo findByClientId(String clientId) {
@@ -48,5 +43,13 @@ public class ClientDao extends AbstractDao<ClientPojo> {
     @Override
     public Page<ClientPojo> findAll(Pageable pageable) {
         return super.findAll(pageable);
+    }
+
+    public ClientPojo findByNameOrPhoneOrEmail(String name, String phone, String email) {
+        Query query = Query.query(new Criteria().orOperator(
+                Criteria.where("name").is(name),
+                Criteria.where("phone").is(phone),
+                Criteria.where("email").is(email)));
+        return mongoOperations.findOne(query, ClientPojo.class);
     }
 }

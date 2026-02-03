@@ -6,6 +6,7 @@ import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.data.ClientSalesReportData;
 import com.increff.pos.model.data.DailySalesData;
 import com.increff.pos.model.data.ProductSalesData;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -18,24 +19,20 @@ import java.util.stream.Collectors;
 @Service
 public class ReportDto {
 
-    private final DailySalesApi dailySalesApi;
-    private final OrderApi orderApi;
-    private final OrderItemApi orderItemApi;
-    private final ProductApi productApi;
-    private final ClientApi clientApi;
+    @Autowired
+    private DailySalesApi dailySalesApi;
 
-    public ReportDto(
-            DailySalesApi dailySalesApi,
-            OrderApi orderApi,
-            OrderItemApi orderItemApi,
-            ProductApi productApi,
-            ClientApi clientApi) {
-        this.dailySalesApi = dailySalesApi;
-        this.orderApi = orderApi;
-        this.orderItemApi = orderItemApi;
-        this.productApi = productApi;
-        this.clientApi = clientApi;
-    }
+    @Autowired
+    private OrderApi orderApi;
+
+    @Autowired
+    private OrderItemApi orderItemApi;
+
+    @Autowired
+    private ProductApi productApi;
+
+    @Autowired
+    private ClientApi clientApi;
 
     public List<DailySalesData> getDailySalesReport(String dateStr, String clientId) throws ApiException {
         LocalDate date;
@@ -57,7 +54,7 @@ public class ReportDto {
             pojos = dailySalesApi.getByDate(date);
         }
 
-        return pojos.stream().map(this::convertToData).collect(Collectors.toList());
+        return pojos.stream().map(this::toData).collect(Collectors.toList());
     }
 
     public List<ClientSalesReportData> getSalesReport(String fromDateStr, String toDateStr, String clientId)
@@ -87,6 +84,25 @@ public class ReportDto {
 
         List<OrderPojo> orders = orderApi.getWithFilters(null, "INVOICED", fromDate, toDate);
 
+        // Collect all product IDs and client IDs first to avoid N+1 queries
+        Set<String> allProductIds = new HashSet<>();
+        for (OrderPojo order : orders) {
+            List<OrderItemPojo> items = orderItemApi.getByOrderId(order.getOrderId());
+            for (OrderItemPojo item : items) {
+                allProductIds.add(item.getProductId());
+            }
+        }
+
+        // Bulk fetch all products (N queries → 1 query)
+        List<ProductPojo> products = productApi.getByIds(new ArrayList<>(allProductIds));
+        Map<String, ProductPojo> productMap = products.stream()
+                .collect(Collectors.toMap(ProductPojo::getId, p -> p));
+
+        // Collect all client IDs from products
+        Set<String> allClientIds = products.stream()
+                .map(ProductPojo::getClientId)
+                .collect(Collectors.toSet());
+
         Map<String, Map<String, ProductSalesData>> clientProductMap = new HashMap<>();
         Map<String, List<Double>> clientPricesMap = new HashMap<>();
         Map<String, Set<String>> clientOrderIdsMap = new HashMap<>();
@@ -95,36 +111,46 @@ public class ReportDto {
             List<OrderItemPojo> items = orderItemApi.getByOrderId(order.getOrderId());
 
             for (OrderItemPojo item : items) {
-                try {
-                    ProductPojo product = productApi.getCheck(item.getProductId());
-                    String productClientId = product.getClientId();
-
-                    if (clientId != null && !clientId.trim().isEmpty() && !productClientId.equals(clientId)) {
-                        continue;
-                    }
-
-                    clientOrderIdsMap.computeIfAbsent(productClientId, k -> new HashSet<>()).add(order.getOrderId());
-
-                    Map<String, ProductSalesData> productMap = clientProductMap.computeIfAbsent(productClientId,
-                            k -> new HashMap<>());
-                    String productKey = item.getProductId();
-                    ProductSalesData productSales = productMap.computeIfAbsent(productKey, k -> {
-                        ProductSalesData ps = new ProductSalesData();
-                        ps.setBarcode(item.getBarcode());
-                        ps.setProductName(item.getProductName());
-                        ps.setQuantity(0);
-                        ps.setRevenue(0.0);
-                        return ps;
-                    });
-
-                    productSales.setQuantity(productSales.getQuantity() + item.getQuantity());
-                    productSales.setRevenue(productSales.getRevenue() + item.getLineTotal());
-
-                    clientPricesMap.computeIfAbsent(productClientId, k -> new ArrayList<>()).add(item.getMrp());
-
-                } catch (ApiException e) {
-                    // Item not found or error, skip
+                ProductPojo product = productMap.get(item.getProductId());
+                if (product == null) {
+                    continue; // Skip if product not found
                 }
+
+                String productClientId = product.getClientId();
+
+                if (clientId != null && !clientId.trim().isEmpty() && !productClientId.equals(clientId)) {
+                    continue;
+                }
+
+                clientOrderIdsMap.computeIfAbsent(productClientId, k -> new HashSet<>()).add(order.getOrderId());
+
+                Map<String, ProductSalesData> productSalesMap = clientProductMap.computeIfAbsent(productClientId,
+                        k -> new HashMap<>());
+                String productKey = item.getProductId();
+                ProductSalesData productSales = productSalesMap.computeIfAbsent(productKey, k -> {
+                    ProductSalesData ps = new ProductSalesData();
+                    ps.setBarcode(item.getBarcode());
+                    ps.setProductName(item.getProductName());
+                    ps.setQuantity(0);
+                    ps.setRevenue(0.0);
+                    return ps;
+                });
+
+                productSales.setQuantity(productSales.getQuantity() + item.getQuantity());
+                productSales.setRevenue(productSales.getRevenue() + item.getLineTotal());
+
+                clientPricesMap.computeIfAbsent(productClientId, k -> new ArrayList<>()).add(item.getMrp());
+            }
+        }
+
+        // Bulk fetch all clients (N queries → 1 query)
+        Map<String, ClientPojo> clientCache = new HashMap<>();
+        for (String cId : allClientIds) {
+            try {
+                ClientPojo client = clientApi.getCheckByClientId(cId);
+                clientCache.put(cId, client);
+            } catch (ApiException e) {
+                // Client not found, will use "Unknown" later
             }
         }
 
@@ -132,24 +158,24 @@ public class ReportDto {
 
         for (Map.Entry<String, Map<String, ProductSalesData>> entry : clientProductMap.entrySet()) {
             String cId = entry.getKey();
-            Map<String, ProductSalesData> productMap = entry.getValue();
+            Map<String, ProductSalesData> productSalesMap = entry.getValue();
 
             ClientSalesReportData clientReport = new ClientSalesReportData();
             clientReport.setClientId(cId);
-            try {
-                ClientPojo client = clientApi.getCheckByClientId(cId);
-                clientReport.setClientName(client != null ? client.getName() : "Unknown");
-            } catch (ApiException e) {
-                clientReport.setClientName("Unknown");
-            }
 
-            clientReport.getProducts().addAll(productMap.values());
+            // Use cached client data (already fetched in bulk)
+            ClientPojo client = clientCache.get(cId);
+            clientReport.setClientName(client != null ? client.getName() : "Unknown");
+
+            clientReport.getProducts().addAll(productSalesMap.values());
 
             Set<String> orderIds = clientOrderIdsMap.get(cId);
             clientReport.setInvoicedOrdersCount(orderIds != null ? orderIds.size() : 0);
 
-            clientReport.setTotalQuantity(productMap.values().stream().mapToInt(ProductSalesData::getQuantity).sum());
-            clientReport.setTotalRevenue(productMap.values().stream().mapToDouble(ProductSalesData::getRevenue).sum());
+            clientReport
+                    .setTotalQuantity(productSalesMap.values().stream().mapToInt(ProductSalesData::getQuantity).sum());
+            clientReport
+                    .setTotalRevenue(productSalesMap.values().stream().mapToDouble(ProductSalesData::getRevenue).sum());
 
             List<Double> prices = clientPricesMap.get(cId);
             if (prices != null && !prices.isEmpty()) {
@@ -166,7 +192,7 @@ public class ReportDto {
         return result;
     }
 
-    private DailySalesData convertToData(DailySalesPojo pojo) {
+    private DailySalesData toData(DailySalesPojo pojo) {
         DailySalesData data = new DailySalesData();
         data.setId(pojo.getId());
         data.setDate(pojo.getDate());

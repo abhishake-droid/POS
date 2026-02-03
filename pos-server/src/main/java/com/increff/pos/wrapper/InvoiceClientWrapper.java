@@ -4,6 +4,7 @@ import com.increff.invoice.client.InvoiceClient;
 import com.increff.invoice.model.InvoiceRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.Field;
 

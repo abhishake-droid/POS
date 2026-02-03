@@ -5,15 +5,13 @@ import com.increff.pos.db.InvoicePojo;
 import com.increff.pos.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class InvoiceApiImpl implements InvoiceApi {
 
-    private final InvoiceDao invoiceDao;
-
-    public InvoiceApiImpl(InvoiceDao invoiceDao) {
-        this.invoiceDao = invoiceDao;
-    }
+    @Autowired
+    private InvoiceDao invoiceDao;
 
     @Override
     @Transactional(rollbackFor = ApiException.class)

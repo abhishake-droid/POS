@@ -11,8 +11,9 @@ import com.increff.pos.db.OrderItemPojo;
 import com.increff.pos.db.OrderPojo;
 import com.increff.pos.db.ProductPojo;
 import com.increff.pos.exception.ApiException;
+import com.increff.pos.util.OrderStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -25,26 +26,17 @@ import java.util.Map;
 @Service
 public class DailySalesFlow {
 
-    private final OrderApi orderApi;
-    private final OrderItemApi orderItemApi;
-    private final ProductApi productApi;
-    private final ClientApi clientApi;
-    private final DailySalesApi dailySalesApi;
+    @Autowired
+    private OrderApi orderApi;
+    @Autowired
+    private OrderItemApi orderItemApi;
+    @Autowired
+    private ProductApi productApi;
+    @Autowired
+    private ClientApi clientApi;
+    @Autowired
+    private DailySalesApi dailySalesApi;
 
-    public DailySalesFlow(
-            OrderApi orderApi,
-            OrderItemApi orderItemApi,
-            ProductApi productApi,
-            ClientApi clientApi,
-            DailySalesApi dailySalesApi) {
-        this.orderApi = orderApi;
-        this.orderItemApi = orderItemApi;
-        this.productApi = productApi;
-        this.clientApi = clientApi;
-        this.dailySalesApi = dailySalesApi;
-    }
-
-    @Transactional(rollbackFor = Exception.class)
     public void aggregateDailySales() {
         LocalDate today = LocalDate.now();
         LocalDate yesterday = today.minusDays(1);
@@ -52,12 +44,11 @@ public class DailySalesFlow {
         aggregateSalesForDate(today);
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void aggregateSalesForDate(LocalDate date) {
         ZonedDateTime startOfDay = date.atStartOfDay(ZoneId.systemDefault());
         ZonedDateTime endOfDay = startOfDay.plus(1, ChronoUnit.DAYS);
 
-        List<OrderPojo> orders = orderApi.getWithFilters(null, "INVOICED", startOfDay, endOfDay);
+        List<OrderPojo> orders = orderApi.getWithFilters(null, OrderStatus.INVOICED.getValue(), startOfDay, endOfDay);
         Map<String, ClientAggregateData> clientDataMap = new HashMap<>();
 
         for (OrderPojo order : orders) {

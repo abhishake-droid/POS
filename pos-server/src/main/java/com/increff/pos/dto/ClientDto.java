@@ -9,38 +9,36 @@ import com.increff.pos.model.form.ClientForm;
 import com.increff.pos.model.form.PageForm;
 import com.increff.pos.util.ValidationUtil;
 import com.increff.pos.util.NormalizeUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ClientDto {
 
-    private final ClientApi clientApi;
-
-    public ClientDto(ClientApi clientApi) {
-        this.clientApi = clientApi;
-    }
+    @Autowired
+    private ClientApi clientApi;
 
     public ClientData create(ClientForm form) throws ApiException {
-        ValidationUtil.validateClientForm(form);
+        ValidationUtil.validate(form);
         NormalizeUtil.normalizeClientForm(form);
         ClientPojo pojo = ClientHelper.convertToEntity(form);
-        return ClientHelper.convertToDto(clientApi.add(pojo));
+        return ClientHelper.convertToData(clientApi.add(pojo));
     }
 
     public ClientData getById(String id) throws ApiException {
-        return ClientHelper.convertToDto(clientApi.getCheckByClientId(id));
+        return ClientHelper.convertToData(clientApi.getCheckByClientId(id));
     }
 
     public Page<ClientData> getAll(PageForm form) throws ApiException {
-        ValidationUtil.validatePageForm(form);
-        return clientApi.getAll(form.getPage(), form.getSize()).map(ClientHelper::convertToDto);
+        ValidationUtil.validate(form);
+        return clientApi.getAll(form.getPage(), form.getSize()).map(ClientHelper::convertToData);
     }
 
     public ClientData update(String id, ClientForm form) throws ApiException {
-        ValidationUtil.validateClientForm(form);
+        ValidationUtil.validate(form);
         NormalizeUtil.normalizeClientForm(form);
         ClientPojo pojo = ClientHelper.convertToEntity(form);
-        return ClientHelper.convertToDto(clientApi.update(id, pojo));
+        return ClientHelper.convertToData(clientApi.update(id, pojo));
     }
 }

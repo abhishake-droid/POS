@@ -9,6 +9,7 @@ import com.increff.pos.db.OrderPojo;
 import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.data.OrderData;
 import com.increff.pos.util.SequenceGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,21 +24,17 @@ import java.util.stream.Collectors;
 @Service
 public class InvoiceDto {
 
-    private final InvoiceClientWrapper invoiceClientWrapper;
-    private final InvoiceFlow invoiceFlow;
-    private final SequenceGenerator sequenceGenerator;
+    @Autowired
+    private InvoiceClientWrapper invoiceClientWrapper;
+
+    @Autowired
+    private InvoiceFlow invoiceFlow;
+
+    @Autowired
+    private SequenceGenerator sequenceGenerator;
 
     @Value("${invoice.storage.path:./invoices}")
     private String storagePath;
-
-    public InvoiceDto(
-            InvoiceClientWrapper invoiceClientWrapper,
-            InvoiceFlow invoiceFlow,
-            SequenceGenerator sequenceGenerator) {
-        this.invoiceClientWrapper = invoiceClientWrapper;
-        this.invoiceFlow = invoiceFlow;
-        this.sequenceGenerator = sequenceGenerator;
-    }
 
     @Transactional(rollbackFor = ApiException.class)
     public OrderData generateInvoice(String orderId) throws ApiException {
@@ -47,6 +44,16 @@ public class InvoiceDto {
 
         InvoiceRequest invoiceRequest = prepareInvoiceRequest(order, orderItems);
         String invoiceId = invoiceRequest.getInvoiceId();
+
+        // Debug logging
+        System.out.println("DEBUG: Generating invoice for order " + orderId);
+        System.out.println("DEBUG: Order items count: " + orderItems.size());
+        System.out.println("DEBUG: Invoice line items count: " + invoiceRequest.getItems().size());
+        if (!orderItems.isEmpty()) {
+            OrderItemPojo firstItem = orderItems.get(0);
+            System.out.println("DEBUG: First order item - barcode: " + firstItem.getBarcode() + ", name: "
+                    + firstItem.getProductName());
+        }
 
         byte[] pdfBytes;
         try {
@@ -58,7 +65,13 @@ public class InvoiceDto {
         String pdfPath = savePdfToFileSystem(invoiceId, pdfBytes);
         invoiceFlow.saveInvoiceAndUpdateOrder(invoiceId, orderId, pdfPath);
 
-        return invoiceFlow.getUpdatedOrderData(order);
+        // Convert OrderPojo to OrderData
+        OrderData orderData = new OrderData();
+        orderData.setOrderId(order.getOrderId());
+        orderData.setStatus("INVOICED");
+        orderData.setTotalItems(order.getTotalItems());
+        orderData.setTotalAmount(order.getTotalAmount());
+        return orderData;
     }
 
     private String savePdfToFileSystem(String invoiceId, byte[] pdfBytes) throws ApiException {

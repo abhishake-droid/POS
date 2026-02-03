@@ -6,17 +6,15 @@ import com.increff.pos.db.UserPojo;
 import com.increff.pos.db.AuditLogPojo;
 import com.increff.pos.exception.ApiException;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class AuthFlow {
 
-    private final UserApi userApi;
-    private final AuditLogApi auditLogApi;
-
-    public AuthFlow(UserApi userApi, AuditLogApi auditLogApi) {
-        this.userApi = userApi;
-        this.auditLogApi = auditLogApi;
-    }
+    @Autowired
+    private UserApi userApi;
+    @Autowired
+    private AuditLogApi auditLogApi;
 
     public UserPojo getUserAndLogActivity(String email, String name, String action) throws ApiException {
         UserPojo user = userApi.getByEmail(email);

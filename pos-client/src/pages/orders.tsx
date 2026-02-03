@@ -134,6 +134,7 @@ export default function OrdersPage() {
 
   const [products, setProducts] = useState<ProductData[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
 
   const [filters, setFilters] = useState<OrderSearchFilters>({});
   const [filterType, setFilterType] = useState<'orderId' | 'dateStatus'>('dateStatus');
@@ -173,11 +174,27 @@ export default function OrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
+  // Debounced product search
   useEffect(() => {
-    if (createDialogOpen) {
-      loadProducts();
+    if (!createDialogOpen && !editDialogOpen && !retryDialogOpen) {
+      return;
     }
-  }, [createDialogOpen]);
+
+    const timer = setTimeout(async () => {
+      setLoadingProducts(true);
+      try {
+        const res = await productService.search(productSearchQuery, 0, 50);
+        setProducts(res.content || []);
+      } catch (e: any) {
+        console.error('Failed to search products:', e);
+        setProducts([]);
+      } finally {
+        setLoadingProducts(false);
+      }
+    }, 200); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [productSearchQuery, createDialogOpen, editDialogOpen, retryDialogOpen]);
 
   // Auto-search for Order ID with debounce
   useEffect(() => {
@@ -227,31 +244,7 @@ export default function OrdersPage() {
     }
   };
 
-  const loadProducts = async () => {
-    setLoadingProducts(true);
-    try {
-      let allProducts: ProductData[] = [];
-      let page = 0;
-      const pageSize = 100;
-      let hasMore = true;
-
-      while (hasMore) {
-        const res = await productService.getAll(page, pageSize);
-        const productList = res.content || [];
-        allProducts = [...allProducts, ...productList];
-        hasMore = res.totalPages > page + 1;
-        page++;
-      }
-
-      setProducts(allProducts);
-    } catch (e: any) {
-      console.error('Failed to load products:', e);
-      setProducts([]);
-      // Don't show toast for products - it's expected if backend is not ready
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
+  // Removed loadProducts - now using debounced search in useEffect
 
 
 
@@ -346,8 +339,15 @@ export default function OrdersPage() {
         }
       }
 
-      await orderService.create(orderForm);
-      toast.success('Order created successfully');
+      const result = await orderService.create(orderForm);
+
+      // Show different messages based on fulfillability
+      if (result.status === 'UNFULFILLABLE') {
+        toast.warning('Order created but is UNFULFILLABLE due to insufficient inventory');
+      } else {
+        toast.success('Order created successfully');
+      }
+
       setCreateDialogOpen(false);
       setOrderForm({
         lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
@@ -371,9 +371,9 @@ export default function OrdersPage() {
     try {
       setEditingOrderId(orderId);
 
-      // Load products first to ensure they're available for the Autocomplete
-      await loadProducts();
-      console.log('Products loaded:', products.length);
+      // Products will load via debounced search
+      setProductSearchQuery('');
+      console.log('Edit dialog opening');
 
       const orderData = await orderService.getById(orderId);
       console.log('Order data:', orderData);
@@ -422,8 +422,15 @@ export default function OrdersPage() {
         }
       }
 
-      await orderService.update(editingOrderId, orderForm);
-      toast.success('Order updated successfully');
+      const result = await orderService.update(editingOrderId, orderForm);
+
+      // Show different messages based on order status
+      if (result.status === 'UNFULFILLABLE') {
+        toast.warning('Order updated but is UNFULFILLABLE due to insufficient inventory');
+      } else {
+        toast.success('Order updated successfully');
+      }
+
       setEditDialogOpen(false);
       setEditingOrderId(null);
       setOrderForm({
@@ -551,8 +558,8 @@ export default function OrdersPage() {
     try {
       setRetryingOrderId(orderId);
 
-      // Load products first
-      await loadProducts();
+      // Products will load via debounced search
+      setProductSearchQuery('');
 
       const orderData = await orderService.getById(orderId);
 
@@ -639,7 +646,7 @@ export default function OrdersPage() {
             setOrderForm({
               lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
             });
-            loadProducts();
+            setProductSearchQuery('');
             setCreateDialogOpen(true);
           }}
           sx={{ borderRadius: '999px', px: 3, py: 1 }}
@@ -1062,7 +1069,8 @@ export default function OrdersPage() {
       {/* CREATE ORDER DIALOG */}
       <Dialog
         open={createDialogOpen}
-        onClose={() => {
+        onClose={(event, reason) => {
+          if (reason === 'backdropClick') return;
           setCreateDialogOpen(false);
           setOrderForm({
             lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
@@ -1105,6 +1113,9 @@ export default function OrdersPage() {
                             onChange={(event, newValue) => {
                               handleProductSelect(index, newValue);
                             }}
+                            onInputChange={(event, newInputValue) => {
+                              setProductSearchQuery(newInputValue);
+                            }}
                             getOptionLabel={(option) =>
                               `${option.name} (${option.barcode})`
                             }
@@ -1112,7 +1123,7 @@ export default function OrdersPage() {
                               <TextField
                                 {...params}
                                 size="small"
-                                placeholder="Select product"
+                                placeholder="Type to search products..."
                                 InputProps={{
                                   ...params.InputProps,
                                   endAdornment: (
@@ -1126,15 +1137,9 @@ export default function OrdersPage() {
                                 }}
                               />
                             )}
-                            filterOptions={(options, { inputValue }) => {
-                              const searchTerm = inputValue.toLowerCase();
-                              return options.filter(
-                                (option) =>
-                                  option.name.toLowerCase().includes(searchTerm) ||
-                                  option.barcode.toLowerCase().includes(searchTerm)
-                              );
-                            }}
-                            noOptionsText="No products found"
+                            filterOptions={(options) => options}
+                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                            noOptionsText={productSearchQuery ? "No products found" : "Type to search..."}
                           />
                         </TableCell>
                         <TableCell>
@@ -1241,7 +1246,8 @@ export default function OrdersPage() {
       {/* EDIT ORDER DIALOG */}
       <Dialog
         open={editDialogOpen}
-        onClose={() => {
+        onClose={(event, reason) => {
+          if (reason === 'backdropClick') return;
           setEditDialogOpen(false);
           setEditingOrderId(null);
           setOrderForm({
@@ -1286,22 +1292,20 @@ export default function OrdersPage() {
                     return null;
                   })()}
                   onChange={(_, newValue) => handleProductSelect(index, newValue)}
+                  onInputChange={(event, newInputValue) => {
+                    setProductSearchQuery(newInputValue);
+                  }}
                   loading={loadingProducts}
                   sx={{ flex: 2 }}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
-                  filterOptions={(options, { inputValue }) => {
-                    const searchTerm = inputValue.toLowerCase();
-                    return options.filter(
-                      (option) =>
-                        option.name.toLowerCase().includes(searchTerm) ||
-                        option.barcode.toLowerCase().includes(searchTerm)
-                    );
-                  }}
+                  filterOptions={(options) => options}
+                  noOptionsText={productSearchQuery ? "No products found" : "Type to search..."}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       label="Product"
                       size="small"
+                      placeholder="Type to search products..."
                       InputProps={{
                         ...params.InputProps,
                         endAdornment: (
@@ -1378,7 +1382,8 @@ export default function OrdersPage() {
       {/* RETRY ORDER DIALOG */}
       <Dialog
         open={retryDialogOpen}
-        onClose={() => {
+        onClose={(event, reason) => {
+          if (reason === 'backdropClick') return;
           setRetryDialogOpen(false);
           setRetryingOrderId(null);
           setOrderForm({
@@ -1412,8 +1417,13 @@ export default function OrdersPage() {
                   onChange={(_, newValue) =>
                     handleProductSelect(index, newValue)
                   }
+                  onInputChange={(event, newInputValue) => {
+                    setProductSearchQuery(newInputValue);
+                  }}
+                  filterOptions={(options) => options}
+                  noOptionsText={productSearchQuery ? "No products found" : "Type to search..."}
                   renderInput={(params) => (
-                    <TextField {...params} label="Product" required />
+                    <TextField {...params} label="Product" placeholder="Type to search products..." required />
                   )}
                   sx={{ flex: 2 }}
                   loading={loadingProducts}
@@ -1484,7 +1494,8 @@ export default function OrdersPage() {
       {/* VIEW ORDER DETAILS DIALOG */}
       <Dialog
         open={viewDialogOpen}
-        onClose={() => {
+        onClose={(event, reason) => {
+          if (reason === 'backdropClick') return;
           setViewDialogOpen(false);
           setViewOrderData(null);
         }}
@@ -1618,7 +1629,10 @@ export default function OrdersPage() {
       {/* CANCEL CONFIRMATION DIALOG */}
       <Dialog
         open={cancelDialogOpen}
-        onClose={() => setCancelDialogOpen(false)}
+        onClose={(event, reason) => {
+          if (reason === 'backdropClick') return;
+          setCancelDialogOpen(false);
+        }}
         maxWidth="sm"
         fullWidth
       >

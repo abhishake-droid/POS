@@ -9,10 +9,6 @@ public interface DailySalesApi {
 
     DailySalesPojo update(String id, DailySalesPojo pojo);
 
-    List<DailySalesPojo> getByDateRange(LocalDate startDate, LocalDate endDate);
-
-    List<DailySalesPojo> getByDateRangeAndClient(LocalDate startDate, LocalDate endDate, String clientId);
-
     DailySalesPojo getByDateAndClient(LocalDate date, String clientId);
 
     List<DailySalesPojo> getByDate(LocalDate date);

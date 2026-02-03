@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AuditLogHelper {
-    public static AuditLogData convertToDto(AuditLogPojo pojo) {
+    public static AuditLogData convertToData(AuditLogPojo pojo) {
         AuditLogData data = new AuditLogData();
         data.setId(pojo.getId());
         data.setOperatorEmail(pojo.getOperatorEmail());
@@ -18,6 +18,6 @@ public class AuditLogHelper {
     }
 
     public static List<AuditLogData> convertToDataList(List<AuditLogPojo> pojoList) {
-        return pojoList.stream().map(AuditLogHelper::convertToDto).collect(Collectors.toList());
+        return pojoList.stream().map(AuditLogHelper::convertToData).collect(Collectors.toList());
     }
 }

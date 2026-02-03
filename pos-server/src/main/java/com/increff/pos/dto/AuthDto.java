@@ -6,6 +6,7 @@ import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.data.AuthData;
 import com.increff.pos.model.form.LoginForm;
 import com.increff.pos.util.ValidationUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,19 +16,17 @@ import java.util.Base64;
 @Service
 public class AuthDto {
 
-    private final AuthFlow authFlow;
+    @Autowired
+    private AuthFlow authFlow;
+
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private static final String SERVER_INSTANCE_ID = java.util.UUID.randomUUID().toString();
 
     @Value("${supervisor.email}")
     private String supervisorEmail;
 
-    public AuthDto(AuthFlow authFlow) {
-        this.authFlow = authFlow;
-    }
-
     public AuthData login(LoginForm loginForm) throws ApiException {
-        ValidationUtil.validateLoginForm(loginForm);
+        ValidationUtil.validate(loginForm);
 
         String email = loginForm.getEmail().trim();
         boolean isSupervisorEmail = supervisorEmail != null && supervisorEmail.equalsIgnoreCase(email);

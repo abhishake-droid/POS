@@ -24,4 +24,8 @@ public class NormalizeUtil {
         if (form.getEmail() != null)
             form.setEmail(form.getEmail().trim().toLowerCase());
     }
+
+    public static String normalizeBarcode(String barcode) {
+        return barcode.trim().toLowerCase();
+    }
 }

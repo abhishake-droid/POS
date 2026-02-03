@@ -5,16 +5,14 @@ import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.data.InventoryData;
 import com.increff.pos.model.form.InventoryForm;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/inventory")
 public class InventoryController {
 
-    private final InventoryDto inventoryDto;
-
-    public InventoryController(InventoryDto inventoryDto) {
-        this.inventoryDto = inventoryDto;
-    }
+    @Autowired
+    private InventoryDto inventoryDto;
 
     @PutMapping("/{productId}")
     public InventoryData updateInventory(@PathVariable String productId, @RequestBody InventoryForm form)

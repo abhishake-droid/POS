@@ -6,9 +6,11 @@ import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.form.PageForm;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -16,11 +18,8 @@ import java.util.List;
 @Service
 public class OrderApiImpl implements OrderApi {
 
-    private final OrderDao orderDao;
-
-    public OrderApiImpl(OrderDao orderDao) {
-        this.orderDao = orderDao;
-    }
+    @Autowired
+    private OrderDao orderDao;
 
     @Override
     @Transactional(rollbackFor = ApiException.class)
@@ -84,5 +83,12 @@ public class OrderApiImpl implements OrderApi {
     @Transactional(readOnly = true)
     public List<OrderPojo> getWithFilters(String orderId, String status, ZonedDateTime fromDate, ZonedDateTime toDate) {
         return orderDao.findWithFilters(orderId, status, fromDate, toDate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderPojo> getWithFilters(String orderId, String status, ZonedDateTime fromDate, ZonedDateTime toDate,
+            Pageable pageable) {
+        return orderDao.findWithFilters(orderId, status, fromDate, toDate, pageable);
     }
 }

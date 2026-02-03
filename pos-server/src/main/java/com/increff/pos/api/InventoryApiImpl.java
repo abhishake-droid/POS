@@ -8,23 +8,22 @@ import com.increff.pos.exception.ApiException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @Service
 public class InventoryApiImpl implements InventoryApi {
 
-    private final InventoryDao inventoryDao;
-    private final ProductDao productDao;
-
-    public InventoryApiImpl(InventoryDao inventoryDao, ProductDao productDao) {
-        this.inventoryDao = inventoryDao;
-        this.productDao = productDao;
-    }
+    @Autowired
+    private InventoryDao inventoryDao;
+    @Autowired
+    private ProductDao productDao;
 
     @Override
     @Transactional(rollbackFor = ApiException.class)
@@ -45,6 +44,24 @@ public class InventoryApiImpl implements InventoryApi {
         }
 
         return inventoryDao.save(inventoryPojo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = ApiException.class)
+    public List<InventoryPojo> addBulk(List<InventoryPojo> inventories) throws ApiException {
+        if (inventories == null || inventories.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Validate all inventories
+        for (InventoryPojo inventory : inventories) {
+            if (inventory.getQuantity() != null && inventory.getQuantity() > 5000) {
+                throw new ApiException("Inventory quantity cannot exceed 5000");
+            }
+        }
+
+        // Bulk insert using Spring Data's saveAll
+        return inventoryDao.saveAll(inventories);
     }
 
     @Override
@@ -104,25 +121,55 @@ public class InventoryApiImpl implements InventoryApi {
     @Override
     @Transactional(rollbackFor = ApiException.class)
     public List<InventoryPojo> updateBulk(List<InventoryPojo> inventoryPojos) throws ApiException {
+        if (inventoryPojos == null || inventoryPojos.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Group by productId (in case of duplicates)
         Map<String, Integer> quantityByProductId = new LinkedHashMap<>();
         for (InventoryPojo inventoryPojo : inventoryPojos) {
             quantityByProductId.put(inventoryPojo.getProductId(), inventoryPojo.getQuantity());
         }
 
-        List<InventoryPojo> saved = new ArrayList<>();
+        List<String> productIds = new ArrayList<>(quantityByProductId.keySet());
+
+        // Bulk find all existing inventories
+        List<InventoryPojo> existingInventories = inventoryDao.findByProductIds(productIds);
+        Map<String, InventoryPojo> existingByProductId = existingInventories.stream()
+                .collect(Collectors.toMap(InventoryPojo::getProductId, inv -> inv));
+
+        // Update quantities
+        List<InventoryPojo> toSave = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : quantityByProductId.entrySet()) {
             String productId = entry.getKey();
             Integer quantityToAdd = entry.getValue();
 
-            InventoryPojo existing = inventoryDao.findByProductId(productId);
+            InventoryPojo existing = existingByProductId.get(productId);
             if (existing != null) {
-                Integer newQuantity = existing.getQuantity() + quantityToAdd;
-                existing.setQuantity(newQuantity);
-                saved.add(inventoryDao.save(existing));
+                existing.setQuantity(existing.getQuantity() + quantityToAdd);
+                toSave.add(existing);
             } else {
-                saved.add(updateByProductId(productId, quantityToAdd));
+                // Create new inventory
+                InventoryPojo newInv = new InventoryPojo();
+                newInv.setProductId(productId);
+                newInv.setQuantity(quantityToAdd);
+                toSave.add(newInv);
             }
         }
-        return saved;
+
+        // Bulk save all updates
+        return inventoryDao.saveAll(toSave);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InventoryPojo> getByProductIds(List<String> productIds) {
+        return inventoryDao.findByProductIds(productIds);
+    }
+
+    @Override
+    @Transactional(rollbackFor = ApiException.class)
+    public void bulkUpdateQuantities(java.util.Map<String, Integer> productIdToQuantity) {
+        inventoryDao.bulkUpdateQuantities(productIdToQuantity);
     }
 }

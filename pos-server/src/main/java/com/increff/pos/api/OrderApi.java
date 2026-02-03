@@ -4,6 +4,8 @@ import com.increff.pos.db.OrderPojo;
 import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.form.PageForm;
 import org.springframework.data.domain.Page;
+import java.time.ZonedDateTime;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -18,6 +20,7 @@ public interface OrderApi {
 
     OrderPojo update(String id, OrderPojo orderPojo) throws ApiException;
 
-    List<OrderPojo> getWithFilters(String orderId, String status, java.time.ZonedDateTime fromDate,
-            java.time.ZonedDateTime toDate);
+    List<OrderPojo> getWithFilters(String orderId, String status, ZonedDateTime fromDate, ZonedDateTime toDate);
+
+    Page<OrderPojo> getWithFilters(String orderId, String status, ZonedDateTime fromDate, ZonedDateTime toDate, Pageable pageable);
 }

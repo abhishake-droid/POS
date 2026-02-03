@@ -8,8 +8,10 @@ import com.increff.pos.flow.ProductFlow;
 import com.increff.pos.model.data.InventoryData;
 import com.increff.pos.model.data.TsvUploadResult;
 import com.increff.pos.model.form.InventoryForm;
+import com.increff.pos.helper.InventoryHelper;
 import com.increff.pos.util.TsvUtil;
 import com.increff.pos.util.ValidationUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -18,78 +20,63 @@ import java.util.List;
 @Service
 public class InventoryDto {
 
-    private final InventoryFlow inventoryFlow;
-    private final ProductFlow productFlow;
+    @Autowired
+    private InventoryFlow inventoryFlow;
 
-    public InventoryDto(InventoryFlow inventoryFlow, ProductFlow productFlow) {
-        this.inventoryFlow = inventoryFlow;
-        this.productFlow = productFlow;
-    }
+    @Autowired
+    private ProductFlow productFlow;
 
     public InventoryData updateInventory(String productId, InventoryForm form) throws ApiException {
-        ValidationUtil.validateInventoryForm(form);
-        return inventoryFlow.updateInventory(productId, form.getQuantity());
+        ValidationUtil.validate(form);
+        InventoryPojo pojo = inventoryFlow.updateInventory(productId, form.getQuantity());
+        return toDataWithRelations(pojo);
+    }
+
+    private InventoryData toDataWithRelations(InventoryPojo pojo) throws ApiException {
+        ProductPojo product = inventoryFlow.getProductById(pojo.getProductId());
+        return InventoryHelper.convertToData(pojo, product.getBarcode());
     }
 
     public String uploadInventoryWithResults(String base64Content) throws ApiException {
         String content = TsvUtil.decode(base64Content);
         String[] lines = TsvUtil.splitLines(content);
         List<TsvUploadResult> results = new ArrayList<>();
-        int startIndex = isHeader(lines[0]) ? 1 : 0;
+        List<InventoryPojo> validInventories = new ArrayList<>();
+        int startIndex = InventoryHelper.isHeader(lines[0]) ? 1 : 0;
+
+        // Map to aggregate quantities by productId
+        java.util.Map<String, Integer> quantityByProductId = new java.util.HashMap<>();
 
         for (int i = startIndex; i < lines.length; i++) {
             String line = lines[i].trim();
             if (line.isEmpty())
                 continue;
-            results.add(processInventoryRow(line, i + 1));
-        }
 
-        return TsvUtil.encode(buildResultTsv(results));
-    }
+            try {
+                InventoryPojo pojo = InventoryHelper.parseInventory(line, i + 1, productFlow);
+                String productId = pojo.getProductId();
 
-    private InventoryPojo parseInventory(String line, int rowNum) throws ApiException {
-        String[] columns = line.split("\t");
-        if (columns.length < 2) {
-            throw new ApiException("Row " + rowNum + ": Invalid format. Expected: barcode, quantity");
-        }
-        ProductPojo product = productFlow.getByBarcodeAsPojo(columns[0].trim().toLowerCase());
-        InventoryPojo pojo = new InventoryPojo();
-        pojo.setProductId(product.getId());
-        try {
-            Integer quantity = Integer.parseInt(columns[1].trim());
-            if (quantity < 0) {
-                throw new ApiException("Row " + rowNum + ": Quantity cannot be negative");
+                // Aggregate quantities for duplicate barcodes
+                quantityByProductId.merge(productId, pojo.getQuantity(), Integer::sum);
+
+                results.add(new TsvUploadResult(i + 1, "SUCCESS", "Inventory updated", line));
+            } catch (ApiException e) {
+                results.add(new TsvUploadResult(i + 1, "FAILED", e.getMessage(), line));
             }
-            pojo.setQuantity(quantity);
-        } catch (NumberFormatException e) {
-            throw new ApiException("Row " + rowNum + ": Invalid quantity");
         }
-        return pojo;
-    }
 
-    private TsvUploadResult processInventoryRow(String line, int rowNum) {
-        try {
-            InventoryPojo pojo = parseInventory(line, rowNum);
-            inventoryFlow.updateByProductId(pojo.getProductId(), pojo.getQuantity());
-            return new TsvUploadResult(rowNum, "SUCCESS", "Inventory updated", line);
-        } catch (ApiException e) {
-            return new TsvUploadResult(rowNum, "FAILED", e.getMessage(), line);
+        // Convert aggregated map to list of InventoryPojo
+        for (java.util.Map.Entry<String, Integer> entry : quantityByProductId.entrySet()) {
+            InventoryPojo pojo = new InventoryPojo();
+            pojo.setProductId(entry.getKey());
+            pojo.setQuantity(entry.getValue());
+            validInventories.add(pojo);
         }
-    }
 
-    private boolean isHeader(String firstLine) {
-        String lower = firstLine.toLowerCase();
-        return lower.contains("barcode") || lower.contains("quantity");
-    }
-
-    private String buildResultTsv(List<TsvUploadResult> results) {
-        StringBuilder sb = new StringBuilder("Row Number\tStatus\tError Message\tOriginal Data\n");
-        for (TsvUploadResult res : results) {
-            sb.append(res.getRowNumber()).append("\t")
-                    .append(res.getStatus()).append("\t")
-                    .append(res.getErrorMessage() != null ? res.getErrorMessage().replace("\t", " ") : "").append("\t")
-                    .append(res.getData()).append("\n");
+        if (!validInventories.isEmpty()) {
+            inventoryFlow.updateBulk(validInventories);
         }
-        return sb.toString();
+
+        return TsvUtil.encode(InventoryHelper.buildResultTsv(results));
     }
 }

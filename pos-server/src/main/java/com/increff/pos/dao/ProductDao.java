@@ -7,9 +7,10 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.repository.support.MongoRepositoryFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,13 +55,15 @@ public class ProductDao extends AbstractDao<ProductPojo> {
         return mongoOperations.find(query, ProductPojo.class);
     }
 
-    public List<ProductPojo> findByNameContaining(String name) {
-        Query query = Query.query(Criteria.where("name").regex(name, "i"));
+    public List<ProductPojo> findByIds(@NonNull List<String> ids) {
+        Query query = Query.query(Criteria.where("_id").in(ids));
         return mongoOperations.find(query, ProductPojo.class);
     }
 
-    @Override
-    public Page<ProductPojo> findAll(Pageable pageable) {
-        return super.findAll(pageable);
+    public List<String> findBarcodesByBarcodes(@NonNull List<String> barcodes) {
+        Query query = Query.query(Criteria.where("barcode").in(barcodes));
+        query.fields().include("barcode");
+        List<ProductPojo> products = mongoOperations.find(query, ProductPojo.class);
+        return products.stream().map(ProductPojo::getBarcode).toList();
     }
 }
