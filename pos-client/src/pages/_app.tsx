@@ -13,7 +13,6 @@ function AppContent({ Component, pageProps }: AppProps) {
   const { user, isLoading, checkAuth } = useAuth();
   const router = useRouter();
 
-  // Check auth on page visibility change
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -21,7 +20,6 @@ function AppContent({ Component, pageProps }: AppProps) {
       }
     };
 
-    // Check auth when page becomes visible
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
@@ -35,12 +33,10 @@ function AppContent({ Component, pageProps }: AppProps) {
     }
   }, [user, isLoading, router]);
 
-  // Show nothing while loading or redirecting
   if (isLoading || (!user && router.pathname !== '/login')) {
     return null;
   }
 
-  // Don't show navbar on login page
   if (router.pathname === '/login') {
     return (
       <>
@@ -50,7 +46,6 @@ function AppContent({ Component, pageProps }: AppProps) {
     );
   }
 
-  // Wrap all pages with AuthGuard for basic authentication
   return (
     <AuthGuard>
       <Navbar />

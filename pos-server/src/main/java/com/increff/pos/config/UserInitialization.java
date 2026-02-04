@@ -62,7 +62,6 @@ public class UserInitialization implements CommandLineRunner {
 
             userApi.add(supervisor);
         } catch (Exception e) {
-            // Silently handle or log minimal error info
         }
     }
 }

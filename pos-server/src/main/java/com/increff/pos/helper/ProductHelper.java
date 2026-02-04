@@ -38,8 +38,6 @@ public class ProductHelper {
         return data;
     }
 
-    // TSV Parsing Helper Methods
-
     public static Map<String, Integer> parseHeader(String headerLine) throws ApiException {
         String[] headers = headerLine.toLowerCase().split("\t");
         Map<String, Integer> columnMap = new HashMap<>();
@@ -49,7 +47,6 @@ public class ProductHelper {
             columnMap.put(header, i);
         }
 
-        // Validate required columns are present
         String[] requiredColumns = { "barcode", "clientid", "name", "mrp" };
         for (String required : requiredColumns) {
             if (!columnMap.containsKey(required)) {

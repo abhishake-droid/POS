@@ -20,13 +20,10 @@ public class InventoryHelper {
         return data;
     }
 
-    // TSV Parsing Helper Methods
-
     public static InventoryPojo parseInventory(String line, int rowNum, ProductFlow productFlow) throws ApiException {
         String[] columns = line.split("\t");
 
         try {
-            // Access columns first to trigger ArrayIndexOutOfBoundsException if missing
             String barcodeStr = columns[0].trim().toLowerCase();
             String quantityStr = columns[1].trim();
 

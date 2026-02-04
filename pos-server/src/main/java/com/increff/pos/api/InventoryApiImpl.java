@@ -108,7 +108,6 @@ public class InventoryApiImpl implements InventoryApi {
             return new ArrayList<>();
         }
 
-        // Group by productId (in case of duplicates)
         Map<String, Integer> quantityByProductId = new LinkedHashMap<>();
         for (InventoryPojo inventoryPojo : inventoryPojos) {
             quantityByProductId.put(inventoryPojo.getProductId(), inventoryPojo.getQuantity());
@@ -116,12 +115,10 @@ public class InventoryApiImpl implements InventoryApi {
 
         List<String> productIds = new ArrayList<>(quantityByProductId.keySet());
 
-        // Bulk find all existing inventories
         List<InventoryPojo> existingInventories = inventoryDao.findByProductIds(productIds);
         Map<String, InventoryPojo> existingByProductId = existingInventories.stream()
                 .collect(Collectors.toMap(InventoryPojo::getProductId, inv -> inv));
 
-        // Update quantities
         List<InventoryPojo> toSave = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : quantityByProductId.entrySet()) {
             String productId = entry.getKey();
@@ -132,7 +129,6 @@ public class InventoryApiImpl implements InventoryApi {
                 existing.setQuantity(existing.getQuantity() + quantityToAdd);
                 toSave.add(existing);
             } else {
-                // Create new inventory
                 InventoryPojo newInv = new InventoryPojo();
                 newInv.setProductId(productId);
                 newInv.setQuantity(quantityToAdd);
@@ -140,7 +136,6 @@ public class InventoryApiImpl implements InventoryApi {
             }
         }
 
-        // Bulk save all updates
         return inventoryDao.saveAll(toSave);
     }
 

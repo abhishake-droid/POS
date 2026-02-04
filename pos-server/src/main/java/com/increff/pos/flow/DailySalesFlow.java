@@ -96,7 +96,6 @@ public class DailySalesFlow {
                     clientName = client.getName();
                 }
             } catch (ApiException e) {
-                // Ignore and use Unknown
             }
 
             DailySalesPojo existing = dailySalesApi.getByDateAndClient(date, clientId);

@@ -160,7 +160,6 @@ export default function Clients() {
       return;
     }
 
-    // ONLY clientId search hits backend
     if (searchFilter === 'clientId') {
       try {
         const client = await clientService.getById(searchValue.trim());
@@ -177,7 +176,6 @@ export default function Clients() {
       return;
     }
 
-    // For other fields, load all pages and filter
     setLoading(true);
     try {
       let allClients: ClientData[] = [];
@@ -185,24 +183,16 @@ export default function Clients() {
       const pageSize = 100; // Use larger page size for fetching all
       let hasMore = true;
 
-      // Fetch all pages
       while (hasMore) {
         const res = await clientService.getAll(page, pageSize);
         const clientList = res.content || [];
         allClients = [...allClients, ...clientList];
 
-        // Check if there are more pages
         hasMore = res.totalPages > page + 1;
         page++;
       }
 
-      // Filter across all clients
       const value = searchValue.toLowerCase();
-      // const filtered = allClients.filter((c) =>
-      //   c[searchFilter]
-      //     .toLowerCase()
-      //     .includes(value)
-      // );
 
       const filtered = allClients.filter((c) => {
         switch (searchFilter) {

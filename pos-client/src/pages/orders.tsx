@@ -129,7 +129,6 @@ export default function OrdersPage() {
     lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
   });
 
-  // Initialize loading state to prevent double calls
   const [initialLoad, setInitialLoad] = useState(true);
 
   const [products, setProducts] = useState<ProductData[]>([]);
@@ -144,26 +143,21 @@ export default function OrdersPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
 
-  // Cancel confirmation dialog state
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
 
-  // Edit order state
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  // Retry order state
   const [retryDialogOpen, setRetryDialogOpen] = useState(false);
   const [retryingOrderId, setRetryingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load orders on mount and when page changes
     const loadData = async () => {
       try {
         await loadOrders(currentPage, filters);
       } catch (err) {
         console.error('Error in useEffect loadOrders:', err);
-        // Error already handled in loadOrders function
       } finally {
         if (initialLoad) {
           setInitialLoad(false);
@@ -172,10 +166,8 @@ export default function OrdersPage() {
     };
 
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
-  // Debounced product search
   useEffect(() => {
     if (!createDialogOpen && !editDialogOpen && !retryDialogOpen) {
       return;
@@ -197,7 +189,6 @@ export default function OrdersPage() {
     return () => clearTimeout(timer);
   }, [productSearchQuery, createDialogOpen, editDialogOpen, retryDialogOpen]);
 
-  // Auto-search for Order ID with debounce
   useEffect(() => {
     if (filterType === 'orderId' && filters.orderId !== undefined) {
       const timer = setTimeout(() => {
@@ -209,31 +200,25 @@ export default function OrdersPage() {
 
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.orderId, filterType]);
 
   const loadOrders = async (page: number, currentFilters: OrderSearchFilters) => {
     setLoading(true);
     try {
       const res = await orderService.getAll(page, PAGE_SIZE, currentFilters);
-      // Safely extract data with defaults
       setOrders(Array.isArray(res?.content) ? res.content : []);
       setTotalPages(res?.totalPages ?? 0);
     } catch (e: any) {
-      // Handle all types of errors gracefully
       const status = e?.response?.status;
       const errorMsg = e?.response?.data?.message || e?.message || 'Failed to load orders';
 
-      // Backend endpoint doesn't exist yet or server error - show empty state silently
       if (status === 404 || status === 500 || status === 503 || !e?.response) {
         setOrders([]);
         setTotalPages(0);
-        // Only show warning on first load, not on every error
         if (page === 0 && Object.keys(currentFilters || {}).length === 0) {
           console.warn('Order service endpoint not available:', errorMsg);
         }
       } else {
-        // Only show toast for unexpected errors
         if (status !== 401) {
           toastError(errorMsg);
         }
@@ -261,7 +246,6 @@ export default function OrdersPage() {
   };
 
   const handleProductSelect = (index: number, product: ProductData | null) => {
-    // Cache the selected product
     if (product) {
       setSelectedProducts(prev => {
         const newMap = new Map(prev);
@@ -332,7 +316,6 @@ export default function OrdersPage() {
 
   const handleCreateOrder = async () => {
     try {
-      // Validation
       if (orderForm.lines.length === 0) {
         toastError('Add at least one product line');
         return;
@@ -354,7 +337,6 @@ export default function OrdersPage() {
 
       const result = await orderService.create(orderForm);
 
-      // Show different messages based on fulfillability
       if (result.status === 'UNFULFILLABLE') {
         toastWarning('Order created but is UNFULFILLABLE due to insufficient inventory');
       } else {
@@ -384,14 +366,12 @@ export default function OrdersPage() {
     try {
       setEditingOrderId(orderId);
 
-      // Products will load via debounced search
       setProductSearchQuery('');
       console.log('Edit dialog opening');
 
       const orderData = await orderService.getById(orderId);
       console.log('Order data:', orderData);
 
-      // Convert order items to form format
       const lines = (orderData.items || []).map(item => {
         console.log('Order item:', item);
         return {
@@ -437,7 +417,6 @@ export default function OrdersPage() {
 
       const result = await orderService.update(editingOrderId, orderForm);
 
-      // Show different messages based on order status
       if (result.status === 'UNFULFILLABLE') {
         toastWarning('Order updated but is UNFULFILLABLE due to insufficient inventory');
       } else {
@@ -462,11 +441,9 @@ export default function OrdersPage() {
 
   const handleFilterChange = (patch: Partial<OrderSearchFilters>) => {
     setFilters((prev) => {
-      // When in orderId mode, only keep orderId filter
       if (filterType === 'orderId') {
         return { orderId: patch.orderId };
       }
-      // When in dateStatus mode, exclude orderId
       const { orderId, ...rest } = prev;
       return { ...rest, ...patch };
     });
@@ -497,7 +474,6 @@ export default function OrdersPage() {
     try {
       await orderService.generateInvoice(orderId);
       toastSuccess('Invoice generated successfully');
-      // Reload orders to get updated status
       loadOrders(currentPage, filters).catch((err) => {
         console.error('Error reloading orders:', err);
       });
@@ -552,7 +528,6 @@ export default function OrdersPage() {
       toastSuccess('Order cancelled');
       setCancelDialogOpen(false);
       setOrderToCancel(null);
-      // Reload orders to get updated status
       loadOrders(currentPage, filters).catch((err) => {
         console.error('Error reloading orders:', err);
       });
@@ -571,12 +546,10 @@ export default function OrdersPage() {
     try {
       setRetryingOrderId(orderId);
 
-      // Products will load via debounced search
       setProductSearchQuery('');
 
       const orderData = await orderService.getById(orderId);
 
-      // Convert order items to form format
       const lines = (orderData.items || []).map(item => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -679,10 +652,8 @@ export default function OrdersPage() {
           onChange={(e) => {
             const newType = e.target.value as 'orderId' | 'dateStatus';
             setFilterType(newType);
-            // Clear filters when switching types
             setFilters({});
             setCurrentPage(0);
-            // Load all orders when switching
             loadOrders(0, {}).catch((err) => {
               console.error('Error loading orders:', err);
             });

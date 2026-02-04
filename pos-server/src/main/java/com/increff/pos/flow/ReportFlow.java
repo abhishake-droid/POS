@@ -25,61 +25,50 @@ public class ReportFlow {
 
     public List<ClientSalesReportData> generateSalesReport(ZonedDateTime fromDate, ZonedDateTime toDate,
             String clientIdFilter) throws ApiException {
-        // Get all invoiced orders in date range
         List<OrderPojo> orders = orderApi.getWithFilters(null, "INVOICED", fromDate, toDate);
         if (orders.isEmpty()) {
             return new ArrayList<>();
         }
 
-        // Group sales data by client
         Map<String, ClientSalesReportData> reportsByClient = new HashMap<>();
 
         for (OrderPojo order : orders) {
             List<OrderItemPojo> items = orderItemApi.getByOrderId(order.getOrderId());
 
             for (OrderItemPojo item : items) {
-                // Get product to find which client it belongs to
                 ProductPojo product;
                 try {
                     product = productApi.getCheck(item.getProductId());
                 } catch (ApiException e) {
-                    // Product not found - skip this item
                     continue;
                 }
 
                 String clientId = product.getClientId();
 
-                // Skip if filtering by client and this isn't the one
                 if (clientIdFilter != null && !clientIdFilter.trim().isEmpty()
                         && !clientId.equals(clientIdFilter)) {
                     continue;
                 }
 
-                // Get or create report for this client
                 ClientSalesReportData report = reportsByClient.get(clientId);
                 if (report == null) {
                     report = createNewClientReport(clientId);
                     reportsByClient.put(clientId, report);
                 }
 
-                // Update product sales within this client's report
                 updateProductSales(report, item);
 
-                // Track this order for the client
                 report.getOrderIds().add(order.getOrderId());
 
-                // Track price for statistics
                 report.getPrices().add(item.getMrp());
             }
         }
 
-        // Calculate totals and statistics for each client
         List<ClientSalesReportData> results = new ArrayList<>(reportsByClient.values());
         for (ClientSalesReportData report : results) {
             calculateTotals(report);
         }
 
-        // Sort by client name
         results.sort(Comparator.comparing(ClientSalesReportData::getClientName));
         return results;
     }
@@ -100,7 +89,6 @@ public class ReportFlow {
     }
 
     private void updateProductSales(ClientSalesReportData report, OrderItemPojo item) {
-        // Find existing product sales or create new one
         ProductSalesData productSales = null;
         for (ProductSalesData ps : report.getProducts()) {
             if (ps.getBarcode().equals(item.getBarcode())) {
@@ -118,16 +106,13 @@ public class ReportFlow {
             report.getProducts().add(productSales);
         }
 
-        // Add this item's quantity and revenue
         productSales.setQuantity(productSales.getQuantity() + item.getQuantity());
         productSales.setRevenue(productSales.getRevenue() + item.getLineTotal());
     }
 
     private void calculateTotals(ClientSalesReportData report) {
-        // Count unique orders
         report.setInvoicedOrdersCount(report.getOrderIds().size());
 
-        // Sum up quantities and revenues
         int totalQty = 0;
         double totalRev = 0.0;
         for (ProductSalesData product : report.getProducts()) {
@@ -137,7 +122,6 @@ public class ReportFlow {
         report.setTotalQuantity(totalQty);
         report.setTotalRevenue(totalRev);
 
-        // Calculate price statistics
         List<Double> prices = report.getPrices();
         if (!prices.isEmpty()) {
             report.setMinPrice(Collections.min(prices));

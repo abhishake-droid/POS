@@ -27,6 +27,7 @@ public class ClientDto {
     }
 
     public ClientData getById(String id) throws ApiException {
+        id = NormalizeUtil.normalizeId(id);
         return ClientHelper.convertToData(clientApi.getCheckByClientId(id));
     }
 
@@ -38,6 +39,7 @@ public class ClientDto {
     public ClientData update(String id, ClientForm form) throws ApiException {
         ValidationUtil.validate(form);
         NormalizeUtil.normalizeClientForm(form);
+        id = NormalizeUtil.normalizeId(id);
         ClientPojo pojo = ClientHelper.convertToEntity(form);
         return ClientHelper.convertToData(clientApi.update(id, pojo));
     }

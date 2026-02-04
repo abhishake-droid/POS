@@ -157,12 +157,10 @@ function ProductDetailsModal({ open, onClose, client }: ProductDetailsModalProps
 export default function SalesReportPage() {
   const [tabValue, setTabValue] = useState(0);
 
-  // Daily sales state - SINGLE DATE
   const [dailySales, setDailySales] = useState<DailySalesData[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [dailyClientId, setDailyClientId] = useState('');
 
-  // Date range report state - DATE RANGE
   const [dateRangeReport, setDateRangeReport] = useState<ClientSalesReport[]>([]);
   const [rangeFromDate, setRangeFromDate] = useState('');
   const [rangeToDate, setRangeToDate] = useState('');
@@ -171,7 +169,6 @@ export default function SalesReportPage() {
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientSalesReport | null>(null);
 
@@ -186,7 +183,6 @@ export default function SalesReportPage() {
 
   const loadClients = async () => {
     try {
-      // Load clients in batches (max 100 per page) - same as products page
       let allClients: ClientData[] = [];
       let page = 0;
       const pageSize = 100;
@@ -197,7 +193,6 @@ export default function SalesReportPage() {
         const clientList = res.content || [];
         allClients = [...allClients, ...clientList];
 
-        // Check if there are more pages
         hasMore = res.totalPages > page + 1;
         page++;
       }
@@ -210,8 +205,6 @@ export default function SalesReportPage() {
       }
     } catch (e: any) {
       console.error('Failed to load clients:', e);
-      // Don't show error toast - just log it
-      // This prevents breaking the page if server is down
       setClients([]);
     }
   };
@@ -236,7 +229,6 @@ export default function SalesReportPage() {
     }
     setLoading(true);
     try {
-      // Use single date for daily sales
       const data = await reportService.getDailySales(
         selectedDate,
         dailyClientId || undefined

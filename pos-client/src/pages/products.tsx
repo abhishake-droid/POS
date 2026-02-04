@@ -122,11 +122,9 @@ export default function Products() {
     quantity: 0,
   });
 
-  // Inline inventory editing state
   const [editingInventoryId, setEditingInventoryId] = useState<string | null>(null);
   const [tempInventoryValue, setTempInventoryValue] = useState<number>(0);
 
-  // TSV upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadType, setUploadType] = useState<'products' | 'inventory' | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -146,7 +144,6 @@ export default function Products() {
   const loadClients = async () => {
     setLoadingClients(true);
     try {
-      // Load clients in batches (max 100 per page)
       let allClients: ClientData[] = [];
       let page = 0;
       const pageSize = 100;
@@ -157,7 +154,6 @@ export default function Products() {
         const clientList = res.content || [];
         allClients = [...allClients, ...clientList];
 
-        // Check if there are more pages
         hasMore = res.totalPages > page + 1;
         page++;
       }
@@ -196,7 +192,6 @@ export default function Products() {
       return;
     }
 
-    // Only barcode search hits backend
     if (searchFilter === 'barcode') {
       try {
         const product = await productService.getByBarcode(searchValue.trim());
@@ -213,7 +208,6 @@ export default function Products() {
       return;
     }
 
-    // For other fields, load all pages and filter
     setLoading(true);
     try {
       let allProducts: ProductData[] = [];
@@ -221,18 +215,15 @@ export default function Products() {
       const pageSize = 100; // Use larger page size for fetching all
       let hasMore = true;
 
-      // Fetch all pages
       while (hasMore) {
         const res = await productService.getAll(page, pageSize);
         const productList = res.content || [];
         allProducts = [...allProducts, ...productList];
 
-        // Check if there are more pages
         hasMore = res.totalPages > page + 1;
         page++;
       }
 
-      // Filter across all products
       const value = searchValue.toLowerCase();
       const filtered = allProducts.filter((p) => {
         switch (searchFilter) {
@@ -292,7 +283,6 @@ export default function Products() {
   };
 
   const downloadTsvFile = (content: string, filename: string) => {
-    // Decode base64 content
     const decodedContent = atob(content);
     const blob = new Blob([decodedContent], { type: 'text/tab-separated-values' });
     const url = window.URL.createObjectURL(blob);
@@ -309,7 +299,6 @@ export default function Products() {
     const decoded = atob(base64Tsv);
     const lines = decoded.split('\n');
 
-    // skip header, check status column
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue; // skip empty lines
@@ -332,7 +321,6 @@ export default function Products() {
     const lines = decoded.split('\n');
     const failures: { rowNumber: string; error: string; data: string }[] = [];
 
-    // Parse header to find column indices
     if (lines.length < 2) return failures;
 
     const header = lines[0].split('\t');
@@ -405,7 +393,6 @@ export default function Products() {
       try {
         const text = e.target?.result as string;
 
-        // Validate headers
         const lines = text.split('\n');
         if (lines.length === 0) {
           toastError('File is empty');
@@ -416,7 +403,6 @@ export default function Products() {
         const headerLine = lines[0].trim();
         const headers = headerLine.split('\t').map(h => h.trim().toLowerCase());
 
-        // Check mandatory headers based on upload type
         if (uploadType === 'products') {
           const requiredHeaders = ['barcode', 'clientid', 'name', 'mrp'];
           const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
@@ -427,7 +413,6 @@ export default function Products() {
             return;
           }
 
-          // Check for blank client IDs in data rows
           const clientIdIndex = headers.indexOf('clientid');
           for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();

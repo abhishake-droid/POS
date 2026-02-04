@@ -69,3 +69,5 @@ This generated password is for development use only. Your security configuration
 2026-02-04T16:48:22.395+05:30  WARN 65726 --- [POS] [nio-8080-exec-5] c.i.p.c.AppRestControllerAdvice          : API exception: Phone number already exists
 2026-02-04T16:48:30.422+05:30  WARN 65726 --- [POS] [nio-8080-exec-4] c.i.p.c.AppRestControllerAdvice          : API exception: Phone number already exists
 2026-02-04T16:48:35.409+05:30  WARN 65726 --- [POS] [io-8080-exec-10] c.i.p.c.AppRestControllerAdvice          : API exception: Client name already exists
+2026-02-04T22:12:51.185+05:30  INFO 65726 --- [POS] [nio-8080-exec-1] c.increff.invoice.client.InvoiceClient   : Calling invoice service at: http://localhost:8081/api/invoice/generate
+2026-02-04T22:12:51.619+05:30  INFO 65726 --- [POS] [nio-8080-exec-1] c.increff.invoice.client.InvoiceClient   : Received PDF (6315 bytes) from invoice service
