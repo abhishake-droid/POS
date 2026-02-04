@@ -21,8 +21,6 @@ public class OrderHelper {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
-    // ==================== CONVERSION METHODS ====================
-
     public static OrderData convertToData(OrderPojo pojo, boolean hasInvoice) {
         OrderData data = new OrderData();
         data.setId(pojo.getId());
@@ -54,7 +52,6 @@ public class OrderHelper {
         return pojoList.stream().map(OrderHelper::convertItemToDto).collect(Collectors.toList());
     }
 
-    // ==================== VALIDATION METHODS ====================
 
     //Todo isnt it already validated in form
     public static String validateOrderId(String orderId) throws ApiException {
@@ -64,7 +61,6 @@ public class OrderHelper {
         return orderId.trim();
     }
 
-    // ==================== EXTRACTION METHODS ====================
 
     public static List<String> extractProductIds(List<OrderItemPojo> items) {
         return items.stream()
@@ -72,7 +68,6 @@ public class OrderHelper {
                 .collect(Collectors.toList());
     }
 
-    // ==================== FETCH METHODS ====================
 
     public static Map<String, ProductPojo> fetchProductsMap(ProductApi productApi, List<String> productIds) {
         List<ProductPojo> products = productApi.getByIds(productIds);
@@ -86,7 +81,6 @@ public class OrderHelper {
                 .collect(Collectors.toMap(InventoryPojo::getProductId, i -> i));
     }
 
-    // ==================== INVENTORY CALCULATION METHODS ====================
 
     public static Map<String, Integer> prepareInventoryRestore(
             List<OrderItemPojo> items,

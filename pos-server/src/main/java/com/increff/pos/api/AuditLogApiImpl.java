@@ -44,6 +44,6 @@ public class AuditLogApiImpl implements AuditLogApi {
     @Override
     @Transactional(readOnly = true)
     public List<AuditLogPojo> getAll() {
-        return dao.findAll();
+        return dao.findAll(Sort.by(Sort.Direction.DESC, "timestamp"));
     }
 }

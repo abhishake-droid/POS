@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -65,14 +66,14 @@ public class OrderDto {
                 try {
                     fromDate = ZonedDateTime.parse(form.getFromDate());
                 } catch (DateTimeParseException e) {
-                    fromDate = java.time.LocalDate.parse(form.getFromDate()).atStartOfDay(java.time.ZoneOffset.UTC);
+                    fromDate = LocalDate.parse(form.getFromDate()).atStartOfDay(java.time.ZoneOffset.UTC);
                 }
             }
             if (form.getToDate() != null && !form.getToDate().trim().isEmpty()) {
                 try {
                     toDate = ZonedDateTime.parse(form.getToDate());
                 } catch (DateTimeParseException e) {
-                    toDate = java.time.LocalDate.parse(form.getToDate()).atTime(23, 59, 59)
+                    toDate = LocalDate.parse(form.getToDate()).atTime(23, 59, 59)
                             .atZone(java.time.ZoneOffset.UTC);
                 }
             }

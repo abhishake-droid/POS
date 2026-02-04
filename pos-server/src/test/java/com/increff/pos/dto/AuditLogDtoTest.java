@@ -76,15 +76,6 @@ public class AuditLogDtoTest extends AbstractUnitTest {
     }
 
     @Test
-    public void testGetAll_WithoutPagination() {
-        // When
-        List<AuditLogData> result = auditLogDto.getAll();
-
-        // Then
-        assertNotNull(result);
-    }
-
-    @Test
     public void testGetAll_WithPagination_DifferentPageSizes() throws ApiException {
         // Test with page size 5
         PageForm form1 = new PageForm();

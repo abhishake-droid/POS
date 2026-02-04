@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Map;
 
 @Tag(name = "Authentication", description = "APIs for user authentication")
 @RestController
@@ -25,7 +26,7 @@ public class AuthController {
 
     @Operation(summary = "Validate token")
     @RequestMapping(path = "/validate", method = RequestMethod.POST)
-    public AuthData validateToken(@RequestBody java.util.Map<String, String> request) throws ApiException {
+    public AuthData validateToken(@RequestBody Map<String, String> request) throws ApiException {
         String token = request.get("token");
         if (token == null || token.trim().isEmpty()) {
             throw new ApiException("Token is required");
@@ -35,7 +36,7 @@ public class AuthController {
 
     @Operation(summary = "Logout user")
     @RequestMapping(path = "/logout", method = RequestMethod.POST)
-    public void logout(@RequestBody java.util.Map<String, String> request) throws ApiException {
+    public void logout(@RequestBody Map<String, String> request) throws ApiException {
         String email = request.get("email");
         if (email == null || email.trim().isEmpty()) {
             throw new ApiException("Email is required");

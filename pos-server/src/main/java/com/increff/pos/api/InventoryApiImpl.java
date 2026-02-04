@@ -38,10 +38,7 @@ public class InventoryApiImpl implements InventoryApi {
             throw new ApiException("Inventory already exists for product " + inventoryPojo.getProductId());
         }
 
-        // Validate inventory limit
-        if (inventoryPojo.getQuantity() != null && inventoryPojo.getQuantity() > 5000) {
-            throw new ApiException("Inventory quantity cannot exceed 5000");
-        }
+        validateInventoryLimit(inventoryPojo.getQuantity());
 
         return inventoryDao.save(inventoryPojo);
     }
@@ -53,14 +50,9 @@ public class InventoryApiImpl implements InventoryApi {
             return new ArrayList<>();
         }
 
-        // Validate all inventories
         for (InventoryPojo inventory : inventories) {
-            if (inventory.getQuantity() != null && inventory.getQuantity() > 5000) {
-                throw new ApiException("Inventory quantity cannot exceed 5000");
-            }
+            validateInventoryLimit(inventory.getQuantity());
         }
-
-        // Bulk insert using Spring Data's saveAll
         return inventoryDao.saveAll(inventories);
     }
 
@@ -94,13 +86,8 @@ public class InventoryApiImpl implements InventoryApi {
     @Transactional(rollbackFor = ApiException.class)
     public InventoryPojo update(String id, InventoryPojo inventoryPojo) throws ApiException {
         InventoryPojo existing = getCheck(id);
-        if (inventoryPojo.getQuantity() != null) {
-            // Validate inventory limit
-            if (inventoryPojo.getQuantity() > 5000) {
-                throw new ApiException("Inventory quantity cannot exceed 5000");
-            }
-            existing.setQuantity(inventoryPojo.getQuantity());
-        }
+        validateInventoryLimit(inventoryPojo.getQuantity());
+        existing.setQuantity(inventoryPojo.getQuantity());
         return inventoryDao.save(existing);
     }
 
@@ -171,5 +158,11 @@ public class InventoryApiImpl implements InventoryApi {
     @Transactional(rollbackFor = ApiException.class)
     public void bulkUpdateQuantities(java.util.Map<String, Integer> productIdToQuantity) {
         inventoryDao.bulkUpdateQuantities(productIdToQuantity);
+    }
+
+    private void validateInventoryLimit(Integer quantity) throws ApiException {
+        if (quantity != null && quantity > 5000) {
+            throw new ApiException("Inventory quantity cannot exceed 5000");
+        }
     }
 }

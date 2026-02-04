@@ -37,11 +37,6 @@ public class InventoryFlow {
     }
 
     @Transactional(rollbackFor = ApiException.class)
-    public InventoryPojo updateByProductId(String productId, Integer quantity) throws ApiException {
-        return inventoryApi.updateByProductId(productId, quantity);
-    }
-
-    @Transactional(rollbackFor = ApiException.class)
     public List<InventoryPojo> updateBulk(List<InventoryPojo> pojos) throws ApiException {
         return inventoryApi.updateBulk(pojos);
     }

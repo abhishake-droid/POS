@@ -79,20 +79,6 @@ class InventoryFlowTest {
     }
 
     @Test
-    void testUpdateByProductId_Success() throws ApiException {
-        // Given
-        when(inventoryApi.updateByProductId("prod1", 50)).thenReturn(inventoryPojo);
-
-        // When
-        InventoryPojo result = inventoryFlow.updateByProductId("prod1", 50);
-
-        // Then
-        assertNotNull(result);
-        assertEquals("prod1", result.getProductId());
-        verify(inventoryApi, times(1)).updateByProductId("prod1", 50);
-    }
-
-    @Test
     void testUpdateBulk_Success() throws ApiException {
         // Given
         List<InventoryPojo> pojos = Arrays.asList(inventoryPojo);
@@ -129,19 +115,6 @@ class InventoryFlowTest {
         // Then
         assertNotNull(result);
         verify(inventoryApi, times(1)).update(anyString(), argThat(inv -> inv.getQuantity() == -10));
-    }
-
-    @Test
-    void testUpdateByProductId_NegativeIncrement() throws ApiException {
-        // Given
-        when(inventoryApi.updateByProductId("prod1", -20)).thenReturn(inventoryPojo);
-
-        // When
-        InventoryPojo result = inventoryFlow.updateByProductId("prod1", -20);
-
-        // Then
-        assertNotNull(result);
-        verify(inventoryApi, times(1)).updateByProductId("prod1", -20);
     }
 
     @Test

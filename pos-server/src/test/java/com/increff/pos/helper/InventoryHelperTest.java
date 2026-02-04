@@ -99,7 +99,7 @@ class InventoryHelperTest {
         ApiException exception = assertThrows(ApiException.class, () -> {
             InventoryHelper.parseInventory(line, rowNum, productFlow);
         });
-        assertTrue(exception.getMessage().contains("Invalid format"));
+        assertTrue(exception.getMessage().contains("Missing required columns"));
     }
 
     @Test

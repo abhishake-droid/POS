@@ -3,6 +3,7 @@ package com.increff.pos.dto;
 import com.increff.pos.api.*;
 import com.increff.pos.db.*;
 import com.increff.pos.exception.ApiException;
+import com.increff.pos.flow.ReportFlow;
 import com.increff.pos.model.data.ClientSalesReportData;
 import com.increff.pos.model.data.DailySalesData;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,25 +29,13 @@ class ReportDtoTest {
     private DailySalesApi dailySalesApi;
 
     @Mock
-    private OrderApi orderApi;
-
-    @Mock
-    private OrderItemApi orderItemApi;
-
-    @Mock
-    private ProductApi productApi;
-
-    @Mock
-    private ClientApi clientApi;
+    private ReportFlow reportFlow;
 
     @InjectMocks
     private ReportDto reportDto;
 
     private DailySalesPojo dailySalesPojo;
-    private OrderPojo orderPojo;
-    private OrderItemPojo orderItemPojo;
-    private ProductPojo productPojo;
-    private ClientPojo clientPojo;
+    private ClientSalesReportData clientSalesReportData;
 
     @BeforeEach
     void setUp() {
@@ -60,29 +48,12 @@ class ReportDtoTest {
         dailySalesPojo.setInvoicedItemsCount(50);
         dailySalesPojo.setTotalRevenue(5000.0);
 
-        orderPojo = new OrderPojo();
-        orderPojo.setId("order1");
-        orderPojo.setOrderId("ORD001");
-        orderPojo.setStatus("INVOICED");
-        orderPojo.setTotalAmount(1000.0);
-
-        orderItemPojo = new OrderItemPojo();
-        orderItemPojo.setId("item1");
-        orderItemPojo.setProductId("prod1");
-        orderItemPojo.setBarcode("BC123");
-        orderItemPojo.setProductName("Test Product");
-        orderItemPojo.setQuantity(10);
-        orderItemPojo.setMrp(100.0);
-        orderItemPojo.setLineTotal(1000.0);
-
-        productPojo = new ProductPojo();
-        productPojo.setId("prod1");
-        productPojo.setClientId("client1");
-
-        clientPojo = new ClientPojo();
-        clientPojo.setId("client1");
-        clientPojo.setClientId("client1");
-        clientPojo.setName("Test Client");
+        clientSalesReportData = new ClientSalesReportData();
+        clientSalesReportData.setClientId("client1");
+        clientSalesReportData.setClientName("Test Client");
+        clientSalesReportData.setTotalRevenue(1000.0);
+        clientSalesReportData.setTotalQuantity(10);
+        clientSalesReportData.setInvoicedOrdersCount(1);
     }
 
     @Test
@@ -121,12 +92,8 @@ class ReportDtoTest {
     @Test
     void testGetSalesReport_Success() throws ApiException {
         // Given
-        when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(ZonedDateTime.class), any(ZonedDateTime.class)))
-                .thenReturn(Arrays.asList(orderPojo));
-        when(orderItemApi.getByOrderId("ORD001")).thenReturn(Arrays.asList(orderItemPojo));
-        // Mock bulk fetch instead of individual fetch
-        when(productApi.getByIds(anyList())).thenReturn(Arrays.asList(productPojo));
-        when(clientApi.getCheckByClientId("client1")).thenReturn(clientPojo);
+        when(reportFlow.generateSalesReport(any(ZonedDateTime.class), any(ZonedDateTime.class), isNull()))
+                .thenReturn(Arrays.asList(clientSalesReportData));
 
         // When
         List<ClientSalesReportData> result = reportDto.getSalesReport(
@@ -136,7 +103,9 @@ class ReportDtoTest {
 
         // Then
         assertNotNull(result);
-        assertTrue(result.size() > 0);
+        assertEquals(1, result.size());
+        assertEquals("Test Client", result.get(0).getClientName());
+        verify(reportFlow).generateSalesReport(any(ZonedDateTime.class), any(ZonedDateTime.class), isNull());
     }
 
     @Test

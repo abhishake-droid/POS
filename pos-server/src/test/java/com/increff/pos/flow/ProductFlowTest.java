@@ -69,7 +69,7 @@ class ProductFlowTest {
         when(inventoryApi.add(any(InventoryPojo.class))).thenReturn(inventoryPojo);
 
         // When
-        ProductPojo result = productFlow.add(productPojo);
+        ProductPojo result = productFlow.create(productPojo);
 
         // Then
         assertNotNull(result);
@@ -123,7 +123,7 @@ class ProductFlowTest {
                 .thenThrow(new ApiException("Inventory creation failed"));
 
         // When/Then
-        assertThrows(ApiException.class, () -> productFlow.add(productPojo));
+        assertThrows(ApiException.class, () -> productFlow.create(productPojo));
     }
 
     @Test

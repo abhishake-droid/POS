@@ -69,12 +69,6 @@ public class ProductApiImpl implements ProductApi {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsByBarcode(String barcode) {
-        return productDao.findByBarcode(barcode).isPresent();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<String> getExistingBarcodes(List<String> barcodes) {
         if (barcodes == null || barcodes.isEmpty()) {
             return List.of();

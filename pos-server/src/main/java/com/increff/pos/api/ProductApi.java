@@ -21,7 +21,5 @@ public interface ProductApi {
 
     List<ProductPojo> getByIds(List<String> ids);
 
-    boolean existsByBarcode(String barcode);
-
     List<String> getExistingBarcodes(List<String> barcodes);
 }

@@ -88,16 +88,16 @@ public class ProductDto {
         List<String> validBarcodes = new ArrayList<>();
         List<Integer> validProductRows = new ArrayList<>();
 
-        // Parse header to determine column mapping
-        Map<String, Integer> columnMap = null;
-        int startIndex = 0;
-        if (ProductHelper.isHeader(lines[0])) {
-            columnMap = ProductHelper.parseHeader(lines[0]);
-            startIndex = 1;
+        if (!ProductHelper.isHeader(lines[0])) {
+            throw new ApiException(
+                    "Invalid TSV format: Missing required header row. " +
+                            "First line must contain: barcode, clientid, name, mrp (in any order, tab-separated)");
         }
 
-        // First pass: validate format and collect valid products (NO DB CALLS)
-        for (int i = startIndex; i < lines.length; i++) {
+        Map<String, Integer> columnMap = ProductHelper.parseHeader(lines[0]);
+
+        // First pass
+        for (int i = 1; i < lines.length; i++) {
             String line = lines[i].trim();
             if (line.isEmpty())
                 continue;
@@ -114,11 +114,11 @@ public class ProductDto {
             }
         }
 
-        // Second pass: check which barcodes already exist (1 DB CALL)
+        // Second pass
         List<String> existingBarcodes = productFlow.getExistingBarcodes(validBarcodes);
         Set<String> existingBarcodesSet = new HashSet<>(existingBarcodes);
 
-        // Third pass: filter out duplicates and prepare for bulk insert
+        // Third pass
         List<ProductPojo> productsToInsert = new ArrayList<>();
         List<Integer> rowsToInsert = new ArrayList<>();
 
@@ -128,27 +128,23 @@ public class ProductDto {
             String line = lines[rowNum - 1];
 
             if (existingBarcodesSet.contains(pojo.getBarcode())) {
-                // Product already exists - mark as SKIPPED
                 results.add(new TsvUploadResult(rowNum, "SKIPPED", "Product already exists", line));
             } else {
-                // Product is new - add to bulk insert list
                 productsToInsert.add(pojo);
                 rowsToInsert.add(rowNum);
             }
         }
 
-        // Fourth pass: bulk insert all new products (1 DB CALL)
+        // Fourth pass
         if (!productsToInsert.isEmpty()) {
             try {
                 List<ProductPojo> savedProducts = productFlow.addBulk(productsToInsert);
-                // Mark all as success
                 for (int i = 0; i < savedProducts.size(); i++) {
                     int rowNum = rowsToInsert.get(i);
                     String line = lines[rowNum - 1];
                     results.add(new TsvUploadResult(rowNum, "SUCCESS", "Product created", line));
                 }
             } catch (ApiException e) {
-                // Bulk insert failed - mark all as failed
                 for (int i = 0; i < productsToInsert.size(); i++) {
                     int rowNum = rowsToInsert.get(i);
                     String line = lines[rowNum - 1];
@@ -157,7 +153,6 @@ public class ProductDto {
             }
         }
 
-        // Sort results by row number for better readability
         results.sort((a, b) -> Integer.compare(a.getRowNumber(), b.getRowNumber()));
 
         return TsvUtil.encode(ProductHelper.buildResultTsv(results));

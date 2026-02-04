@@ -35,38 +35,47 @@ public class OrderFlow {
     @Autowired
     private SequenceGenerator sequenceGenerator;
 
-    public OrderCreationResult createOrder(List<OrderItemPojo> orderItems)
-            throws ApiException {
-
-        long orderNumber = sequenceGenerator.getNextSequence("order");
-        String orderId = "ORD-" + String.format("%06d", orderNumber);
-
+    public OrderCreationResult createOrder(List<OrderItemPojo> orderItems) throws ApiException {
+        String orderId = generateOrderId();
         InventoryCheckResult checkResult = checkAllInventoryAvailable(orderItems);
-
-        String orderStatus;
-        List<OrderItemPojo> savedItems = new ArrayList<>();
         OrderCalculator totals = new OrderCalculator();
 
-        if (checkResult.isAllAvailable()) {
-            orderStatus = OrderStatus.PLACED.getValue();
+        String orderStatus = processOrderCreation(orderId, orderItems, checkResult, totals);
+        OrderPojo savedOrder = saveNewOrder(orderId, orderStatus, totals);
 
+        return buildOrderCreationResult(savedOrder, checkResult);
+    }
+
+    private String generateOrderId() {
+        long orderNumber = sequenceGenerator.getNextSequence("order");
+        return "ORD-" + String.format("%06d", orderNumber);
+    }
+
+    private String processOrderCreation(String orderId, List<OrderItemPojo> orderItems,
+            InventoryCheckResult checkResult, OrderCalculator totals) throws ApiException {
+        List<OrderItemPojo> savedItems = new ArrayList<>();
+
+        if (checkResult.isAllAvailable()) {
             List<String> productIds = OrderHelper.extractProductIds(orderItems);
             BulkData bulkData = fetchBulkData(productIds);
             Map<String, Integer> inventoryUpdates = OrderHelper.prepareInventoryDeduct(orderItems,
                     bulkData.inventoryMap);
 
             processOrderItems(orderItems, orderId, bulkData.productMap, savedItems, totals);
-
             inventoryApi.bulkUpdateQuantities(inventoryUpdates);
-        } else {
-            orderStatus = OrderStatus.UNFULFILLABLE.getValue();
 
+            return OrderStatus.PLACED.getValue();
+        } else {
             List<String> productIds = OrderHelper.extractProductIds(orderItems);
             Map<String, ProductPojo> productMap = OrderHelper.fetchProductsMap(productApi, productIds);
 
             processOrderItems(orderItems, orderId, productMap, savedItems, totals);
-        }
 
+            return OrderStatus.UNFULFILLABLE.getValue();
+        }
+    }
+
+    private OrderPojo saveNewOrder(String orderId, String orderStatus, OrderCalculator totals) throws ApiException {
         OrderPojo order = new OrderPojo();
         order.setOrderId(orderId);
         order.setStatus(orderStatus);
@@ -74,13 +83,14 @@ public class OrderFlow {
         order.setTotalAmount(totals.getTotalAmount());
         order.setOrderDate(ZonedDateTime.now());
 
-        OrderPojo savedOrder = orderApi.add(order);
+        return orderApi.add(order);
+    }
 
+    private OrderCreationResult buildOrderCreationResult(OrderPojo savedOrder, InventoryCheckResult checkResult) {
         OrderCreationResult result = new OrderCreationResult();
         result.setOrderId(savedOrder.getOrderId());
         result.setFulfillable(checkResult.isAllAvailable());
         result.setUnfulfillableItems(checkResult.getUnfulfillableItems());
-
         return result;
     }
 
@@ -170,14 +180,25 @@ public class OrderFlow {
 
     public OrderPojo updateOrder(String orderId, List<OrderItemPojo> newOrderItems) throws ApiException {
         orderId = OrderHelper.validateOrderId(orderId);
+        OrderPojo order = validateUpdatableOrder(orderId);
 
+        restoreAndClearExistingItems(orderId);
+
+        OrderCalculator totals = new OrderCalculator();
+        InventoryCheckResult checkResult = checkAllInventoryAvailable(newOrderItems);
+
+        return processOrderUpdate(order, orderId, newOrderItems, checkResult, totals);
+    }
+
+    private OrderPojo validateUpdatableOrder(String orderId) throws ApiException {
         OrderPojo order = orderApi.getCheckByOrderId(orderId);
-        // getCheckByOrderId() already throws ApiException if order not found
-
         if (!OrderStatus.PLACED.getValue().equals(order.getStatus())) {
             throw new ApiException("Only PLACED orders can be edited. Current status: " + order.getStatus());
         }
+        return order;
+    }
 
+    private void restoreAndClearExistingItems(String orderId) throws ApiException {
         List<OrderItemPojo> existingItems = orderItemApi.getByOrderId(orderId);
         List<String> existingProductIds = OrderHelper.extractProductIds(existingItems);
         Map<String, InventoryPojo> inventoryMap = OrderHelper.fetchInventoriesMap(inventoryApi, existingProductIds);
@@ -188,43 +209,39 @@ public class OrderFlow {
         for (OrderItemPojo item : existingItems) {
             orderItemApi.delete(item.getId());
         }
+    }
 
-        OrderCalculator totals = new OrderCalculator();
-
-        // Check inventory availability instead of throwing exception
-        InventoryCheckResult checkResult = checkAllInventoryAvailable(newOrderItems);
+    private OrderPojo processOrderUpdate(OrderPojo order, String orderId, List<OrderItemPojo> newOrderItems,
+            InventoryCheckResult checkResult, OrderCalculator totals) throws ApiException {
+        List<OrderItemPojo> savedItems = new ArrayList<>();
 
         if (checkResult.isAllAvailable()) {
-            // Sufficient inventory - process as PLACED
             List<String> newProductIds = OrderHelper.extractProductIds(newOrderItems);
             BulkData bulkData = fetchBulkData(newProductIds);
             Map<String, Integer> deductUpdates = OrderHelper.prepareInventoryDeduct(newOrderItems,
                     bulkData.inventoryMap);
 
-            List<OrderItemPojo> savedItems = new ArrayList<>();
             processOrderItems(newOrderItems, orderId, bulkData.productMap, savedItems, totals);
-
             inventoryApi.bulkUpdateQuantities(deductUpdates);
 
-            OrderPojo patch = new OrderPojo();
-            patch.setStatus(OrderStatus.PLACED.getValue());
-            patch.setTotalItems(totals.getTotalItems());
-            patch.setTotalAmount(totals.getTotalAmount());
-            return orderApi.update(order.getId(), patch);
+            return updateOrderStatus(order.getId(), OrderStatus.PLACED, totals);
         } else {
-            // Insufficient inventory - mark as UNFULFILLABLE
             List<String> newProductIds = OrderHelper.extractProductIds(newOrderItems);
             Map<String, ProductPojo> productMap = OrderHelper.fetchProductsMap(productApi, newProductIds);
 
-            List<OrderItemPojo> savedItems = new ArrayList<>();
             processOrderItems(newOrderItems, orderId, productMap, savedItems, totals);
 
-            OrderPojo patch = new OrderPojo();
-            patch.setStatus(OrderStatus.UNFULFILLABLE.getValue());
-            patch.setTotalItems(totals.getTotalItems());
-            patch.setTotalAmount(totals.getTotalAmount());
-            return orderApi.update(order.getId(), patch);
+            return updateOrderStatus(order.getId(), OrderStatus.UNFULFILLABLE, totals);
         }
+    }
+
+    private OrderPojo updateOrderStatus(String orderId, OrderStatus status, OrderCalculator totals)
+            throws ApiException {
+        OrderPojo patch = new OrderPojo();
+        patch.setStatus(status.getValue());
+        patch.setTotalItems(totals.getTotalItems());
+        patch.setTotalAmount(totals.getTotalAmount());
+        return orderApi.update(orderId, patch);
     }
 
     public OrderCreationResult retryOrder(String orderId, List<OrderItemPojo> updatedItems)

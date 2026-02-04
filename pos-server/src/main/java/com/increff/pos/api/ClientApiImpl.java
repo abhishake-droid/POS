@@ -23,22 +23,7 @@ public class ClientApiImpl implements ClientApi {
     @Override
     @Transactional(rollbackFor = ApiException.class)
     public ClientPojo add(ClientPojo clientPojo) throws ApiException {
-        ClientPojo duplicate = dao.findByNameOrPhoneOrEmail(
-                clientPojo.getName(),
-                clientPojo.getPhone(),
-                clientPojo.getEmail());
-
-        if (duplicate != null) {
-            if (duplicate.getName().equals(clientPojo.getName())) {
-                throw new ApiException("Client name already exists");
-            }
-            if (duplicate.getPhone().equals(clientPojo.getPhone())) {
-                throw new ApiException("Phone number already exists");
-            }
-            if (duplicate.getEmail().equals(clientPojo.getEmail())) {
-                throw new ApiException("Email already exists");
-            }
-        }
+        validateClientUniqueness(clientPojo, null);
 
         long sequence = sequenceGenerator.getNextSequence("client");
         clientPojo.setClientId(String.format("C%04d", sequence));
@@ -74,27 +59,31 @@ public class ClientApiImpl implements ClientApi {
     public ClientPojo update(String id, ClientPojo clientPojo) throws ApiException {
         ClientPojo existing = getCheck(id);
 
-        ClientPojo duplicate = dao.findByNameOrPhoneOrEmail(
-                clientPojo.getName(),
-                clientPojo.getPhone(),
-                clientPojo.getEmail());
-
-        if (duplicate != null && !duplicate.getId().equals(id)) {
-            if (duplicate.getName().equals(clientPojo.getName())) {
-                throw new ApiException("Client with name " + clientPojo.getName() + " already exists");
-            }
-            if (duplicate.getPhone().equals(clientPojo.getPhone())) {
-                throw new ApiException("Client with phone " + clientPojo.getPhone() + " already exists");
-            }
-            if (duplicate.getEmail().equals(clientPojo.getEmail())) {
-                throw new ApiException("Client with email " + clientPojo.getEmail() + " already exists");
-            }
-        }
+        validateClientUniqueness(clientPojo, id);
 
         existing.setName(clientPojo.getName());
         existing.setPhone(clientPojo.getPhone());
         existing.setEmail(clientPojo.getEmail());
 
         return dao.save(existing);
+    }
+
+    private void validateClientUniqueness(ClientPojo clientPojo, String excludeId) throws ApiException {
+        ClientPojo duplicate = dao.findByNameOrPhoneOrEmail(
+                clientPojo.getName(),
+                clientPojo.getPhone(),
+                clientPojo.getEmail());
+
+        if (duplicate != null && (excludeId == null || !duplicate.getId().equals(excludeId))) {
+            if (duplicate.getName().equals(clientPojo.getName())) {
+                throw new ApiException("Client name already exists");
+            }
+            if (duplicate.getPhone().equals(clientPojo.getPhone())) {
+                throw new ApiException("Phone number already exists");
+            }
+            if (duplicate.getEmail().equals(clientPojo.getEmail())) {
+                throw new ApiException("Email already exists");
+            }
+        }
     }
 }

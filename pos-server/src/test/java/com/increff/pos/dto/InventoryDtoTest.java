@@ -176,23 +176,16 @@ class InventoryDtoTest {
     }
 
     @Test
-    void testUploadInventoryWithResults_WithoutHeader() throws ApiException {
-        // Given
+    void testUploadInventoryWithResults_WithoutHeader() {
+        // Given - TSV without header (should fail now)
         String tsvContent = "bc123\t75";
         String base64Content = java.util.Base64.getEncoder().encodeToString(tsvContent.getBytes());
 
-        ProductPojo product = new ProductPojo();
-        product.setId("prod1");
-        product.setBarcode("bc123");
-
-        when(productFlow.getByBarcode("bc123")).thenReturn(product);
-
-        // When
-        String result = inventoryDto.uploadInventoryWithResults(base64Content);
-
-        // Then
-        assertNotNull(result);
-        verify(inventoryFlow, times(1)).updateBulk(anyList());
+        // When/Then - Should throw exception because header is mandatory
+        ApiException exception = assertThrows(ApiException.class, () -> {
+            inventoryDto.uploadInventoryWithResults(base64Content);
+        });
+        assertTrue(exception.getMessage().contains("Missing required header row"));
     }
 
     @Test

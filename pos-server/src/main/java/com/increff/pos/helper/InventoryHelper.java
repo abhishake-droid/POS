@@ -24,22 +24,30 @@ public class InventoryHelper {
 
     public static InventoryPojo parseInventory(String line, int rowNum, ProductFlow productFlow) throws ApiException {
         String[] columns = line.split("\t");
-        if (columns.length < 2) {
-            throw new ApiException("Row " + rowNum + ": Invalid format. Expected: barcode, quantity");
-        }
-        ProductPojo product = productFlow.getByBarcode(columns[0].trim().toLowerCase());
-        InventoryPojo pojo = new InventoryPojo();
-        pojo.setProductId(product.getId());
+
         try {
-            Integer quantity = Integer.parseInt(columns[1].trim());
-            if (quantity < 0) {
-                throw new ApiException("Row " + rowNum + ": Quantity cannot be negative");
+            // Access columns first to trigger ArrayIndexOutOfBoundsException if missing
+            String barcodeStr = columns[0].trim().toLowerCase();
+            String quantityStr = columns[1].trim();
+
+            ProductPojo product = productFlow.getByBarcode(barcodeStr);
+            InventoryPojo pojo = new InventoryPojo();
+            pojo.setProductId(product.getId());
+
+            try {
+                Integer quantity = Integer.parseInt(quantityStr);
+                if (quantity < 0) {
+                    throw new ApiException("Row " + rowNum + ": Quantity cannot be negative");
+                }
+                pojo.setQuantity(quantity);
+            } catch (NumberFormatException e) {
+                throw new ApiException("Row " + rowNum + ": Invalid quantity");
             }
-            pojo.setQuantity(quantity);
-        } catch (NumberFormatException e) {
-            throw new ApiException("Row " + rowNum + ": Invalid quantity");
+
+            return pojo;
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new ApiException("Row " + rowNum + ": Missing required columns. Expected: barcode, quantity");
         }
-        return pojo;
     }
 
     public static boolean isHeader(String firstLine) {

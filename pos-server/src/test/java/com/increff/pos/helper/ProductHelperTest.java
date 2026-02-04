@@ -146,41 +146,7 @@ class ProductHelperTest {
         assertTrue(columnMap.containsKey("clientid"));
     }
 
-    @Test
-    void testParseProduct_WithoutHeaderMap() throws ApiException {
-        // Given
-        String line = "BC001\tC001\tProduct A\t99.99\thttp://image.com/a.jpg";
-        int rowNum = 1;
-
-        // When
-        ProductPojo pojo = ProductHelper.parseProduct(line, rowNum, null);
-
-        // Then
-        assertNotNull(pojo);
-        assertEquals("bc001", pojo.getBarcode());
-        assertEquals("C001", pojo.getClientId());
-        assertEquals("product a", pojo.getName());
-        assertEquals(99.99, pojo.getMrp());
-        assertEquals("http://image.com/a.jpg", pojo.getImageUrl());
-    }
-
-    @Test
-    void testParseProduct_WithoutImageUrl() throws ApiException {
-        // Given
-        String line = "BC002\tC002\tProduct B\t49.99";
-        int rowNum = 2;
-
-        // When
-        ProductPojo pojo = ProductHelper.parseProduct(line, rowNum, null);
-
-        // Then
-        assertNotNull(pojo);
-        assertEquals("bc002", pojo.getBarcode());
-        assertEquals("C002", pojo.getClientId());
-        assertEquals("product b", pojo.getName());
-        assertEquals(49.99, pojo.getMrp());
-        assertNull(pojo.getImageUrl());
-    }
+    // Tests for parseProduct without header map removed - headers are now mandatory
 
     @Test
     void testParseProduct_WithHeaderMap() throws ApiException {
@@ -207,31 +173,7 @@ class ProductHelperTest {
         assertEquals("http://image.com/c.jpg", pojo.getImageUrl());
     }
 
-    @Test
-    void testParseProduct_InvalidMrp() {
-        // Given
-        String line = "BC004\tC004\tProduct D\tinvalid_mrp";
-        int rowNum = 4;
-
-        // When/Then
-        ApiException exception = assertThrows(ApiException.class, () -> {
-            ProductHelper.parseProduct(line, rowNum, null);
-        });
-        assertTrue(exception.getMessage().contains("Invalid MRP"));
-    }
-
-    @Test
-    void testParseProduct_InsufficientColumns() {
-        // Given
-        String line = "BC005\tC005"; // Only 2 columns, need at least 4
-        int rowNum = 5;
-
-        // When/Then
-        ApiException exception = assertThrows(ApiException.class, () -> {
-            ProductHelper.parseProduct(line, rowNum, null);
-        });
-        assertTrue(exception.getMessage().contains("Invalid format"));
-    }
+    // Tests for parseProduct without header map removed - headers are now mandatory
 
     @Test
     void testParseProduct_MissingColumnsWithHeaderMap() {

@@ -27,11 +27,6 @@ public class OrderApiImpl implements OrderApi {
         if (orderDao.findByOrderId(orderPojo.getOrderId()) != null) {
             throw new ApiException("Order with ID " + orderPojo.getOrderId() + " already exists");
         }
-
-        if (orderPojo.getOrderDate() == null) {
-            orderPojo.setOrderDate(ZonedDateTime.now());
-        }
-
         return orderDao.save(orderPojo);
     }
 
@@ -67,15 +62,9 @@ public class OrderApiImpl implements OrderApi {
     @Transactional(rollbackFor = ApiException.class)
     public OrderPojo update(String id, OrderPojo orderPojo) throws ApiException {
         OrderPojo existing = getCheck(id);
-        if (orderPojo.getStatus() != null) {
-            existing.setStatus(orderPojo.getStatus());
-        }
-        if (orderPojo.getTotalItems() != null) {
-            existing.setTotalItems(orderPojo.getTotalItems());
-        }
-        if (orderPojo.getTotalAmount() != null) {
-            existing.setTotalAmount(orderPojo.getTotalAmount());
-        }
+        existing.setStatus(orderPojo.getStatus());
+        existing.setTotalItems(orderPojo.getTotalItems());
+        existing.setTotalAmount(orderPojo.getTotalAmount());
         return orderDao.save(existing);
     }
 

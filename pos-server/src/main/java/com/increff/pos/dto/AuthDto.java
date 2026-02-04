@@ -1,7 +1,9 @@
 package com.increff.pos.dto;
 
-import com.increff.pos.flow.AuthFlow;
+import com.increff.pos.api.UserApi;
+import com.increff.pos.api.AuditLogApi;
 import com.increff.pos.db.UserPojo;
+import com.increff.pos.db.AuditLogPojo;
 import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.data.AuthData;
 import com.increff.pos.model.form.LoginForm;
@@ -17,7 +19,10 @@ import java.util.Base64;
 public class AuthDto {
 
     @Autowired
-    private AuthFlow authFlow;
+    private UserApi userApi;
+
+    @Autowired
+    private AuditLogApi auditLogApi;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private static final String SERVER_INSTANCE_ID = java.util.UUID.randomUUID().toString();
@@ -31,7 +36,7 @@ public class AuthDto {
         String email = loginForm.getEmail().trim();
         boolean isSupervisorEmail = supervisorEmail != null && supervisorEmail.equalsIgnoreCase(email);
 
-        UserPojo user = authFlow.getUserByEmail(email);
+        UserPojo user = userApi.getByEmail(email);
         if (user == null) {
             String errorMsg = isSupervisorEmail ? "Invalid email or password"
                     : "Operator not found. Please contact supervisor.";
@@ -55,7 +60,7 @@ public class AuthDto {
         authData.setName(user.getName());
         authData.setRole(role);
 
-        authFlow.logActivity(user.getEmail(), user.getName(), "LOGIN");
+        logActivity(user.getEmail(), user.getName(), "LOGIN");
         return authData;
     }
 
@@ -75,7 +80,7 @@ public class AuthDto {
                 throw new ApiException("Session expired or server restarted. Please login again.");
             }
 
-            UserPojo user = authFlow.getUserByEmail(email);
+            UserPojo user = userApi.getByEmail(email);
             if (user == null) {
                 throw new ApiException("User not found");
             }
@@ -100,9 +105,22 @@ public class AuthDto {
     }
 
     public void logLogout(String email) throws ApiException {
-        UserPojo user = authFlow.getUserByEmail(email);
+        UserPojo user = userApi.getByEmail(email);
         if (user != null) {
-            authFlow.logActivity(user.getEmail(), user.getName(), "LOGOUT");
+            logActivity(user.getEmail(), user.getName(), "LOGOUT");
+        }
+    }
+
+    private void logActivity(String email, String name, String action) {
+        try {
+            AuditLogPojo auditLog = new AuditLogPojo();
+            auditLog.setOperatorEmail(email);
+            auditLog.setOperatorName(name);
+            auditLog.setAction(action);
+            auditLog.setTimestamp(java.time.ZonedDateTime.now());
+            auditLogApi.add(auditLog);
+        } catch (Exception e) {
+            // Silently ignore audit log errors to prevent disrupting auth flow
         }
     }
 }

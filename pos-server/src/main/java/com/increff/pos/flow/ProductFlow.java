@@ -29,11 +29,6 @@ public class ProductFlow {
 
     @Transactional(rollbackFor = ApiException.class)
     public ProductPojo create(ProductPojo productPojo) throws ApiException {
-        return add(productPojo);
-    }
-
-    @Transactional(rollbackFor = ApiException.class)
-    public ProductPojo add(ProductPojo productPojo) throws ApiException {
         ProductPojo saved = productApi.add(productPojo);
         InventoryPojo inventory = new InventoryPojo();
         inventory.setProductId(saved.getId());
@@ -46,7 +41,6 @@ public class ProductFlow {
     public List<ProductPojo> addBulk(List<ProductPojo> productPojos) throws ApiException {
         List<ProductPojo> saved = productApi.addBulk(productPojos);
 
-        // Create all inventory objects
         List<InventoryPojo> inventories = saved.stream()
                 .map(pojo -> {
                     InventoryPojo inventory = new InventoryPojo();
@@ -56,7 +50,6 @@ public class ProductFlow {
                 })
                 .collect(Collectors.toList());
 
-        // Bulk insert all inventories at once
         inventoryApi.addBulk(inventories);
 
         return saved;
@@ -91,11 +84,6 @@ public class ProductFlow {
     @Transactional(readOnly = true)
     public ClientPojo getClientById(String clientId) throws ApiException {
         return clientApi.getCheckByClientId(clientId);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean existsByBarcode(String barcode) {
-        return productApi.existsByBarcode(barcode);
     }
 
     @Transactional(readOnly = true)

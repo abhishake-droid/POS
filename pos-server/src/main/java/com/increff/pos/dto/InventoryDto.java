@@ -10,6 +10,8 @@ import com.increff.pos.model.data.TsvUploadResult;
 import com.increff.pos.model.form.InventoryForm;
 import com.increff.pos.helper.InventoryHelper;
 import com.increff.pos.util.TsvUtil;
+import java.util.Map;
+import java.util.HashMap;
 import com.increff.pos.util.ValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,12 +44,16 @@ public class InventoryDto {
         String[] lines = TsvUtil.splitLines(content);
         List<TsvUploadResult> results = new ArrayList<>();
         List<InventoryPojo> validInventories = new ArrayList<>();
-        int startIndex = InventoryHelper.isHeader(lines[0]) ? 1 : 0;
 
-        // Map to aggregate quantities by productId
-        java.util.Map<String, Integer> quantityByProductId = new java.util.HashMap<>();
+        if (!InventoryHelper.isHeader(lines[0])) {
+            throw new ApiException(
+                    "Invalid TSV format: Missing required header row. " +
+                            "First line must contain: barcode, quantity (in any order, tab-separated)");
+        }
 
-        for (int i = startIndex; i < lines.length; i++) {
+        Map<String, Integer> quantityByProductId = new HashMap<>();
+
+        for (int i = 1; i < lines.length; i++) {
             String line = lines[i].trim();
             if (line.isEmpty())
                 continue;
@@ -56,7 +62,6 @@ public class InventoryDto {
                 InventoryPojo pojo = InventoryHelper.parseInventory(line, i + 1, productFlow);
                 String productId = pojo.getProductId();
 
-                // Aggregate quantities for duplicate barcodes
                 quantityByProductId.merge(productId, pojo.getQuantity(), Integer::sum);
 
                 results.add(new TsvUploadResult(i + 1, "SUCCESS", "Inventory updated", line));
@@ -65,8 +70,7 @@ public class InventoryDto {
             }
         }
 
-        // Convert aggregated map to list of InventoryPojo
-        for (java.util.Map.Entry<String, Integer> entry : quantityByProductId.entrySet()) {
+        for (Map.Entry<String, Integer> entry : quantityByProductId.entrySet()) {
             InventoryPojo pojo = new InventoryPojo();
             pojo.setProductId(entry.getKey());
             pojo.setQuantity(entry.getValue());

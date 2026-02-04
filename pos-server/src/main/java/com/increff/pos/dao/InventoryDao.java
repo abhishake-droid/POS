@@ -50,10 +50,6 @@ public class InventoryDao extends AbstractDao<InventoryPojo> {
     }
 
     public void bulkUpdateQuantities(java.util.Map<String, Integer> productIdToQuantity) {
-        if (productIdToQuantity == null || productIdToQuantity.isEmpty()) {
-            return;
-        }
-
         BulkOperations bulkOps = mongoOperations.bulkOps(BulkOperations.BulkMode.UNORDERED, InventoryPojo.class);
 
         for (java.util.Map.Entry<String, Integer> entry : productIdToQuantity.entrySet()) {

@@ -65,55 +65,35 @@ public class ProductHelper {
 
         ProductPojo pojo = new ProductPojo();
 
-        // If no header mapping, use default column order
-        if (columnMap == null) {
-            if (columns.length < 4) {
-                throw new ApiException(
-                        "Row " + rowNum + ": Invalid format. Expected: barcode, clientId, name, mrp, [imageUrl]");
+        try {
+            int barcodeIdx = columnMap.get("barcode");
+            int clientIdIdx = columnMap.get("clientid");
+            int nameIdx = columnMap.get("name");
+            int mrpIdx = columnMap.get("mrp");
+
+            if (barcodeIdx >= columns.length || clientIdIdx >= columns.length ||
+                    nameIdx >= columns.length || mrpIdx >= columns.length) {
+                throw new ApiException("Row " + rowNum + ": Missing required columns");
             }
-            pojo.setBarcode(columns[0].trim().toLowerCase());
-            pojo.setClientId(columns[1].trim());
-            pojo.setName(columns[2].trim().toLowerCase());
+
+            pojo.setBarcode(columns[barcodeIdx].trim().toLowerCase());
+            pojo.setClientId(columns[clientIdIdx].trim());
+            pojo.setName(columns[nameIdx].trim().toLowerCase());
+
             try {
-                pojo.setMrp(Double.parseDouble(columns[3].trim()));
+                pojo.setMrp(Double.parseDouble(columns[mrpIdx].trim()));
             } catch (NumberFormatException e) {
                 throw new ApiException("Row " + rowNum + ": Invalid MRP");
             }
-            if (columns.length > 4)
-                pojo.setImageUrl(columns[4].trim());
-        } else {
-            // Use header mapping for flexible column order
-            try {
-                int barcodeIdx = columnMap.get("barcode");
-                int clientIdIdx = columnMap.get("clientid");
-                int nameIdx = columnMap.get("name");
-                int mrpIdx = columnMap.get("mrp");
 
-                if (barcodeIdx >= columns.length || clientIdIdx >= columns.length ||
-                        nameIdx >= columns.length || mrpIdx >= columns.length) {
-                    throw new ApiException("Row " + rowNum + ": Missing required columns");
+            if (columnMap.containsKey("imageurl")) {
+                int imageUrlIdx = columnMap.get("imageurl");
+                if (imageUrlIdx < columns.length) {
+                    pojo.setImageUrl(columns[imageUrlIdx].trim());
                 }
-
-                pojo.setBarcode(columns[barcodeIdx].trim().toLowerCase());
-                pojo.setClientId(columns[clientIdIdx].trim());
-                pojo.setName(columns[nameIdx].trim().toLowerCase());
-
-                try {
-                    pojo.setMrp(Double.parseDouble(columns[mrpIdx].trim()));
-                } catch (NumberFormatException e) {
-                    throw new ApiException("Row " + rowNum + ": Invalid MRP");
-                }
-
-                // Optional imageUrl column
-                if (columnMap.containsKey("imageurl")) {
-                    int imageUrlIdx = columnMap.get("imageurl");
-                    if (imageUrlIdx < columns.length) {
-                        pojo.setImageUrl(columns[imageUrlIdx].trim());
-                    }
-                }
-            } catch (NullPointerException e) {
-                throw new ApiException("Row " + rowNum + ": Missing required column data");
             }
+        } catch (NullPointerException e) {
+            throw new ApiException("Row " + rowNum + ": Missing required column data");
         }
 
         return pojo;
@@ -123,12 +103,10 @@ public class ProductHelper {
         String[] columns = firstLine.toLowerCase().split("\t");
         Set<String> columnSet = new HashSet<>();
 
-        // Trim and add each column to set
         for (String col : columns) {
             columnSet.add(col.trim());
         }
 
-        // Must have all 4 required columns as separate tab-delimited values
         return columnSet.contains("barcode") && columnSet.contains("clientid") &&
                 columnSet.contains("name") && columnSet.contains("mrp");
     }

@@ -45,16 +45,6 @@ public class InvoiceDto {
         InvoiceRequest invoiceRequest = prepareInvoiceRequest(order, orderItems);
         String invoiceId = invoiceRequest.getInvoiceId();
 
-        // Debug logging
-        System.out.println("DEBUG: Generating invoice for order " + orderId);
-        System.out.println("DEBUG: Order items count: " + orderItems.size());
-        System.out.println("DEBUG: Invoice line items count: " + invoiceRequest.getItems().size());
-        if (!orderItems.isEmpty()) {
-            OrderItemPojo firstItem = orderItems.get(0);
-            System.out.println("DEBUG: First order item - barcode: " + firstItem.getBarcode() + ", name: "
-                    + firstItem.getProductName());
-        }
-
         byte[] pdfBytes;
         try {
             pdfBytes = invoiceClientWrapper.generateInvoicePdf(invoiceRequest);
@@ -65,7 +55,6 @@ public class InvoiceDto {
         String pdfPath = savePdfToFileSystem(invoiceId, pdfBytes);
         invoiceFlow.saveInvoiceAndUpdateOrder(invoiceId, orderId, pdfPath);
 
-        // Convert OrderPojo to OrderData
         OrderData orderData = new OrderData();
         orderData.setOrderId(order.getOrderId());
         orderData.setStatus("INVOICED");
