@@ -34,9 +34,11 @@ public class OrderDto {
         ValidationUtil.validate(form);
         List<OrderItemPojo> orderItems = convertToOrderItems(form);
         OrderCreationResult creationResult = orderFlow.createOrder(orderItems);
+
         String orderId = creationResult.getOrderId();
         OrderPojo order = orderFlow.getOrderWithItems(orderId);
         List<OrderItemPojo> savedItems = orderFlow.getOrderItems(orderId);
+
         OrderData orderData = OrderHelper.convertToData(order, false);
         orderData.setItems(OrderHelper.convertItemsToDtoList(savedItems));
         orderData.setFulfillable(creationResult.isFulfillable());
@@ -45,9 +47,11 @@ public class OrderDto {
     }
 
     public OrderData getById(String orderId) throws ApiException {
+        orderId = com.increff.pos.util.NormalizeUtil.normalizeOrderId(orderId);
         OrderPojo order = orderFlow.getOrderWithItems(orderId);
         List<OrderItemPojo> items = orderFlow.getOrderItems(orderId);
         boolean hasInvoice = "INVOICED".equals(order.getStatus());
+
         OrderData orderData = OrderHelper.convertToData(order, hasInvoice);
         orderData.setItems(OrderHelper.convertItemsToDtoList(items));
         return orderData;
@@ -104,9 +108,9 @@ public class OrderDto {
 
     public OrderData cancel(String orderId) throws ApiException {
         OrderPojo cancelled = orderFlow.cancelOrder(orderId);
-        boolean hasInvoice = "INVOICED".equals(cancelled.getStatus());
-        List<OrderItemPojo> items = orderFlow.getOrderItems(orderId);
-        OrderData orderData = OrderHelper.convertToData(cancelled, hasInvoice);
+        List<OrderItemPojo> items = orderFlow.getOrderItems(cancelled.getOrderId());
+
+        OrderData orderData = OrderHelper.convertToData(cancelled, false);
         orderData.setItems(OrderHelper.convertItemsToDtoList(items));
         return orderData;
     }
@@ -116,21 +120,16 @@ public class OrderDto {
         List<OrderItemPojo> orderItems = convertToOrderItems(form);
         OrderPojo order = orderFlow.updateOrder(orderId, orderItems);
         List<OrderItemPojo> savedItems = orderFlow.getOrderItems(order.getOrderId());
-        boolean hasInvoice = "INVOICED".equals(order.getStatus());
-        OrderData orderData = OrderHelper.convertToData(order, hasInvoice);
+
+        OrderData orderData = OrderHelper.convertToData(order, false);
         orderData.setItems(OrderHelper.convertItemsToDtoList(savedItems));
         return orderData;
     }
 
     private List<OrderItemPojo> convertToOrderItems(OrderForm form) {
         return form.getLines().stream()
-                .map(line -> {
-                    OrderItemPojo item = new OrderItemPojo();
-                    item.setProductId(line.getProductId());
-                    item.setQuantity(line.getQuantity());
-                    item.setMrp(line.getMrp());
-                    return item;
-                })
+                .map(line -> OrderHelper.createOrderItem(
+                        line.getProductId(), line.getQuantity(), line.getMrp()))
                 .collect(Collectors.toList());
     }
 
@@ -145,8 +144,8 @@ public class OrderDto {
         String resultOrderId = creationResult.getOrderId();
         OrderPojo order = orderFlow.getOrderWithItems(resultOrderId);
         List<OrderItemPojo> savedItems = orderFlow.getOrderItems(resultOrderId);
-        boolean hasInvoice = "INVOICED".equals(order.getStatus());
-        OrderData orderData = OrderHelper.convertToData(order, hasInvoice);
+
+        OrderData orderData = OrderHelper.convertToData(order, false);
         orderData.setItems(OrderHelper.convertItemsToDtoList(savedItems));
         orderData.setFulfillable(creationResult.isFulfillable());
         orderData.setUnfulfillableItems(creationResult.getUnfulfillableItems());

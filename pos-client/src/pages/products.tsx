@@ -37,7 +37,7 @@ import { ProductData, ProductForm, ProductSearchFilter, InventoryForm } from '..
 import { formatINR } from '../utils/formatNumber';
 import { ClientData } from '../types/client.types';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'react-toastify';
+import { toastError, toastSuccess, toastWarning } from '../utils/toast';
 
 const PAGE_SIZE = 12;
 
@@ -164,11 +164,11 @@ export default function Products() {
 
       setClients(allClients);
       if (allClients.length === 0) {
-        toast.warning('No clients found. Please create clients first.');
+        toastWarning('No clients found. Please create clients first.');
       }
     } catch (e: any) {
       console.error('Failed to load clients:', e);
-      toast.error('Failed to load clients: ' + (e.response?.data?.message || e.message));
+      toastError('Failed to load clients: ' + (e.response?.data?.message || e.message));
       setClients([]);
     } finally {
       setLoadingClients(false);
@@ -183,7 +183,7 @@ export default function Products() {
       setTotalPages(res.totalPages || 0);
       setTotalElements(res.totalElements || 0);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to load products');
+      toastError(e.response?.data?.message || 'Failed to load products');
     } finally {
       setLoading(false);
     }
@@ -205,7 +205,7 @@ export default function Products() {
         setTotalElements(1);
         setCurrentPage(0);
       } catch {
-        toast.error('Product not found');
+        toastError('Product not found');
         setProducts([]);
         setTotalPages(0);
         setTotalElements(0);
@@ -252,7 +252,7 @@ export default function Products() {
       setTotalElements(filtered.length);
       setCurrentPage(0);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Search failed');
+      toastError(e.response?.data?.message || 'Search failed');
       setProducts([]);
       setTotalPages(0);
       setTotalElements(0);
@@ -265,29 +265,29 @@ export default function Products() {
     try {
       if (editingId) {
         await productService.update(editingId, form);
-        toast.success('Product updated');
+        toastSuccess('Product updated');
       } else {
         await productService.create(form);
-        toast.success('Product created');
+        toastSuccess('Product created');
       }
       setOpen(false);
       setEditingId(null);
       setForm({ barcode: '', clientId: '', name: '', mrp: 0, imageUrl: '' });
       loadProducts(currentPage);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Operation failed');
+      toastError(e.response?.data?.message || 'Operation failed');
     }
   };
 
   const handleInventorySubmit = async () => {
     try {
       await productService.updateInventory(inventoryForm.productId, inventoryForm);
-      toast.success('Inventory updated');
+      toastSuccess('Inventory updated');
       setOpen(false);
       setInventoryForm({ productId: '', quantity: 0 });
       loadProducts(currentPage);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to update inventory');
+      toastError(e.response?.data?.message || 'Failed to update inventory');
     }
   };
 
@@ -390,12 +390,12 @@ export default function Products() {
 
   const handleUploadConfirm = () => {
     if (!uploadType || !uploadFile) {
-      toast.error('Please select a TSV file to upload');
+      toastError('Please select a TSV file to upload');
       return;
     }
 
     if (uploadFile.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB');
+      toastError('File size must be less than 5MB');
       return;
     }
 
@@ -408,7 +408,7 @@ export default function Products() {
         // Validate headers
         const lines = text.split('\n');
         if (lines.length === 0) {
-          toast.error('File is empty');
+          toastError('File is empty');
           setUploading(false);
           return;
         }
@@ -422,7 +422,7 @@ export default function Products() {
           const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
 
           if (missingHeaders.length > 0) {
-            toast.error(`Missing required headers: ${missingHeaders.join(', ')}`);
+            toastError(`Missing required headers: ${missingHeaders.join(', ')}`);
             setUploading(false);
             return;
           }
@@ -437,7 +437,7 @@ export default function Products() {
             const clientId = columns[clientIdIndex]?.trim();
 
             if (!clientId || clientId === '') {
-              toast.error(`Row ${i + 1}: Client ID cannot be blank. Please provide a valid client ID for all products.`);
+              toastError(`Row ${i + 1}: Client ID cannot be blank. Please provide a valid client ID for all products.`);
               setUploading(false);
               return;
             }
@@ -447,7 +447,7 @@ export default function Products() {
           const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
 
           if (missingHeaders.length > 0) {
-            toast.error(`Missing required headers: ${missingHeaders.join(', ')}`);
+            toastError(`Missing required headers: ${missingHeaders.join(', ')}`);
             setUploading(false);
             return;
           }
@@ -457,9 +457,9 @@ export default function Products() {
 
         let resultTsv: string;
         if (uploadType === 'inventory') {
-          resultTsv = await productService.uploadInventoryTsvWithResults(base64);
+          resultTsv = await productService.uploadInventoryTsv(base64);
         } else {
-          resultTsv = await productService.uploadProductsTsvWithResults(base64);
+          resultTsv = await productService.uploadProductsTsv(base64);
         }
 
         setUploadResultTsv(resultTsv);
@@ -468,9 +468,9 @@ export default function Products() {
         setUploadFailures(failures);
 
         if (hasErrors) {
-          toast.error('Upload completed with some errors.');
+          toastError('Upload completed with some errors.');
         } else {
-          toast.success(
+          toastSuccess(
             uploadType === 'inventory'
               ? 'Inventory uploaded successfully.'
               : 'Products uploaded successfully.'
@@ -481,7 +481,7 @@ export default function Products() {
         setCurrentPage(0);
         await loadProducts(0);
       } catch (err: any) {
-        toast.error(err?.response?.data?.message || 'Upload failed');
+        toastError(err?.response?.data?.message || 'Upload failed');
       } finally {
         setUploading(false);
       }
@@ -529,7 +529,7 @@ export default function Products() {
   const handleInventoryIncrement = () => {
     setTempInventoryValue((prev) => {
       if (prev >= 5000) {
-        toast.error('Inventory cannot exceed 5000');
+        toastError('Inventory cannot exceed 5000');
         return prev;
       }
       return prev + 1;
@@ -543,7 +543,7 @@ export default function Products() {
   const handleInventoryManualChange = (value: string) => {
     const numValue = parseInt(value) || 0;
     if (numValue > 5000) {
-      toast.error('Inventory cannot exceed 5000');
+      toastError('Inventory cannot exceed 5000');
       setTempInventoryValue(5000);
       return;
     }
@@ -556,11 +556,11 @@ export default function Products() {
         productId,
         quantity: tempInventoryValue,
       });
-      toast.success('Inventory updated');
+      toastSuccess('Inventory updated');
       setEditingInventoryId(null);
       loadProducts(currentPage);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to update inventory');
+      toastError(e.response?.data?.message || 'Failed to update inventory');
     }
   };
 
@@ -704,10 +704,10 @@ export default function Products() {
       )}
 
       {/* TSV UPLOAD DIALOG */}
-      <Dialog 
-        open={uploadDialogOpen} 
-        onClose={(event, reason) => { if (reason === 'backdropClick') return; handleCloseUploadDialog(); }} 
-        fullWidth 
+      <Dialog
+        open={uploadDialogOpen}
+        onClose={(event, reason) => { if (reason === 'backdropClick') return; handleCloseUploadDialog(); }}
+        fullWidth
         maxWidth="sm"
         PaperProps={{
           sx: {
@@ -716,9 +716,9 @@ export default function Products() {
           }
         }}
       >
-        <DialogTitle sx={{ 
-          pb: 1, 
-          pt: 3, 
+        <DialogTitle sx={{
+          pb: 1,
+          pt: 3,
           px: 3,
           display: 'flex',
           alignItems: 'center',
@@ -731,11 +731,11 @@ export default function Products() {
                 ? 'Bulk Upload Products'
                 : 'Bulk Upload'}
           </Typography>
-          <IconButton 
-            onClick={handleCloseUploadDialog} 
+          <IconButton
+            onClick={handleCloseUploadDialog}
             disabled={uploading}
             size="small"
-            sx={{ 
+            sx={{
               color: '#6b7280',
               '&:hover': { bgcolor: '#f3f4f6' }
             }}
@@ -743,22 +743,22 @@ export default function Products() {
             <Close fontSize="small" />
           </IconButton>
         </DialogTitle>
-        
+
         <DialogContent sx={{ px: 3, pb: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
-            
+
             {/* Download Template Section */}
-            <Box sx={{ 
-              bgcolor: '#f9fafb', 
-              borderRadius: 2, 
+            <Box sx={{
+              bgcolor: '#f9fafb',
+              borderRadius: 2,
               p: 2,
               border: '1px solid #e5e7eb'
             }}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                <Box sx={{ 
-                  bgcolor: 'white', 
-                  borderRadius: 1.5, 
-                  p: 1, 
+                <Box sx={{
+                  bgcolor: 'white',
+                  borderRadius: 1.5,
+                  p: 1,
                   display: 'flex',
                   border: '1px solid #e5e7eb'
                 }}>
@@ -954,7 +954,7 @@ export default function Products() {
             )}
           </Box>
         </DialogContent>
-        
+
         <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1.5 }}>
           {uploadResultTsv && (
             <Button
@@ -977,8 +977,8 @@ export default function Products() {
             </Button>
           )}
           <Box sx={{ flex: 1 }} />
-          <Button 
-            onClick={handleCloseUploadDialog} 
+          <Button
+            onClick={handleCloseUploadDialog}
             disabled={uploading}
             sx={{
               textTransform: 'none',

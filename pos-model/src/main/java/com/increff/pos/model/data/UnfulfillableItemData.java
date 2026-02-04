@@ -10,5 +10,5 @@ public class UnfulfillableItemData {
     private String productName;
     private Integer requestedQuantity;
     private Integer availableQuantity;
-    private String reason; // "OUT_OF_STOCK" or "INSUFFICIENT_QUANTITY"
+    private String reason;
 }

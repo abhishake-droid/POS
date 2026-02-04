@@ -8,9 +8,9 @@ import com.increff.pos.db.InventoryPojo;
 import com.increff.pos.db.ProductPojo;
 import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.form.PageForm;
-import com.increff.pos.util.ValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import com.increff.pos.helper.ProductHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,9 +30,7 @@ public class ProductFlow {
     @Transactional(rollbackFor = ApiException.class)
     public ProductPojo create(ProductPojo productPojo) throws ApiException {
         ProductPojo saved = productApi.add(productPojo);
-        InventoryPojo inventory = new InventoryPojo();
-        inventory.setProductId(saved.getId());
-        inventory.setQuantity(0);
+        InventoryPojo inventory = ProductHelper.createInitialInventory(saved.getId());
         inventoryApi.add(inventory);
         return saved;
     }
@@ -42,12 +40,7 @@ public class ProductFlow {
         List<ProductPojo> saved = productApi.addBulk(productPojos);
 
         List<InventoryPojo> inventories = saved.stream()
-                .map(pojo -> {
-                    InventoryPojo inventory = new InventoryPojo();
-                    inventory.setProductId(pojo.getId());
-                    inventory.setQuantity(0);
-                    return inventory;
-                })
+                .map(pojo -> com.increff.pos.helper.ProductHelper.createInitialInventory(pojo.getId()))
                 .collect(Collectors.toList());
 
         inventoryApi.addBulk(inventories);
@@ -67,7 +60,6 @@ public class ProductFlow {
 
     @Transactional(readOnly = true)
     public Page<ProductPojo> getAll(PageForm form) throws ApiException {
-        ValidationUtil.validate(form);
         return productApi.getAll(form);
     }
 

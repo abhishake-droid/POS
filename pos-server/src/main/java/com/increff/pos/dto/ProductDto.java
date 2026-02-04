@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-//Todo proper how parsing works how the error is thrown
-
 @Service
 public class ProductDto {
 
@@ -41,6 +39,7 @@ public class ProductDto {
     }
 
     public ProductData getById(String id) throws ApiException {
+        id = NormalizeUtil.normalizeId(id);
         ProductPojo product = productFlow.getById(id);
         return toDataWithRelations(product);
     }
@@ -67,11 +66,29 @@ public class ProductDto {
     }
 
     public ProductData update(String id, ProductForm form) throws ApiException {
+        id = NormalizeUtil.normalizeId(id);
         ValidationUtil.validate(form);
         NormalizeUtil.normalizeProductForm(form);
         ProductPojo pojo = ProductHelper.convertToEntity(form);
         ProductPojo updated = productFlow.update(id, pojo);
         return toDataWithRelations(updated);
+    }
+
+    public String uploadProductsTsv(String base64Content) throws ApiException {
+        String content = TsvUtil.decode(base64Content);
+        String[] lines = TsvUtil.splitLines(content);
+        List<TsvUploadResult> results = new ArrayList<>();
+
+        Map<String, Integer> columnMap = validateProductHeader(lines);
+
+        ParsedProductsData parsedData = parseProducts(lines, columnMap, results);
+        List<ProductPojo> productsToInsert = filterExistingProducts(parsedData.products, parsedData.rowNumbers, lines,
+                results);
+        performBulkProductInsert(productsToInsert, parsedData.rowNumbers, lines, results);
+
+        results.sort((a, b) -> Integer.compare(a.getRowNumber(), b.getRowNumber()));
+
+        return TsvUtil.encode(ProductHelper.buildResultTsv(results));
     }
 
     private ProductData toDataWithRelations(ProductPojo product) throws ApiException {
@@ -80,23 +97,20 @@ public class ProductDto {
         return ProductHelper.convertToData(product, client.getName(), inventory.getQuantity());
     }
 
-    public String uploadProductsWithResults(String base64Content) throws ApiException {
-        String content = TsvUtil.decode(base64Content);
-        String[] lines = TsvUtil.splitLines(content);
-        List<TsvUploadResult> results = new ArrayList<>();
-        List<ProductPojo> validProducts = new ArrayList<>();
-        List<String> validBarcodes = new ArrayList<>();
-        List<Integer> validProductRows = new ArrayList<>();
-
+    private Map<String, Integer> validateProductHeader(String[] lines) throws ApiException {
         if (!ProductHelper.isHeader(lines[0])) {
             throw new ApiException(
                     "Invalid TSV format: Missing required header row. " +
                             "First line must contain: barcode, clientid, name, mrp (in any order, tab-separated)");
         }
+        return ProductHelper.parseHeader(lines[0]);
+    }
 
-        Map<String, Integer> columnMap = ProductHelper.parseHeader(lines[0]);
+    private ParsedProductsData parseProducts(String[] lines, Map<String, Integer> columnMap,
+            List<TsvUploadResult> results) {
+        List<ProductPojo> validProducts = new ArrayList<>();
+        List<Integer> validProductRows = new ArrayList<>();
 
-        // First pass
         for (int i = 1; i < lines.length; i++) {
             String line = lines[i].trim();
             if (line.isEmpty())
@@ -107,54 +121,70 @@ public class ProductDto {
             try {
                 ProductPojo pojo = ProductHelper.parseProduct(line, rowNum, columnMap);
                 validProducts.add(pojo);
-                validBarcodes.add(pojo.getBarcode());
                 validProductRows.add(rowNum);
             } catch (ApiException e) {
                 results.add(new TsvUploadResult(rowNum, "FAILED", e.getMessage(), line));
             }
         }
 
-        // Second pass
+        return new ParsedProductsData(validProducts, validProductRows);
+    }
+
+    private List<ProductPojo> filterExistingProducts(List<ProductPojo> products, List<Integer> rowNumbers,
+            String[] lines, List<TsvUploadResult> results) {
+        List<String> validBarcodes = products.stream()
+                .map(ProductPojo::getBarcode)
+                .toList();
+
         List<String> existingBarcodes = productFlow.getExistingBarcodes(validBarcodes);
         Set<String> existingBarcodesSet = new HashSet<>(existingBarcodes);
 
-        // Third pass
         List<ProductPojo> productsToInsert = new ArrayList<>();
-        List<Integer> rowsToInsert = new ArrayList<>();
 
-        for (int i = 0; i < validProducts.size(); i++) {
-            ProductPojo pojo = validProducts.get(i);
-            int rowNum = validProductRows.get(i);
+        for (int i = 0; i < products.size(); i++) {
+            ProductPojo pojo = products.get(i);
+            int rowNum = rowNumbers.get(i);
             String line = lines[rowNum - 1];
 
             if (existingBarcodesSet.contains(pojo.getBarcode())) {
                 results.add(new TsvUploadResult(rowNum, "SKIPPED", "Product already exists", line));
             } else {
                 productsToInsert.add(pojo);
-                rowsToInsert.add(rowNum);
             }
         }
 
-        // Fourth pass
-        if (!productsToInsert.isEmpty()) {
-            try {
-                List<ProductPojo> savedProducts = productFlow.addBulk(productsToInsert);
-                for (int i = 0; i < savedProducts.size(); i++) {
-                    int rowNum = rowsToInsert.get(i);
-                    String line = lines[rowNum - 1];
-                    results.add(new TsvUploadResult(rowNum, "SUCCESS", "Product created", line));
-                }
-            } catch (ApiException e) {
-                for (int i = 0; i < productsToInsert.size(); i++) {
-                    int rowNum = rowsToInsert.get(i);
-                    String line = lines[rowNum - 1];
-                    results.add(new TsvUploadResult(rowNum, "FAILED", "Bulk insert failed: " + e.getMessage(), line));
-                }
-            }
+        return productsToInsert;
+    }
+
+    private void performBulkProductInsert(List<ProductPojo> productsToInsert, List<Integer> allRowNumbers,
+            String[] lines, List<TsvUploadResult> results) {
+        if (productsToInsert.isEmpty()) {
+            return;
         }
 
-        results.sort((a, b) -> Integer.compare(a.getRowNumber(), b.getRowNumber()));
+        try {
+            List<ProductPojo> savedProducts = productFlow.addBulk(productsToInsert);
+            for (int i = 0; i < savedProducts.size(); i++) {
+                int rowNum = allRowNumbers.get(i);
+                String line = lines[rowNum - 1];
+                results.add(new TsvUploadResult(rowNum, "SUCCESS", "Product created", line));
+            }
+        } catch (ApiException e) {
+            for (int i = 0; i < productsToInsert.size(); i++) {
+                int rowNum = allRowNumbers.get(i);
+                String line = lines[rowNum - 1];
+                results.add(new TsvUploadResult(rowNum, "FAILED", "Bulk insert failed: " + e.getMessage(), line));
+            }
+        }
+    }
 
-        return TsvUtil.encode(ProductHelper.buildResultTsv(results));
+    private static class ParsedProductsData {
+        final List<ProductPojo> products;
+        final List<Integer> rowNumbers;
+
+        ParsedProductsData(List<ProductPojo> products, List<Integer> rowNumbers) {
+            this.products = products;
+            this.rowNumbers = rowNumbers;
+        }
     }
 }

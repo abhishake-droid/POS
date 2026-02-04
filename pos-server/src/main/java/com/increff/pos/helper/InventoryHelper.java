@@ -65,4 +65,11 @@ public class InventoryHelper {
         }
         return sb.toString();
     }
+
+    public static InventoryPojo createInventoryUpdate(String productId, Integer quantity) {
+        InventoryPojo pojo = new InventoryPojo();
+        pojo.setProductId(productId);
+        pojo.setQuantity(quantity);
+        return pojo;
+    }
 }

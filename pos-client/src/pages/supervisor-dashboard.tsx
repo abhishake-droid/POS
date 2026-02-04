@@ -28,7 +28,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { operatorService } from '../services/operator.service';
 import { auditLogService } from '../services/auditLog.service';
 import { OperatorData, AuditLogData } from '../types/operator.types';
-import { toast } from 'react-toastify';
+import { toastError, toastSuccess } from '../utils/toast';
 import AuthGuard from '../components/AuthGuard';
 
 const PAGE_SIZE = 10;
@@ -101,7 +101,7 @@ export default function SupervisorDashboard() {
       setOperators(res.content || []);
       setTotalPages(res.totalPages || 0);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to load operators');
+      toastError(e.response?.data?.message || 'Failed to load operators');
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export default function SupervisorDashboard() {
       const logs = await auditLogService.getAllList();
       setAuditLogs(logs.slice(0, 50));
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to load audit logs');
+      toastError(e.response?.data?.message || 'Failed to load audit logs');
     }
   };
 

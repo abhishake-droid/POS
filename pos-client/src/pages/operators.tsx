@@ -32,7 +32,7 @@ import { styled } from '@mui/material/styles';
 import { operatorService } from '../services/operator.service';
 import { OperatorData, OperatorForm } from '../types/operator.types';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'react-toastify';
+import { toastError, toastSuccess } from '../utils/toast';
 import AuthGuard from '../components/AuthGuard';
 
 const PAGE_SIZE = 10;
@@ -114,7 +114,7 @@ export default function Operators() {
       setOperators(res.content || []);
       setTotalPages(res.totalPages || 0);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to load operators');
+      toastError(e.response?.data?.message || 'Failed to load operators');
     } finally {
       setLoading(false);
     }
@@ -123,12 +123,12 @@ export default function Operators() {
   const handleSubmit = async () => {
     try {
       await operatorService.create(form);
-      toast.success('Operator created successfully');
+      toastSuccess('Operator created successfully');
       setOpen(false);
       setForm({ email: '', name: '', password: '' });
       loadOperators(currentPage);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to create operator');
+      toastError(e.response?.data?.message || 'Failed to create operator');
     }
   };
 

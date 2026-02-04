@@ -8,8 +8,6 @@ export const productService = {
   },
 
   search: async (query: string, page: number = 0, size: number = 20): Promise<any> => {
-    // For now, use getAll and filter client-side
-    // TODO: Add server-side search endpoint
     const response = await apiClient.post('/product/get-all-paginated', { page, size: 100 });
     const products = response.data.content || [];
 
@@ -50,15 +48,15 @@ export const productService = {
 
 
 
-  uploadProductsTsvWithResults: async (base64Content: string): Promise<string> => {
-    const response = await apiClient.post('/product/upload-products-with-results', base64Content, {
+  uploadProductsTsv: async (base64Content: string): Promise<string> => {
+    const response = await apiClient.post('/product/upload-products-tsv', base64Content, {
       headers: { 'Content-Type': 'text/plain' },
     });
     return response.data;
   },
 
-  uploadInventoryTsvWithResults: async (base64Content: string): Promise<string> => {
-    const response = await apiClient.post('/inventory/upload-with-results', base64Content, {
+  uploadInventoryTsv: async (base64Content: string): Promise<string> => {
+    const response = await apiClient.post('/inventory/upload-inventory-tsv', base64Content, {
       headers: { 'Content-Type': 'text/plain' },
     });
     return response.data;

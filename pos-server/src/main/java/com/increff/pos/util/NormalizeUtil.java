@@ -28,4 +28,12 @@ public class NormalizeUtil {
     public static String normalizeBarcode(String barcode) {
         return barcode.trim().toLowerCase();
     }
+
+    public static String normalizeOrderId(String orderId) {
+        return orderId != null ? orderId.trim() : null;
+    }
+
+    public static String normalizeId(String id) {
+        return id != null ? id.trim() : null;
+    }
 }

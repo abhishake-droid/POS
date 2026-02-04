@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class OrderCreationResult {
-    private String orderId; // ID of the created/retried order
+    private String orderId;
     private boolean fulfillable;
     private List<UnfulfillableItemData> unfulfillableItems;
 }

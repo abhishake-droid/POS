@@ -3,12 +3,10 @@ package com.increff.pos.db;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.time.ZonedDateTime;
 
 @Data
-@EqualsAndHashCode(callSuper = false)
 @Document(collection = "audit_logs")
 public class AuditLogPojo extends AbstractPojo {
 

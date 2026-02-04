@@ -10,6 +10,7 @@ import com.increff.pos.exception.ApiException;
 import com.increff.pos.util.OrderStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -45,12 +46,10 @@ public class InvoiceFlow {
         return new OrderWithItems(order, orderItems);
     }
 
+    @Transactional(rollbackFor = ApiException.class)
     public InvoicePojo saveInvoiceAndUpdateOrder(String invoiceId, String orderId, String pdfPath) throws ApiException {
-        InvoicePojo invoice = new InvoicePojo();
-        invoice.setInvoiceId(invoiceId);
-        invoice.setOrderId(orderId);
-        invoice.setPdfPath(pdfPath);
-        invoice.setInvoiceDate(ZonedDateTime.now());
+        InvoicePojo invoice = com.increff.pos.helper.InvoiceHelper.createInvoice(
+                invoiceId, orderId, pdfPath, ZonedDateTime.now());
         InvoicePojo savedInvoice = invoiceApi.add(invoice);
 
         OrderPojo order = orderApi.getCheckByOrderId(orderId);

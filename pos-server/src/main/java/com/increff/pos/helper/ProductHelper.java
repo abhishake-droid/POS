@@ -5,6 +5,7 @@ import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.data.ProductData;
 import com.increff.pos.model.data.TsvUploadResult;
 import com.increff.pos.model.form.ProductForm;
+import com.increff.pos.db.InventoryPojo;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -120,5 +121,12 @@ public class ProductHelper {
                     .append(res.getData()).append("\n");
         }
         return sb.toString();
+    }
+
+    public static InventoryPojo createInitialInventory(String productId) {
+        InventoryPojo inventory = new InventoryPojo();
+        inventory.setProductId(productId);
+        inventory.setQuantity(0);
+        return inventory;
     }
 }

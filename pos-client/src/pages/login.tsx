@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'react-toastify';
+import { toastError, toastSuccess } from '../utils/toast';
 
 const StyledContainer = styled(Container)(({ theme }) => ({
   paddingTop: '4rem',
@@ -60,9 +60,9 @@ export default function Login() {
 
     try {
       await login(email.trim(), password.trim());
-      toast.success('Login successful');
+      toastSuccess('Login successful');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      toastError(error.response?.data?.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }

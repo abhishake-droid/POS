@@ -23,6 +23,7 @@ public class ProductApiImpl implements ProductApi {
 
     @Override
     public ProductPojo add(ProductPojo pojo) throws ApiException {
+        validateBarcodeUniqueness(pojo.getBarcode(), null);
         return productDao.save(pojo);
     }
 
@@ -74,5 +75,13 @@ public class ProductApiImpl implements ProductApi {
             return List.of();
         }
         return productDao.findBarcodesByBarcodes(barcodes);
+    }
+
+    private void validateBarcodeUniqueness(String barcode, String excludeId) throws ApiException {
+        ProductPojo existing = productDao.findByBarcode(barcode).orElse(null);
+
+        if (existing != null && (excludeId == null || !existing.getId().equals(excludeId))) {
+            throw new ApiException("Product with barcode '" + barcode + "' already exists");
+        }
     }
 }

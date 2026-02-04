@@ -14,6 +14,7 @@ import com.increff.pos.exception.ApiException;
 import com.increff.pos.util.OrderStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -44,6 +45,7 @@ public class DailySalesFlow {
         aggregateSalesForDate(today);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void aggregateSalesForDate(LocalDate date) {
         ZonedDateTime startOfDay = date.atStartOfDay(ZoneId.systemDefault());
         ZonedDateTime endOfDay = startOfDay.plus(1, ChronoUnit.DAYS);
@@ -106,13 +108,9 @@ public class DailySalesFlow {
                 existing.setClientName(clientName);
                 dailySalesApi.update(existing.getId(), existing);
             } else {
-                DailySalesPojo newRecord = new DailySalesPojo();
-                newRecord.setDate(date);
-                newRecord.setClientId(clientId);
-                newRecord.setClientName(clientName);
-                newRecord.setInvoicedOrdersCount(data.invoicedOrdersCount);
-                newRecord.setInvoicedItemsCount(data.invoicedItemsCount);
-                newRecord.setTotalRevenue(data.totalRevenue);
+                DailySalesPojo newRecord = com.increff.pos.helper.DailySalesHelper.createDailySales(
+                        date, clientId, clientName,
+                        data.invoicedOrdersCount, data.invoicedItemsCount, data.totalRevenue);
                 dailySalesApi.add(newRecord);
             }
         }

@@ -9,7 +9,11 @@ import com.increff.pos.db.ProductPojo;
 import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.data.OrderData;
 import com.increff.pos.model.data.OrderItemData;
+import com.increff.pos.model.data.OrderCreationResult;
+import com.increff.pos.model.data.UnfulfillableItemData;
+import com.increff.pos.model.data.InventoryCheckResult;
 import org.springframework.util.StringUtils;
+import com.increff.pos.util.NormalizeUtil;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -52,22 +56,20 @@ public class OrderHelper {
         return pojoList.stream().map(OrderHelper::convertItemToDto).collect(Collectors.toList());
     }
 
-
-    //Todo isnt it already validated in form
     public static String validateOrderId(String orderId) throws ApiException {
+        orderId = NormalizeUtil.normalizeOrderId(orderId);
+
         if (!StringUtils.hasText(orderId)) {
             throw new ApiException("Order ID cannot be empty");
         }
-        return orderId.trim();
+        return orderId;
     }
-
 
     public static List<String> extractProductIds(List<OrderItemPojo> items) {
         return items.stream()
                 .map(OrderItemPojo::getProductId)
                 .collect(Collectors.toList());
     }
-
 
     public static Map<String, ProductPojo> fetchProductsMap(ProductApi productApi, List<String> productIds) {
         List<ProductPojo> products = productApi.getByIds(productIds);
@@ -80,7 +82,6 @@ public class OrderHelper {
         return inventories.stream()
                 .collect(Collectors.toMap(InventoryPojo::getProductId, i -> i));
     }
-
 
     public static Map<String, Integer> prepareInventoryRestore(
             List<OrderItemPojo> items,
@@ -107,5 +108,67 @@ public class OrderHelper {
             updates.put(item.getProductId(), newQty);
         }
         return updates;
+    }
+
+    public static OrderPojo createOrderPatch(String status) {
+        OrderPojo patch = new OrderPojo();
+        patch.setStatus(status);
+        return patch;
+    }
+
+    public static OrderPojo createOrderPatch(String status, Integer totalItems, Double totalAmount) {
+        OrderPojo patch = new OrderPojo();
+        patch.setStatus(status);
+        patch.setTotalItems(totalItems);
+        patch.setTotalAmount(totalAmount);
+        return patch;
+    }
+
+    public static OrderCreationResult createOrderCreationResult(
+            String orderId, boolean isFulfillable,
+            List<UnfulfillableItemData> unfulfillableItems) {
+        OrderCreationResult result = new OrderCreationResult();
+        result.setOrderId(orderId);
+        result.setFulfillable(isFulfillable);
+        result.setUnfulfillableItems(unfulfillableItems);
+        return result;
+    }
+
+    public static OrderPojo createNewOrder(String orderId, String status, Integer totalItems,
+            Double totalAmount, java.time.ZonedDateTime orderDate) {
+        OrderPojo order = new OrderPojo();
+        order.setOrderId(orderId);
+        order.setStatus(status);
+        order.setTotalItems(totalItems);
+        order.setTotalAmount(totalAmount);
+        order.setOrderDate(orderDate);
+        return order;
+    }
+
+    public static InventoryCheckResult createInventoryCheckResult(
+            boolean allAvailable, List<UnfulfillableItemData> unfulfillableItems) {
+        InventoryCheckResult result = new InventoryCheckResult();
+        result.setAllAvailable(allAvailable);
+        result.setUnfulfillableItems(unfulfillableItems);
+        return result;
+    }
+
+    public static UnfulfillableItemData createUnfulfillableItem(String barcode, String productName,
+            Integer requestedQuantity, Integer availableQuantity, String reason) {
+        UnfulfillableItemData item = new UnfulfillableItemData();
+        item.setBarcode(barcode);
+        item.setProductName(productName);
+        item.setRequestedQuantity(requestedQuantity);
+        item.setAvailableQuantity(availableQuantity);
+        item.setReason(reason);
+        return item;
+    }
+
+    public static com.increff.pos.db.OrderItemPojo createOrderItem(String productId, Integer quantity, Double mrp) {
+        com.increff.pos.db.OrderItemPojo item = new com.increff.pos.db.OrderItemPojo();
+        item.setProductId(productId);
+        item.setQuantity(quantity);
+        item.setMrp(mrp);
+        return item;
     }
 }

@@ -27,7 +27,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { toast } from 'react-toastify';
+import { toastError, toastSuccess, toastWarning } from '../utils/toast';
 import AuthGuard from '../components/AuthGuard';
 import { DailySalesData, ClientSalesReport } from '../types/report.types';
 import { reportService } from '../services/report.service';
@@ -231,7 +231,7 @@ export default function SalesReportPage() {
 
   const loadDailySales = async () => {
     if (!selectedDate) {
-      toast.error('Please select a date');
+      toastError('Please select a date');
       return;
     }
     setLoading(true);
@@ -243,13 +243,13 @@ export default function SalesReportPage() {
       );
       setDailySales(data);
       if (data.length === 0) {
-        toast.info('No sales data found for this date');
+        toastWarning('No sales data found for this date');
       } else {
-        toast.success(`Loaded sales data.`);
+        toastSuccess(`Loaded sales data.`);
       }
     } catch (e: any) {
       const errorMsg = e.response?.data?.message || e.message || 'Failed to load daily sales';
-      toast.error(errorMsg);
+      toastError(errorMsg);
       setDailySales([]);
     } finally {
       setLoading(false);
@@ -258,7 +258,7 @@ export default function SalesReportPage() {
 
   const loadDateRangeReport = async () => {
     if (!rangeFromDate || !rangeToDate) {
-      toast.error('Please select both start and end dates');
+      toastError('Please select both start and end dates');
       return;
     }
     setLoading(true);
@@ -270,13 +270,13 @@ export default function SalesReportPage() {
       );
       setDateRangeReport(data);
       if (data.length === 0) {
-        toast.info('No sales data found');
+        toastWarning('No sales data found');
       } else {
-        toast.success(`Loaded report for ${data.length} clients`);
+        toastSuccess(`Loaded report for ${data.length} clients`);
       }
     } catch (e: any) {
       const errorMsg = e.response?.data?.message || e.message || 'Failed to load report';
-      toast.error(errorMsg);
+      toastError(errorMsg);
       setDateRangeReport([]);
     } finally {
       setLoading(false);

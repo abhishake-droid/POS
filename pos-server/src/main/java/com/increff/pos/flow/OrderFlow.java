@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ public class OrderFlow {
     @Autowired
     private SequenceGenerator sequenceGenerator;
 
+    @Transactional(rollbackFor = ApiException.class)
     public OrderCreationResult createOrder(List<OrderItemPojo> orderItems) throws ApiException {
         String orderId = generateOrderId();
         InventoryCheckResult checkResult = checkAllInventoryAvailable(orderItems);
@@ -43,7 +45,65 @@ public class OrderFlow {
         String orderStatus = processOrderCreation(orderId, orderItems, checkResult, totals);
         OrderPojo savedOrder = saveNewOrder(orderId, orderStatus, totals);
 
-        return buildOrderCreationResult(savedOrder, checkResult);
+        return OrderHelper.createOrderCreationResult(
+                savedOrder.getOrderId(),
+                checkResult.isAllAvailable(),
+                checkResult.getUnfulfillableItems());
+    }
+
+    public OrderPojo getOrderWithItems(String orderId) throws ApiException {
+        orderId = OrderHelper.validateOrderId(orderId);
+        return orderApi.getCheckByOrderId(orderId);
+    }
+
+    public List<OrderItemPojo> getOrderItems(String orderId) {
+        return orderItemApi.getByOrderId(orderId);
+    }
+
+    public List<OrderPojo> getOrderWithFilters(String orderId, String status, ZonedDateTime fromDate,
+            ZonedDateTime toDate) {
+        return orderApi.getWithFilters(orderId, status, fromDate, toDate);
+    }
+
+    public Page<OrderPojo> getOrderWithFilters(String orderId, String status, ZonedDateTime fromDate,
+            ZonedDateTime toDate, Pageable pageable) {
+        return orderApi.getWithFilters(orderId, status, fromDate, toDate, pageable);
+    }
+
+    @Transactional(rollbackFor = ApiException.class)
+    public OrderPojo cancelOrder(String orderId) throws ApiException {
+        orderId = OrderHelper.validateOrderId(orderId);
+        OrderPojo order = validateCancellableOrder(orderId);
+        restoreInventoryForCancelledOrder(order.getOrderId());
+        return updateOrderStatus(order.getId(), OrderStatus.CANCELLED);
+    }
+
+    @Transactional(rollbackFor = ApiException.class)
+    public OrderCreationResult retryOrder(String orderId, List<OrderItemPojo> updatedItems)
+            throws ApiException {
+        orderId = OrderHelper.validateOrderId(orderId);
+        OrderPojo order = validateRetryableOrder(orderId);
+        List<OrderItemPojo> itemsToCheck = prepareItemsForRetry(orderId, updatedItems);
+        InventoryCheckResult checkResult = checkAllInventoryAvailable(itemsToCheck);
+
+        if (checkResult.isAllAvailable()) {
+            return processFulfillableRetry(order, itemsToCheck);
+        } else {
+            return processUnfulfillableRetry(order, updatedItems, checkResult);
+        }
+    }
+
+    @Transactional(rollbackFor = ApiException.class)
+    public OrderPojo updateOrder(String orderId, List<OrderItemPojo> newOrderItems) throws ApiException {
+        orderId = OrderHelper.validateOrderId(orderId);
+        OrderPojo order = validateUpdatableOrder(orderId);
+
+        restoreAndClearExistingItems(orderId);
+
+        OrderCalculator totals = new OrderCalculator();
+        InventoryCheckResult checkResult = checkAllInventoryAvailable(newOrderItems);
+
+        return processOrderUpdate(order, orderId, newOrderItems, checkResult, totals);
     }
 
     private String generateOrderId() {
@@ -86,14 +146,6 @@ public class OrderFlow {
         return orderApi.add(order);
     }
 
-    private OrderCreationResult buildOrderCreationResult(OrderPojo savedOrder, InventoryCheckResult checkResult) {
-        OrderCreationResult result = new OrderCreationResult();
-        result.setOrderId(savedOrder.getOrderId());
-        result.setFulfillable(checkResult.isAllAvailable());
-        result.setUnfulfillableItems(checkResult.getUnfulfillableItems());
-        return result;
-    }
-
     private InventoryCheckResult checkAllInventoryAvailable(List<OrderItemPojo> orderItems)
             throws ApiException {
         InventoryCheckResult result = new InventoryCheckResult();
@@ -127,31 +179,6 @@ public class OrderFlow {
         return result;
     }
 
-    public OrderPojo getOrderWithItems(String orderId) throws ApiException {
-        return orderApi.getCheckByOrderId(orderId);
-    }
-
-    public List<OrderItemPojo> getOrderItems(String orderId) {
-        return orderItemApi.getByOrderId(orderId);
-    }
-
-    public List<OrderPojo> getOrderWithFilters(String orderId, String status, ZonedDateTime fromDate,
-            ZonedDateTime toDate) {
-        return orderApi.getWithFilters(orderId, status, fromDate, toDate);
-    }
-
-    public Page<OrderPojo> getOrderWithFilters(String orderId, String status, ZonedDateTime fromDate,
-            ZonedDateTime toDate, Pageable pageable) {
-        return orderApi.getWithFilters(orderId, status, fromDate, toDate, pageable);
-    }
-
-    public OrderPojo cancelOrder(String orderId) throws ApiException {
-        orderId = OrderHelper.validateOrderId(orderId);
-        OrderPojo order = validateCancellableOrder(orderId);
-        restoreInventoryForCancelledOrder(order.getOrderId());
-        return updateOrderStatus(order.getId(), OrderStatus.CANCELLED);
-    }
-
     private OrderPojo validateCancellableOrder(String orderId) throws ApiException {
         OrderPojo order = orderApi.getCheckByOrderId(orderId);
 
@@ -173,21 +200,7 @@ public class OrderFlow {
     }
 
     private OrderPojo updateOrderStatus(String orderId, OrderStatus status) throws ApiException {
-        OrderPojo patch = new OrderPojo();
-        patch.setStatus(status.getValue());
-        return orderApi.update(orderId, patch);
-    }
-
-    public OrderPojo updateOrder(String orderId, List<OrderItemPojo> newOrderItems) throws ApiException {
-        orderId = OrderHelper.validateOrderId(orderId);
-        OrderPojo order = validateUpdatableOrder(orderId);
-
-        restoreAndClearExistingItems(orderId);
-
-        OrderCalculator totals = new OrderCalculator();
-        InventoryCheckResult checkResult = checkAllInventoryAvailable(newOrderItems);
-
-        return processOrderUpdate(order, orderId, newOrderItems, checkResult, totals);
+        return orderApi.update(orderId, OrderHelper.createOrderPatch(status.getValue()));
     }
 
     private OrderPojo validateUpdatableOrder(String orderId) throws ApiException {
@@ -237,25 +250,10 @@ public class OrderFlow {
 
     private OrderPojo updateOrderStatus(String orderId, OrderStatus status, OrderCalculator totals)
             throws ApiException {
-        OrderPojo patch = new OrderPojo();
-        patch.setStatus(status.getValue());
-        patch.setTotalItems(totals.getTotalItems());
-        patch.setTotalAmount(totals.getTotalAmount());
-        return orderApi.update(orderId, patch);
-    }
-
-    public OrderCreationResult retryOrder(String orderId, List<OrderItemPojo> updatedItems)
-            throws ApiException {
-        orderId = OrderHelper.validateOrderId(orderId);
-        OrderPojo order = validateRetryableOrder(orderId);
-        List<OrderItemPojo> itemsToCheck = prepareItemsForRetry(orderId, updatedItems);
-        InventoryCheckResult checkResult = checkAllInventoryAvailable(itemsToCheck);
-
-        if (checkResult.isAllAvailable()) {
-            return processFulfillableRetry(order, itemsToCheck);
-        } else {
-            return processUnfulfillableRetry(order, updatedItems, checkResult);
-        }
+        return orderApi.update(orderId, OrderHelper.createOrderPatch(
+                status.getValue(),
+                totals.getTotalItems(),
+                totals.getTotalAmount()));
     }
 
     private OrderPojo validateRetryableOrder(String orderId) throws ApiException {
@@ -307,17 +305,15 @@ public class OrderFlow {
 
         inventoryApi.bulkUpdateQuantities(inventoryUpdates);
 
-        OrderPojo patch = new OrderPojo();
-        patch.setStatus(OrderStatus.PLACED.getValue());
-        patch.setTotalItems(totals.getTotalItems());
-        patch.setTotalAmount(totals.getTotalAmount());
-        OrderPojo updatedOrder = orderApi.update(order.getId(), patch);
+        OrderPojo updatedOrder = orderApi.update(order.getId(), OrderHelper.createOrderPatch(
+                OrderStatus.PLACED.getValue(),
+                totals.getTotalItems(),
+                totals.getTotalAmount()));
 
-        OrderCreationResult result = new OrderCreationResult();
-        result.setOrderId(updatedOrder.getOrderId());
-        result.setFulfillable(true);
-        result.setUnfulfillableItems(new ArrayList<>());
-        return result;
+        return OrderHelper.createOrderCreationResult(
+                updatedOrder.getOrderId(),
+                true,
+                new ArrayList<>());
     }
 
     private OrderCreationResult processUnfulfillableRetry(OrderPojo order, List<OrderItemPojo> updatedItems,
@@ -330,18 +326,16 @@ public class OrderFlow {
 
             processOrderItems(updatedItems, order.getOrderId(), productMap, new ArrayList<>(), totals);
 
-            OrderPojo patch = new OrderPojo();
-            patch.setStatus(OrderStatus.UNFULFILLABLE.getValue());
-            patch.setTotalItems(totals.getTotalItems());
-            patch.setTotalAmount(totals.getTotalAmount());
-            orderApi.update(order.getId(), patch);
+            orderApi.update(order.getId(), OrderHelper.createOrderPatch(
+                    OrderStatus.UNFULFILLABLE.getValue(),
+                    totals.getTotalItems(),
+                    totals.getTotalAmount()));
         }
 
-        OrderCreationResult result = new OrderCreationResult();
-        result.setOrderId(order.getOrderId());
-        result.setFulfillable(false);
-        result.setUnfulfillableItems(checkResult.getUnfulfillableItems());
-        return result;
+        return OrderHelper.createOrderCreationResult(
+                order.getOrderId(),
+                false,
+                checkResult.getUnfulfillableItems());
     }
 
     private BulkData fetchBulkData(List<String> productIds) throws ApiException {

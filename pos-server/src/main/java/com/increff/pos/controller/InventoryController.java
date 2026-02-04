@@ -20,8 +20,8 @@ public class InventoryController {
         return inventoryDto.updateInventory(productId, form);
     }
 
-    @PostMapping("/upload-with-results")
-    public String uploadInventoryWithResults(@RequestBody String base64Content) throws ApiException {
-        return inventoryDto.uploadInventoryWithResults(base64Content);
+    @PostMapping("/upload-inventory-tsv")
+    public String uploadInventoryTsv(@RequestBody String base64Content) throws ApiException {
+        return inventoryDto.uploadInventoryTsv(base64Content);
     }
 }

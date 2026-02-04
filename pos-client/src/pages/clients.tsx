@@ -348,7 +348,7 @@ export default function Clients() {
               <TableCell>Name</TableCell>
               <TableCell>Phone</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell align="center">Actions</TableCell>
+              {isSupervisor && <TableCell align="center">Actions</TableCell>}
             </TableRow>
           </StyledTableHead>
           <TableBody>
@@ -358,8 +358,8 @@ export default function Clients() {
                 <TableCell>{c.name}</TableCell>
                 <TableCell>{c.phone}</TableCell>
                 <TableCell>{c.email}</TableCell>
-                <TableCell align="center">
-                  {isSupervisor && (
+                {isSupervisor && (
+                  <TableCell align="center">
                     <Button
                       startIcon={<Edit />}
                       onClick={() => {
@@ -374,8 +374,8 @@ export default function Clients() {
                     >
                       Edit
                     </Button>
-                  )}
-                </TableCell>
+                  </TableCell>
+                )}
               </StyledTableRow>
             ))}
           </TableBody>

@@ -7,5 +7,5 @@ public class AuthData {
     private String token;
     private String email;
     private String name;
-    private String role; // "SUPERVISOR" or "USER"
+    private String role;
 }

@@ -8,6 +8,7 @@ import com.increff.pos.exception.ApiException;
 import com.increff.pos.model.data.AuthData;
 import com.increff.pos.model.form.LoginForm;
 import com.increff.pos.util.ValidationUtil;
+import com.increff.pos.helper.AuthHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -54,11 +55,7 @@ public class AuthDto {
 
         String token = Base64.getEncoder()
                 .encodeToString((user.getEmail() + ":" + role + ":" + SERVER_INSTANCE_ID).getBytes());
-        AuthData authData = new AuthData();
-        authData.setToken(token);
-        authData.setEmail(user.getEmail());
-        authData.setName(user.getName());
-        authData.setRole(role);
+        AuthData authData = AuthHelper.createAuthData(token, user.getEmail(), user.getName(), role);
 
         logActivity(user.getEmail(), user.getName(), "LOGIN");
         return authData;
@@ -90,11 +87,7 @@ public class AuthDto {
                 throw new ApiException("Invalid token");
             }
 
-            AuthData authData = new AuthData();
-            authData.setToken(token);
-            authData.setEmail(user.getEmail());
-            authData.setName(user.getName());
-            authData.setRole(userRole);
+            AuthData authData = AuthHelper.createAuthData(token, user.getEmail(), user.getName(), userRole);
 
             return authData;
         } catch (ApiException e) {
@@ -104,7 +97,7 @@ public class AuthDto {
         }
     }
 
-    public void logLogout(String email) throws ApiException {
+    public void logLogout(String email) {
         UserPojo user = userApi.getByEmail(email);
         if (user != null) {
             logActivity(user.getEmail(), user.getName(), "LOGOUT");
@@ -113,14 +106,10 @@ public class AuthDto {
 
     private void logActivity(String email, String name, String action) {
         try {
-            AuditLogPojo auditLog = new AuditLogPojo();
-            auditLog.setOperatorEmail(email);
-            auditLog.setOperatorName(name);
-            auditLog.setAction(action);
-            auditLog.setTimestamp(java.time.ZonedDateTime.now());
+            AuditLogPojo auditLog = com.increff.pos.helper.AuthHelper.createAuditLog(
+                    email, name, action, java.time.ZonedDateTime.now());
             auditLogApi.add(auditLog);
         } catch (Exception e) {
-            // Silently ignore audit log errors to prevent disrupting auth flow
         }
     }
 }

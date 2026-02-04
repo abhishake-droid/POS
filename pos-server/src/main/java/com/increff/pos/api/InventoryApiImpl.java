@@ -94,15 +94,11 @@ public class InventoryApiImpl implements InventoryApi {
     @Override
     @Transactional(rollbackFor = ApiException.class)
     public InventoryPojo updateByProductId(String productId, Integer quantity) throws ApiException {
-        try {
-            InventoryPojo updated = inventoryDao.incrementQuantityByProductId(productId, quantity);
-            if (updated == null) {
-                throw new ApiException("Failed to update inventory for product " + productId);
-            }
-            return updated;
-        } catch (Exception e) {
-            throw new ApiException("Failed to update inventory for product " + productId + ": " + e.getMessage());
+        InventoryPojo updated = inventoryDao.incrementQuantityByProductId(productId, quantity);
+        if (updated == null) {
+            throw new ApiException("Failed to update inventory for product " + productId);
         }
+        return updated;
     }
 
     @Override

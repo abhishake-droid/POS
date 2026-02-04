@@ -52,8 +52,8 @@ public class ProductController {
     }
 
     @Operation(summary = "Uploads products via TSV and returns status for each row")
-    @PostMapping("/upload-products-with-results")
-    public String uploadProductsWithResults(@RequestBody String base64Content) throws ApiException {
-        return productDto.uploadProductsWithResults(base64Content);
+    @PostMapping("/upload-products-tsv")
+    public String uploadProductsTsv(@RequestBody String base64Content) throws ApiException {
+        return productDto.uploadProductsTsv(base64Content);
     }
 }

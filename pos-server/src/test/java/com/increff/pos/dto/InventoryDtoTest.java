@@ -146,7 +146,7 @@ class InventoryDtoTest {
         when(productFlow.getByBarcode("bc456")).thenReturn(product2);
 
         // When
-        String result = inventoryDto.uploadInventoryWithResults(base64Content);
+        String result = inventoryDto.uploadInventoryTsv(base64Content);
 
         // Then
         assertNotNull(result);
@@ -168,7 +168,7 @@ class InventoryDtoTest {
         when(productFlow.getByBarcode("bc123")).thenReturn(product);
 
         // When
-        String result = inventoryDto.uploadInventoryWithResults(base64Content);
+        String result = inventoryDto.uploadInventoryTsv(base64Content);
 
         // Then
         assertNotNull(result);
@@ -183,7 +183,7 @@ class InventoryDtoTest {
 
         // When/Then - Should throw exception because header is mandatory
         ApiException exception = assertThrows(ApiException.class, () -> {
-            inventoryDto.uploadInventoryWithResults(base64Content);
+            inventoryDto.uploadInventoryTsv(base64Content);
         });
         assertTrue(exception.getMessage().contains("Missing required header row"));
     }
@@ -201,7 +201,7 @@ class InventoryDtoTest {
         when(productFlow.getByBarcode("bc123")).thenReturn(product);
 
         // When
-        String result = inventoryDto.uploadInventoryWithResults(base64Content);
+        String result = inventoryDto.uploadInventoryTsv(base64Content);
 
         // Then
         assertNotNull(result);
@@ -221,7 +221,7 @@ class InventoryDtoTest {
         when(productFlow.getByBarcode("bc123")).thenReturn(product);
 
         // When
-        String result = inventoryDto.uploadInventoryWithResults(base64Content);
+        String result = inventoryDto.uploadInventoryTsv(base64Content);
 
         // Then
         assertNotNull(result);
@@ -249,7 +249,7 @@ class InventoryDtoTest {
         when(productFlow.getByBarcode("bc456")).thenReturn(product2);
 
         // When
-        String result = inventoryDto.uploadInventoryWithResults(base64Content);
+        String result = inventoryDto.uploadInventoryTsv(base64Content);
 
         // Then
         assertNotNull(result);
@@ -268,7 +268,7 @@ class InventoryDtoTest {
         when(productFlow.getByBarcode(anyString())).thenThrow(new ApiException("Product not found"));
 
         // When
-        String result = inventoryDto.uploadInventoryWithResults(base64Content);
+        String result = inventoryDto.uploadInventoryTsv(base64Content);
 
         // Then
         assertNotNull(result);
@@ -290,7 +290,7 @@ class InventoryDtoTest {
         when(productFlow.getByBarcode("bc123")).thenReturn(product);
 
         // When
-        String result = inventoryDto.uploadInventoryWithResults(base64Content);
+        String result = inventoryDto.uploadInventoryTsv(base64Content);
 
         // Then
         assertNotNull(result);

@@ -47,7 +47,7 @@ import {
   Refresh as RetryIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { toast } from 'react-toastify';
+import { toastError, toastSuccess, toastWarning } from '../utils/toast';
 import {
   CreateOrderForm,
   OrderData,
@@ -135,6 +135,7 @@ export default function OrdersPage() {
   const [products, setProducts] = useState<ProductData[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [selectedProducts, setSelectedProducts] = useState<Map<number, ProductData>>(new Map());
 
   const [filters, setFilters] = useState<OrderSearchFilters>({});
   const [filterType, setFilterType] = useState<'orderId' | 'dateStatus'>('dateStatus');
@@ -234,7 +235,7 @@ export default function OrdersPage() {
       } else {
         // Only show toast for unexpected errors
         if (status !== 401) {
-          toast.error(errorMsg);
+          toastError(errorMsg);
         }
         setOrders([]);
         setTotalPages(0);
@@ -243,9 +244,6 @@ export default function OrdersPage() {
       setLoading(false);
     }
   };
-
-  // Removed loadProducts - now using debounced search in useEffect
-
 
 
   const handleAddLine = () => {
@@ -263,6 +261,21 @@ export default function OrdersPage() {
   };
 
   const handleProductSelect = (index: number, product: ProductData | null) => {
+    // Cache the selected product
+    if (product) {
+      setSelectedProducts(prev => {
+        const newMap = new Map(prev);
+        newMap.set(index, product);
+        return newMap;
+      });
+    } else {
+      setSelectedProducts(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(index);
+        return newMap;
+      });
+    }
+
     setOrderForm((prev) => {
       const newLines = prev.lines.map((line, i) => {
         if (i === index) {
@@ -321,20 +334,20 @@ export default function OrdersPage() {
     try {
       // Validation
       if (orderForm.lines.length === 0) {
-        toast.error('Add at least one product line');
+        toastError('Add at least one product line');
         return;
       }
       for (const line of orderForm.lines) {
         if (!line.productId) {
-          toast.error('Please select a product.');
+          toastError('Please select a product.');
           return;
         }
         if (line.quantity <= 0) {
-          toast.error('Quantity must be positive');
+          toastError('Quantity must be positive');
           return;
         }
         if (line.mrp < 0) {
-          toast.error('MRP cannot be negative');
+          toastError('MRP cannot be negative');
           return;
         }
       }
@@ -343,9 +356,9 @@ export default function OrdersPage() {
 
       // Show different messages based on fulfillability
       if (result.status === 'UNFULFILLABLE') {
-        toast.warning('Order created but is UNFULFILLABLE due to insufficient inventory');
+        toastWarning('Order created but is UNFULFILLABLE due to insufficient inventory');
       } else {
-        toast.success('Order created successfully');
+        toastSuccess('Order created successfully');
       }
 
       setCreateDialogOpen(false);
@@ -360,9 +373,9 @@ export default function OrdersPage() {
       const status = e.response?.status;
       const errorMsg = e.response?.data?.message || e.message || 'Failed to create order';
       if (status === 404 || status === 500 || !e.response) {
-        toast.error('Order creation endpoint is not available yet. Backend needs to be implemented.');
+        toastError('Order creation endpoint is not available yet. Backend needs to be implemented.');
       } else {
-        toast.error(errorMsg);
+        toastError(errorMsg);
       }
     }
   };
@@ -395,7 +408,7 @@ export default function OrdersPage() {
       setOrderForm({ lines });
       setEditDialogOpen(true);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to load order details');
+      toastError(e.response?.data?.message || 'Failed to load order details');
     }
   };
 
@@ -404,20 +417,20 @@ export default function OrdersPage() {
       if (!editingOrderId) return;
 
       if (orderForm.lines.length === 0) {
-        toast.error('Add at least one product line');
+        toastError('Add at least one product line');
         return;
       }
       for (const line of orderForm.lines) {
         if (!line.productId) {
-          toast.error('Please select a product.');
+          toastError('Please select a product.');
           return;
         }
         if (line.quantity <= 0) {
-          toast.error('Quantity must be positive');
+          toastError('Quantity must be positive');
           return;
         }
         if (line.mrp < 0) {
-          toast.error('MRP cannot be negative');
+          toastError('MRP cannot be negative');
           return;
         }
       }
@@ -426,9 +439,9 @@ export default function OrdersPage() {
 
       // Show different messages based on order status
       if (result.status === 'UNFULFILLABLE') {
-        toast.warning('Order updated but is UNFULFILLABLE due to insufficient inventory');
+        toastWarning('Order updated but is UNFULFILLABLE due to insufficient inventory');
       } else {
-        toast.success('Order updated successfully');
+        toastSuccess('Order updated successfully');
       }
 
       setEditDialogOpen(false);
@@ -443,7 +456,7 @@ export default function OrdersPage() {
     } catch (e: any) {
       const status = e.response?.status;
       const errorMsg = e.response?.data?.message || e.message || 'Failed to update order';
-      toast.error(errorMsg);
+      toastError(errorMsg);
     }
   };
 
@@ -483,7 +496,7 @@ export default function OrdersPage() {
     setGeneratingInvoice(orderId);
     try {
       await orderService.generateInvoice(orderId);
-      toast.success('Invoice generated successfully');
+      toastSuccess('Invoice generated successfully');
       // Reload orders to get updated status
       loadOrders(currentPage, filters).catch((err) => {
         console.error('Error reloading orders:', err);
@@ -492,9 +505,9 @@ export default function OrdersPage() {
       const status = e.response?.status;
       const errorMsg = e.response?.data?.message || e.message || 'Failed to generate invoice';
       if (status === 404 || status === 500 || !e.response) {
-        toast.error('Invoice generation endpoint is not available yet. Backend needs to be implemented.');
+        toastError('Invoice generation endpoint is not available yet. Backend needs to be implemented.');
       } else {
-        toast.error(errorMsg);
+        toastError(errorMsg);
       }
     } finally {
       setGeneratingInvoice(null);
@@ -504,14 +517,14 @@ export default function OrdersPage() {
   const handleDownloadInvoice = async (orderId: string) => {
     try {
       await orderService.downloadInvoice(orderId);
-      toast.success('Invoice downloaded');
+      toastSuccess('Invoice downloaded');
     } catch (e: any) {
       const status = e.response?.status;
       const errorMsg = e.response?.data?.message || e.message || 'Failed to download invoice';
       if (status === 404 || status === 500 || !e.response) {
-        toast.error('Invoice download endpoint is not available yet. Backend needs to be implemented.');
+        toastError('Invoice download endpoint is not available yet. Backend needs to be implemented.');
       } else {
-        toast.error(errorMsg);
+        toastError(errorMsg);
       }
     }
   };
@@ -527,7 +540,7 @@ export default function OrdersPage() {
       setViewOrderData(orderData);
       setViewDialogOpen(true);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to load order details');
+      toastError(e.response?.data?.message || 'Failed to load order details');
     }
   };
 
@@ -536,7 +549,7 @@ export default function OrdersPage() {
 
     try {
       await orderService.cancel(orderToCancel);
-      toast.success('Order cancelled');
+      toastSuccess('Order cancelled');
       setCancelDialogOpen(false);
       setOrderToCancel(null);
       // Reload orders to get updated status
@@ -547,9 +560,9 @@ export default function OrdersPage() {
       const status = e.response?.status;
       const errorMsg = e.response?.data?.message || e.message || 'Failed to cancel order';
       if (status === 404 || status === 500 || !e.response) {
-        toast.error('Order cancel endpoint is not available yet.');
+        toastError('Order cancel endpoint is not available yet.');
       } else {
-        toast.error(errorMsg);
+        toastError(errorMsg);
       }
     }
   };
@@ -576,7 +589,7 @@ export default function OrdersPage() {
       setOrderForm({ lines });
       setRetryDialogOpen(true);
     } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to load order details');
+      toastError(e.response?.data?.message || 'Failed to load order details');
     }
   };
 
@@ -585,20 +598,20 @@ export default function OrdersPage() {
       if (!retryingOrderId) return;
 
       if (orderForm.lines.length === 0) {
-        toast.error('Add at least one product line');
+        toastError('Add at least one product line');
         return;
       }
       for (const line of orderForm.lines) {
         if (!line.productId) {
-          toast.error('Please select a product.');
+          toastError('Please select a product.');
           return;
         }
         if (line.quantity <= 0) {
-          toast.error('Quantity must be positive');
+          toastError('Quantity must be positive');
           return;
         }
         if (line.mrp < 0) {
-          toast.error('MRP cannot be negative');
+          toastError('MRP cannot be negative');
           return;
         }
       }
@@ -606,9 +619,9 @@ export default function OrdersPage() {
       const result = await orderService.retry(retryingOrderId, orderForm);
 
       if (result.status === 'PLACED') {
-        toast.success('Order retry successful! Order is now PLACED.');
+        toastSuccess('Order retry successful! Order is now PLACED.');
       } else if (result.status === 'UNFULFILLABLE') {
-        toast.warning('Order is still unfulfillable. Check inventory.');
+        toastWarning('Order is still unfulfillable. Check inventory.');
       }
 
       setRetryDialogOpen(false);
@@ -623,7 +636,7 @@ export default function OrdersPage() {
     } catch (e: any) {
       const status = e.response?.status;
       const errorMsg = e.response?.data?.message || e.message || 'Failed to retry order';
-      toast.error(errorMsg);
+      toastError(errorMsg);
     }
   };
 
@@ -1075,6 +1088,7 @@ export default function OrdersPage() {
           setOrderForm({
             lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
           });
+          setSelectedProducts(new Map()); // Clear cached products
         }}
         fullWidth
         maxWidth="lg"
@@ -1102,14 +1116,16 @@ export default function OrdersPage() {
                 </TableHead>
                 <TableBody>
                   {orderForm.lines.map((line, index) => {
-                    const selectedProduct = products.find((p) => p.id === line.productId);
+                    const selectedProduct = selectedProducts.get(index) ||
+                      products.find((p) => p.id === line.productId) ||
+                      null;
                     return (
                       <TableRow key={index}>
                         <TableCell>
                           <Autocomplete
                             options={products}
                             loading={loadingProducts}
-                            value={selectedProduct || null}
+                            value={selectedProduct}
                             onChange={(event, newValue) => {
                               handleProductSelect(index, newValue);
                             }}
@@ -1173,7 +1189,7 @@ export default function OrdersPage() {
                               const newPrice = Number(e.target.value) || 0;
                               const productMRP = selectedProduct?.mrp || 0;
                               if (newPrice > productMRP) {
-                                toast.error(`Selling price cannot exceed MRP (${formatINR(productMRP)})`);
+                                toastError(`Selling price cannot exceed MRP (${formatINR(productMRP)})`);
                                 return;
                               }
                               handleMrpChange(index, newPrice);
@@ -1233,6 +1249,7 @@ export default function OrdersPage() {
               setOrderForm({
                 lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
               });
+              setSelectedProducts(new Map()); // Clear cached products
             }}
           >
             Cancel
@@ -1253,6 +1270,7 @@ export default function OrdersPage() {
           setOrderForm({
             lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
           });
+          setSelectedProducts(new Map()); // Clear cached products
         }}
         maxWidth="md"
         fullWidth
@@ -1260,99 +1278,103 @@ export default function OrdersPage() {
         <DialogTitle>Edit Order {editingOrderId}</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
-            {orderForm.lines.map((line, index) => (
-              <Box
-                key={index}
-                sx={{
-                  display: 'flex',
-                  gap: 2,
-                  mb: 2,
-                  alignItems: 'flex-start',
-                }}
-              >
-                <Autocomplete
-                  options={products}
-                  getOptionLabel={(option) => `${option.name} (${option.barcode})`}
-                  value={(() => {
-                    // Try to find the product in the products array
-                    const found = products.find((p) => p.id === line.productId);
-                    if (found) return found;
+            {orderForm.lines.map((line, index) => {
+              const selectedProduct = selectedProducts.get(index) ||
+                products.find((p) => p.id === line.productId) ||
+                (line.productName && line.barcode ? {
+                  id: line.productId,
+                  name: line.productName,
+                  barcode: line.barcode,
+                  clientId: '',
+                  mrp: line.mrp,
+                } : null);
 
-                    // If not found but we have productName from the order data, create a virtual product
-                    if (line.productName && line.barcode) {
-                      return {
-                        id: line.productId,
-                        name: line.productName,
-                        barcode: line.barcode,
-                        clientId: '',
-                        mrp: line.mrp,
-                      };
-                    }
-
-                    return null;
-                  })()}
-                  onChange={(_, newValue) => handleProductSelect(index, newValue)}
-                  onInputChange={(event, newInputValue) => {
-                    setProductSearchQuery(newInputValue);
+              return (
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    mb: 2,
+                    alignItems: 'flex-start',
                   }}
-                  loading={loadingProducts}
-                  sx={{ flex: 2 }}
-                  isOptionEqualToValue={(option, value) => option.id === value.id}
-                  filterOptions={(options) => options}
-                  noOptionsText={productSearchQuery ? "No products found" : "Type to search..."}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Product"
-                      size="small"
-                      placeholder="Type to search products..."
-                      InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                          <>
-                            {loadingProducts ? (
-                              <CircularProgress color="inherit" size={16} />
-                            ) : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                />
-                <TextField
-                  label="Quantity"
-                  type="number"
-                  size="small"
-                  value={line.quantity}
-                  onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
-                  sx={{ width: 100 }}
-                />
-                <TextField
-                  label="MRP"
-                  type="number"
-                  size="small"
-                  value={line.mrp}
-                  onChange={(e) => handleMrpChange(index, parseFloat(e.target.value) || 0)}
-                  sx={{ width: 120 }}
-                  InputProps={{ startAdornment: '₹' }}
-                />
-                <TextField
-                  label="Line Total"
-                  size="small"
-                  value={line.lineTotal.toFixed(2)}
-                  InputProps={{ readOnly: true, startAdornment: '₹' }}
-                  sx={{ width: 120 }}
-                />
-                <IconButton
-                  onClick={() => handleRemoveLine(index)}
-                  disabled={orderForm.lines.length === 1}
-                  color="error"
                 >
-                  <Cancel />
-                </IconButton>
-              </Box>
-            ))}
+                  <Autocomplete
+                    options={products}
+                    getOptionLabel={(option) => `${option.name} (${option.barcode})`}
+                    value={selectedProduct}
+                    onChange={(_, newValue) => handleProductSelect(index, newValue)}
+                    onInputChange={(event, newInputValue) => {
+                      setProductSearchQuery(newInputValue);
+                    }}
+                    loading={loadingProducts}
+                    sx={{ flex: 2 }}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    filterOptions={(options) => options}
+                    noOptionsText={productSearchQuery ? "No products found" : "Type to search..."}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Product"
+                        size="small"
+                        placeholder="Type to search products..."
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {loadingProducts ? (
+                                <CircularProgress color="inherit" size={16} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+                  <TextField
+                    label="Quantity"
+                    type="number"
+                    size="small"
+                    value={line.quantity}
+                    onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
+                    sx={{ width: 100 }}
+                  />
+                  <TextField
+                    label="Selling Price"
+                    type="number"
+                    size="small"
+                    value={line.mrp}
+                    onChange={(e) => {
+                      const newPrice = parseFloat(e.target.value) || 0;
+                      const productMRP = selectedProduct?.mrp || 0;
+
+                      if (newPrice > productMRP) {
+                        toastError(`Selling price cannot exceed MRP (${formatINR(productMRP)})`);
+                        return;
+                      }
+                      handleMrpChange(index, newPrice);
+                    }}
+                    sx={{ width: 120 }}
+                    InputProps={{ startAdornment: '₹' }}
+                  />
+                  <TextField
+                    label="Line Total"
+                    size="small"
+                    value={line.lineTotal.toFixed(2)}
+                    InputProps={{ readOnly: true, startAdornment: '₹' }}
+                    sx={{ width: 120 }}
+                  />
+                  <IconButton
+                    onClick={() => handleRemoveLine(index)}
+                    disabled={orderForm.lines.length === 1}
+                    color="error"
+                  >
+                    <Cancel />
+                  </IconButton>
+                </Box>
+              );
+            })}
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
               <Button variant="outlined" onClick={handleAddLine}>
@@ -1369,6 +1391,7 @@ export default function OrdersPage() {
               setOrderForm({
                 lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
               });
+              setSelectedProducts(new Map()); // Clear cached products
             }}
           >
             Cancel
@@ -1389,6 +1412,7 @@ export default function OrdersPage() {
           setOrderForm({
             lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
           });
+          setSelectedProducts(new Map()); // Clear cached products
         }}
         maxWidth="md"
         fullWidth
@@ -1396,73 +1420,84 @@ export default function OrdersPage() {
         <DialogTitle>Retry Order {retryingOrderId}</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
-            {orderForm.lines.map((line, index) => (
-              <Box
-                key={index}
-                sx={{
-                  display: 'flex',
-                  gap: 2,
-                  mb: 2,
-                  alignItems: 'flex-start',
-                }}
-              >
-                <Autocomplete
-                  options={products}
-                  getOptionLabel={(option) =>
-                    `${option.name} (${option.barcode})`
-                  }
-                  value={
-                    products.find((p) => p.id === line.productId) || null
-                  }
-                  onChange={(_, newValue) =>
-                    handleProductSelect(index, newValue)
-                  }
-                  onInputChange={(event, newInputValue) => {
-                    setProductSearchQuery(newInputValue);
+            {orderForm.lines.map((line, index) => {
+              const selectedProduct = selectedProducts.get(index) ||
+                products.find((p) => p.id === line.productId) ||
+                null;
+
+              return (
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    mb: 2,
+                    alignItems: 'flex-start',
                   }}
-                  filterOptions={(options) => options}
-                  noOptionsText={productSearchQuery ? "No products found" : "Type to search..."}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Product" placeholder="Type to search products..." required />
-                  )}
-                  sx={{ flex: 2 }}
-                  loading={loadingProducts}
-                />
-                <TextField
-                  label="Quantity"
-                  type="number"
-                  value={line.quantity}
-                  onChange={(e) =>
-                    handleQuantityChange(index, parseInt(e.target.value) || 1)
-                  }
-                  required
-                  sx={{ flex: 1 }}
-                />
-                <TextField
-                  label="MRP"
-                  type="number"
-                  value={line.mrp}
-                  onChange={(e) =>
-                    handleMrpChange(index, parseFloat(e.target.value) || 0)
-                  }
-                  required
-                  sx={{ flex: 1 }}
-                />
-                <TextField
-                  label="Line Total"
-                  value={line.lineTotal.toFixed(2)}
-                  disabled
-                  sx={{ flex: 1 }}
-                />
-                <IconButton
-                  color="error"
-                  onClick={() => handleRemoveLine(index)}
-                  disabled={orderForm.lines.length === 1}
                 >
-                  <Cancel />
-                </IconButton>
-              </Box>
-            ))}
+                  <Autocomplete
+                    options={products}
+                    getOptionLabel={(option) =>
+                      `${option.name} (${option.barcode})`
+                    }
+                    value={selectedProduct}
+                    onChange={(_, newValue) =>
+                      handleProductSelect(index, newValue)
+                    }
+                    onInputChange={(event, newInputValue) => {
+                      setProductSearchQuery(newInputValue);
+                    }}
+                    filterOptions={(options) => options}
+                    noOptionsText={productSearchQuery ? "No products found" : "Type to search..."}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Product" placeholder="Type to search products..." required />
+                    )}
+                    sx={{ flex: 2 }}
+                    loading={loadingProducts}
+                  />
+                  <TextField
+                    label="Quantity"
+                    type="number"
+                    value={line.quantity}
+                    onChange={(e) =>
+                      handleQuantityChange(index, parseInt(e.target.value) || 1)
+                    }
+                    required
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Selling Price"
+                    type="number"
+                    value={line.mrp}
+                    onChange={(e) => {
+                      const newPrice = parseFloat(e.target.value) || 0;
+                      const productMRP = selectedProduct?.mrp || 0;
+
+                      if (newPrice > productMRP) {
+                        toastError(`Selling price cannot exceed MRP (${formatINR(productMRP)})`);
+                        return;
+                      }
+                      handleMrpChange(index, newPrice);
+                    }}
+                    required
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Line Total"
+                    value={line.lineTotal.toFixed(2)}
+                    disabled
+                    sx={{ flex: 1 }}
+                  />
+                  <IconButton
+                    color="error"
+                    onClick={() => handleRemoveLine(index)}
+                    disabled={orderForm.lines.length === 1}
+                  >
+                    <Cancel />
+                  </IconButton>
+                </Box>
+              );
+            })}
             <Button
               variant="outlined"
               startIcon={<Add />}
@@ -1481,6 +1516,7 @@ export default function OrdersPage() {
               setOrderForm({
                 lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
               });
+              setSelectedProducts(new Map()); // Clear cached products
             }}
           >
             Cancel
