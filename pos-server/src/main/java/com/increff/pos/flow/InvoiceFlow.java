@@ -7,6 +7,7 @@ import com.increff.pos.db.InvoicePojo;
 import com.increff.pos.db.OrderItemPojo;
 import com.increff.pos.db.OrderPojo;
 import com.increff.pos.exception.ApiException;
+import com.increff.pos.helper.InvoiceHelper;
 import com.increff.pos.util.OrderStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,8 +49,7 @@ public class InvoiceFlow {
 
     @Transactional(rollbackFor = ApiException.class)
     public InvoicePojo saveInvoiceAndUpdateOrder(String invoiceId, String orderId, String pdfPath) throws ApiException {
-        InvoicePojo invoice = com.increff.pos.helper.InvoiceHelper.createInvoice(
-                invoiceId, orderId, pdfPath, ZonedDateTime.now());
+        InvoicePojo invoice = InvoiceHelper.createInvoice(invoiceId, orderId, pdfPath, ZonedDateTime.now());
         InvoicePojo savedInvoice = invoiceApi.add(invoice);
 
         OrderPojo order = orderApi.getCheckByOrderId(orderId);

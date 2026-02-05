@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.ZonedDateTime;
+import java.util.List;
+
 @Service
 public class InvoiceApiImpl implements InvoiceApi {
 
@@ -44,5 +47,11 @@ public class InvoiceApiImpl implements InvoiceApi {
             throw new ApiException("Invoice not found for order: " + orderId);
         }
         return invoice;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InvoicePojo> getByInvoiceDateRange(ZonedDateTime startDate, ZonedDateTime endDate) {
+        return invoiceDao.findByInvoiceDateBetween(startDate, endDate);
     }
 }

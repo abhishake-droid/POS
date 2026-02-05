@@ -22,6 +22,11 @@ public class InvoiceClient {
         this.restTemplate = new RestTemplate();
     }
 
+    public InvoiceClient(String invoiceServiceUrl) {
+        this.restTemplate = new RestTemplate();
+        this.invoiceServiceUrl = invoiceServiceUrl;
+    }
+
     public byte[] generateInvoicePdf(InvoiceRequest request) throws Exception {
         try {
             String url = invoiceServiceUrl + "/api/invoice/generate";

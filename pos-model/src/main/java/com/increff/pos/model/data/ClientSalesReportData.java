@@ -16,7 +16,6 @@ public class ClientSalesReportData {
     private Double maxPrice;
     private Double avgPrice;
 
-    // Internal fields for calculation (not exposed in API response)
     private List<String> orderIds = new ArrayList<>();
     private List<Double> prices = new ArrayList<>();
 }

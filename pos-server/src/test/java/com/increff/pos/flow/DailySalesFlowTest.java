@@ -12,8 +12,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -35,6 +35,9 @@ class DailySalesFlowTest {
     @Mock
     private DailySalesApi dailySalesApi;
 
+    @Mock
+    private InvoiceApi invoiceApi;
+
     @InjectMocks
     private DailySalesFlow dailySalesFlow;
 
@@ -52,6 +55,7 @@ class DailySalesFlowTest {
 
         orderItemPojo = new OrderItemPojo();
         orderItemPojo.setId("item1");
+        orderItemPojo.setOrderId("ORD001");
         orderItemPojo.setProductId("prod1");
         orderItemPojo.setQuantity(10);
         orderItemPojo.setLineTotal(1000.0);
@@ -72,7 +76,7 @@ class DailySalesFlowTest {
         LocalDate date = LocalDate.now();
         when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(), any()))
                 .thenReturn(Arrays.asList(orderPojo));
-        when(orderItemApi.getByOrderId(anyString())).thenReturn(Arrays.asList(orderItemPojo));
+        when(orderItemApi.getByOrderId("ORD001")).thenReturn(Arrays.asList(orderItemPojo));
         when(productApi.getCheck("prod1")).thenReturn(productPojo);
         when(clientApi.getCheckByClientId("client1")).thenReturn(clientPojo);
         when(dailySalesApi.getByDateAndClient(any(), anyString())).thenReturn(null);
@@ -94,7 +98,7 @@ class DailySalesFlowTest {
 
         when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(), any()))
                 .thenReturn(Arrays.asList(orderPojo));
-        when(orderItemApi.getByOrderId(anyString())).thenReturn(Arrays.asList(orderItemPojo));
+        when(orderItemApi.getByOrderId("ORD001")).thenReturn(Arrays.asList(orderItemPojo));
         when(productApi.getCheck("prod1")).thenReturn(productPojo);
         when(clientApi.getCheckByClientId("client1")).thenReturn(clientPojo);
         when(dailySalesApi.getByDateAndClient(any(), anyString())).thenReturn(existing);
@@ -112,7 +116,7 @@ class DailySalesFlowTest {
         // Given
         LocalDate date = LocalDate.now();
         when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(), any()))
-                .thenReturn(java.util.Collections.emptyList());
+                .thenReturn(Collections.emptyList());
 
         // When
         dailySalesFlow.aggregateSalesForDate(date);
@@ -131,9 +135,17 @@ class DailySalesFlowTest {
         order2.setOrderId("ORD002");
         order2.setStatus("INVOICED");
 
+        OrderItemPojo item2 = new OrderItemPojo();
+        item2.setId("item2");
+        item2.setOrderId("ORD002");
+        item2.setProductId("prod1");
+        item2.setQuantity(5);
+        item2.setLineTotal(500.0);
+
         when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(), any()))
                 .thenReturn(Arrays.asList(orderPojo, order2));
-        when(orderItemApi.getByOrderId(anyString())).thenReturn(Arrays.asList(orderItemPojo));
+        when(orderItemApi.getByOrderId("ORD001")).thenReturn(Arrays.asList(orderItemPojo));
+        when(orderItemApi.getByOrderId("ORD002")).thenReturn(Arrays.asList(item2));
         when(productApi.getCheck("prod1")).thenReturn(productPojo);
         when(clientApi.getCheckByClientId("client1")).thenReturn(clientPojo);
         when(dailySalesApi.getByDateAndClient(any(), anyString())).thenReturn(null);
@@ -152,7 +164,7 @@ class DailySalesFlowTest {
         LocalDate date = LocalDate.now();
         when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(), any()))
                 .thenReturn(Arrays.asList(orderPojo));
-        when(orderItemApi.getByOrderId(anyString())).thenReturn(java.util.Collections.emptyList());
+        when(orderItemApi.getByOrderId("ORD001")).thenReturn(Collections.emptyList());
 
         // When
         dailySalesFlow.aggregateSalesForDate(date);

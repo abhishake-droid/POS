@@ -1,16 +1,19 @@
 package com.increff.pos.flow;
 
 import com.increff.pos.api.DailySalesApi;
+import com.increff.pos.api.InvoiceApi;
 import com.increff.pos.api.OrderApi;
 import com.increff.pos.api.OrderItemApi;
 import com.increff.pos.api.ProductApi;
 import com.increff.pos.api.ClientApi;
 import com.increff.pos.db.ClientPojo;
 import com.increff.pos.db.DailySalesPojo;
+import com.increff.pos.db.InvoicePojo;
 import com.increff.pos.db.OrderItemPojo;
 import com.increff.pos.db.OrderPojo;
 import com.increff.pos.db.ProductPojo;
 import com.increff.pos.exception.ApiException;
+import com.increff.pos.helper.DailySalesHelper;
 import com.increff.pos.util.OrderStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class DailySalesFlow {
@@ -37,6 +41,8 @@ public class DailySalesFlow {
     private ClientApi clientApi;
     @Autowired
     private DailySalesApi dailySalesApi;
+    @Autowired
+    private InvoiceApi invoiceApi;
 
     public void aggregateDailySales() {
         LocalDate today = LocalDate.now();
@@ -51,10 +57,12 @@ public class DailySalesFlow {
         ZonedDateTime endOfDay = startOfDay.plus(1, ChronoUnit.DAYS);
 
         List<OrderPojo> orders = orderApi.getWithFilters(null, OrderStatus.INVOICED.getValue(), startOfDay, endOfDay);
+
         Map<String, ClientAggregateData> clientDataMap = new HashMap<>();
 
         for (OrderPojo order : orders) {
             List<OrderItemPojo> items = orderItemApi.getByOrderId(order.getOrderId());
+
             if (items.isEmpty()) {
                 continue;
             }
@@ -69,7 +77,6 @@ public class DailySalesFlow {
                     clientOrder.itemsCount += item.getQuantity();
                     clientOrder.revenue += item.getLineTotal();
                 } catch (ApiException e) {
-                    continue;
                 }
             }
 
@@ -107,7 +114,7 @@ public class DailySalesFlow {
                 existing.setClientName(clientName);
                 dailySalesApi.update(existing.getId(), existing);
             } else {
-                DailySalesPojo newRecord = com.increff.pos.helper.DailySalesHelper.createDailySales(
+                DailySalesPojo newRecord = DailySalesHelper.createDailySales(
                         date, clientId, clientName,
                         data.invoicedOrdersCount, data.invoicedItemsCount, data.totalRevenue);
                 dailySalesApi.add(newRecord);

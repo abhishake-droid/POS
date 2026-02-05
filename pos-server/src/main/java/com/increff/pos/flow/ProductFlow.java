@@ -40,7 +40,7 @@ public class ProductFlow {
         List<ProductPojo> saved = productApi.addBulk(productPojos);
 
         List<InventoryPojo> inventories = saved.stream()
-                .map(pojo -> com.increff.pos.helper.ProductHelper.createInitialInventory(pojo.getId()))
+                .map(pojo -> ProductHelper.createInitialInventory(pojo.getId()))
                 .collect(Collectors.toList());
 
         inventoryApi.addBulk(inventories);

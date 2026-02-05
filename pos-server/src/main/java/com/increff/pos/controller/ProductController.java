@@ -11,8 +11,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
-
 @Tag(name = "Product Management", description = "APIs for managing products and inventory")
 @RestController
 @RequestMapping("/api/product")

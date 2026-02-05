@@ -11,11 +11,14 @@ import com.increff.pos.model.data.OrderData;
 import com.increff.pos.model.data.OrderItemData;
 import com.increff.pos.model.data.OrderCreationResult;
 import com.increff.pos.model.data.UnfulfillableItemData;
-import com.increff.pos.model.data.InventoryCheckResult;
 import org.springframework.util.StringUtils;
 import com.increff.pos.util.NormalizeUtil;
 
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,25 +137,6 @@ public class OrderHelper {
         return result;
     }
 
-    public static OrderPojo createNewOrder(String orderId, String status, Integer totalItems,
-            Double totalAmount, java.time.ZonedDateTime orderDate) {
-        OrderPojo order = new OrderPojo();
-        order.setOrderId(orderId);
-        order.setStatus(status);
-        order.setTotalItems(totalItems);
-        order.setTotalAmount(totalAmount);
-        order.setOrderDate(orderDate);
-        return order;
-    }
-
-    public static InventoryCheckResult createInventoryCheckResult(
-            boolean allAvailable, List<UnfulfillableItemData> unfulfillableItems) {
-        InventoryCheckResult result = new InventoryCheckResult();
-        result.setAllAvailable(allAvailable);
-        result.setUnfulfillableItems(unfulfillableItems);
-        return result;
-    }
-
     public static UnfulfillableItemData createUnfulfillableItem(String barcode, String productName,
             Integer requestedQuantity, Integer availableQuantity, String reason) {
         UnfulfillableItemData item = new UnfulfillableItemData();
@@ -164,8 +148,41 @@ public class OrderHelper {
         return item;
     }
 
-    public static com.increff.pos.db.OrderItemPojo createOrderItem(String productId, Integer quantity, Double mrp) {
-        com.increff.pos.db.OrderItemPojo item = new com.increff.pos.db.OrderItemPojo();
+    public static ZonedDateTime parseStartDate(String dateStr) throws ApiException {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return ZonedDateTime.parse(dateStr);
+        } catch (java.time.format.DateTimeParseException e) {
+            try {
+                return LocalDate.parse(dateStr)
+                        .atStartOfDay(java.time.ZoneOffset.UTC);
+            } catch (DateTimeParseException ex) {
+                throw new ApiException("Invalid date format. Use yyyy-MM-dd format (e.g., 2024-01-01)");
+            }
+        }
+    }
+
+    public static ZonedDateTime parseEndDate(String dateStr) throws ApiException {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return ZonedDateTime.parse(dateStr);
+        } catch (DateTimeParseException e) {
+            try {
+                return java.time.LocalDate.parse(dateStr)
+                        .atTime(23, 59, 59)
+                        .atZone(java.time.ZoneOffset.UTC);
+            } catch (DateTimeParseException ex) {
+                throw new ApiException("Invalid date format. Use yyyy-MM-dd format (e.g., 2024-01-01)");
+            }
+        }
+    }
+
+    public static OrderItemPojo createOrderItem(String productId, Integer quantity, Double mrp) {
+        OrderItemPojo item = new OrderItemPojo();
         item.setProductId(productId);
         item.setQuantity(quantity);
         item.setMrp(mrp);

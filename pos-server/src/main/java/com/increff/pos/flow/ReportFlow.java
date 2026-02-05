@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ReportFlow {
@@ -24,44 +25,50 @@ public class ReportFlow {
     private ClientApi clientApi;
 
     public List<ClientSalesReportData> generateSalesReport(ZonedDateTime fromDate, ZonedDateTime toDate,
-            String clientIdFilter) throws ApiException {
+            String clientIdFilter) {
         List<OrderPojo> orders = orderApi.getWithFilters(null, "INVOICED", fromDate, toDate);
         if (orders.isEmpty()) {
             return new ArrayList<>();
         }
 
+        List<String> orderIds = orders.stream()
+                .map(OrderPojo::getOrderId)
+                .collect(Collectors.toList());
+        List<OrderItemPojo> allItems = orderItemApi.getByOrderIds(orderIds);
+
+        List<String> productIds = allItems.stream()
+                .map(OrderItemPojo::getProductId)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<String, ProductPojo> productMap = productApi.getByIds(productIds).stream()
+                .collect(Collectors.toMap(ProductPojo::getId, p -> p));
+
         Map<String, ClientSalesReportData> reportsByClient = new HashMap<>();
 
-        for (OrderPojo order : orders) {
-            List<OrderItemPojo> items = orderItemApi.getByOrderId(order.getOrderId());
-
-            for (OrderItemPojo item : items) {
-                ProductPojo product;
-                try {
-                    product = productApi.getCheck(item.getProductId());
-                } catch (ApiException e) {
-                    continue;
-                }
-
-                String clientId = product.getClientId();
-
-                if (clientIdFilter != null && !clientIdFilter.trim().isEmpty()
-                        && !clientId.equals(clientIdFilter)) {
-                    continue;
-                }
-
-                ClientSalesReportData report = reportsByClient.get(clientId);
-                if (report == null) {
-                    report = createNewClientReport(clientId);
-                    reportsByClient.put(clientId, report);
-                }
-
-                updateProductSales(report, item);
-
-                report.getOrderIds().add(order.getOrderId());
-
-                report.getPrices().add(item.getMrp());
+        for (OrderItemPojo item : allItems) {
+            ProductPojo product = productMap.get(item.getProductId());
+            if (product == null) {
+                continue;
             }
+
+            String clientId = product.getClientId();
+
+            if (clientIdFilter != null && !clientIdFilter.trim().isEmpty()
+                    && !clientId.equals(clientIdFilter)) {
+                continue;
+            }
+
+            ClientSalesReportData report = reportsByClient.get(clientId);
+            if (report == null) {
+                report = createNewClientReport(clientId);
+                reportsByClient.put(clientId, report);
+            }
+
+            updateProductSales(report, item);
+
+            report.getOrderIds().add(item.getOrderId());
+
+            report.getPrices().add(item.getMrp());
         }
 
         List<ClientSalesReportData> results = new ArrayList<>(reportsByClient.values());

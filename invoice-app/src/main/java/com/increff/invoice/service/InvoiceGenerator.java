@@ -60,7 +60,6 @@ public class InvoiceGenerator {
         }
     }
 
-    // Build a reasonably styled XSL‑FO invoice layout
     private String buildSimpleXml(InvoiceRequest request) {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")

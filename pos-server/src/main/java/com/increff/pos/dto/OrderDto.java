@@ -10,6 +10,7 @@ import com.increff.pos.model.form.OrderForm;
 import com.increff.pos.model.form.OrderSearchForm;
 import com.increff.pos.model.data.OrderCreationResult;
 import com.increff.pos.util.ValidationUtil;
+import com.increff.pos.util.NormalizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import com.increff.pos.model.form.PageForm;
@@ -18,9 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,7 +46,7 @@ public class OrderDto {
     }
 
     public OrderData getById(String orderId) throws ApiException {
-        orderId = com.increff.pos.util.NormalizeUtil.normalizeOrderId(orderId);
+        orderId = NormalizeUtil.normalizeOrderId(orderId);
         OrderPojo order = orderFlow.getOrderWithItems(orderId);
         List<OrderItemPojo> items = orderFlow.getOrderItems(orderId);
         boolean hasInvoice = "INVOICED".equals(order.getStatus());
@@ -63,35 +62,23 @@ public class OrderDto {
         pageForm.setSize(form.getSize());
         ValidationUtil.validate(pageForm);
 
-        ZonedDateTime fromDate = null;
-        ZonedDateTime toDate = null;
-        try {
-            if (form.getFromDate() != null && !form.getFromDate().trim().isEmpty()) {
-                try {
-                    fromDate = ZonedDateTime.parse(form.getFromDate());
-                } catch (DateTimeParseException e) {
-                    fromDate = LocalDate.parse(form.getFromDate()).atStartOfDay(java.time.ZoneOffset.UTC);
-                }
-            }
-            if (form.getToDate() != null && !form.getToDate().trim().isEmpty()) {
-                try {
-                    toDate = ZonedDateTime.parse(form.getToDate());
-                } catch (DateTimeParseException e) {
-                    toDate = LocalDate.parse(form.getToDate()).atTime(23, 59, 59)
-                            .atZone(java.time.ZoneOffset.UTC);
-                }
-            }
-        } catch (DateTimeParseException e) {
-            throw new ApiException("Invalid date format. Use yyyy-MM-dd format (e.g., 2024-01-01)");
-        }
+        ZonedDateTime fromDate = OrderHelper.parseStartDate(form.getFromDate());
+        ZonedDateTime toDate = OrderHelper.parseEndDate(form.getToDate());
 
         int page = form.getPage() != null ? form.getPage() : 0;
         int size = form.getSize() != null ? form.getSize() : 10;
         Pageable pageable = PageRequest.of(page, size);
 
+        String orderId = form.getOrderId() != null && !form.getOrderId().trim().isEmpty()
+                ? form.getOrderId()
+                : null;
+        String status = form.getStatus() != null && !form.getStatus().trim().isEmpty()
+                ? form.getStatus()
+                : null;
+
         Page<OrderPojo> orderPage = orderFlow.getOrderWithFilters(
-                form.getOrderId(),
-                form.getStatus() != null && !form.getStatus().isEmpty() ? form.getStatus() : null,
+                orderId,
+                status,
                 fromDate,
                 toDate,
                 pageable);
@@ -126,13 +113,6 @@ public class OrderDto {
         return orderData;
     }
 
-    private List<OrderItemPojo> convertToOrderItems(OrderForm form) {
-        return form.getLines().stream()
-                .map(line -> OrderHelper.createOrderItem(
-                        line.getProductId(), line.getQuantity(), line.getMrp()))
-                .collect(Collectors.toList());
-    }
-
     public OrderData retry(String orderId, OrderForm form) throws ApiException {
         List<OrderItemPojo> orderItems = null;
         if (form != null && form.getLines() != null && !form.getLines().isEmpty()) {
@@ -150,5 +130,12 @@ public class OrderDto {
         orderData.setFulfillable(creationResult.isFulfillable());
         orderData.setUnfulfillableItems(creationResult.getUnfulfillableItems());
         return orderData;
+    }
+
+    private List<OrderItemPojo> convertToOrderItems(OrderForm form) {
+        return form.getLines().stream()
+                .map(line -> OrderHelper.createOrderItem(
+                        line.getProductId(), line.getQuantity(), line.getMrp()))
+                .collect(Collectors.toList());
     }
 }

@@ -24,6 +24,11 @@ public class OrderItemDao extends AbstractDao<OrderItemPojo> {
         return mongoOperations.find(query, OrderItemPojo.class);
     }
 
+    public List<OrderItemPojo> findByOrderIdIn(List<String> orderIds) {
+        Query query = Query.query(Criteria.where("orderId").in(orderIds));
+        return mongoOperations.find(query, OrderItemPojo.class);
+    }
+
     public void deleteByOrderId(String orderId) {
         Query query = Query.query(Criteria.where("orderId").is(orderId));
         mongoOperations.remove(query, OrderItemPojo.class);

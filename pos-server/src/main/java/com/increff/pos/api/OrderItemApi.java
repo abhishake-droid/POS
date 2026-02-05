@@ -12,6 +12,8 @@ public interface OrderItemApi {
 
     List<OrderItemPojo> getByOrderId(String orderId);
 
+    List<OrderItemPojo> getByOrderIds(List<String> orderIds);
+
     List<OrderItemPojo> addBulk(List<OrderItemPojo> orderItemPojos) throws ApiException;
 
     void delete(String id) throws ApiException;

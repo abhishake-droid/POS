@@ -5,7 +5,6 @@ import com.increff.pos.dao.ProductDao;
 import com.increff.pos.db.InventoryPojo;
 import com.increff.pos.db.ProductPojo;
 import com.increff.pos.exception.ApiException;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -147,7 +146,7 @@ public class InventoryApiImpl implements InventoryApi {
 
     @Override
     @Transactional(rollbackFor = ApiException.class)
-    public void bulkUpdateQuantities(java.util.Map<String, Integer> productIdToQuantity) {
+    public void bulkUpdateQuantities(Map<String, Integer> productIdToQuantity) {
         inventoryDao.bulkUpdateQuantities(productIdToQuantity);
     }
 

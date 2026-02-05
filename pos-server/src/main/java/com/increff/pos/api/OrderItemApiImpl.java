@@ -35,6 +35,12 @@ public class OrderItemApiImpl implements OrderItemApi {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<OrderItemPojo> getByOrderIds(List<String> orderIds) {
+        return orderItemDao.findByOrderIdIn(orderIds);
+    }
+
+    @Override
     @Transactional(rollbackFor = ApiException.class)
     public List<OrderItemPojo> addBulk(List<OrderItemPojo> orderItemPojos) throws ApiException {
         return orderItemDao.saveAll(orderItemPojos);

@@ -13,6 +13,7 @@ import com.increff.pos.util.TsvUtil;
 import java.util.Map;
 import java.util.HashMap;
 import com.increff.pos.util.ValidationUtil;
+import com.increff.pos.util.NormalizeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +30,7 @@ public class InventoryDto {
     private ProductFlow productFlow;
 
     public InventoryData updateInventory(String productId, InventoryForm form) throws ApiException {
-        productId = com.increff.pos.util.NormalizeUtil.normalizeId(productId);
+        productId = NormalizeUtil.normalizeId(productId);
         ValidationUtil.validate(form);
         InventoryPojo pojo = inventoryFlow.updateInventory(productId, form.getQuantity());
         return toDataWithRelations(pojo);

@@ -114,9 +114,9 @@ public class OrderFlow {
     private String processOrderCreation(String orderId, List<OrderItemPojo> orderItems,
             InventoryCheckResult checkResult, OrderCalculator totals) throws ApiException {
         List<OrderItemPojo> savedItems = new ArrayList<>();
+        List<String> productIds = OrderHelper.extractProductIds(orderItems);
 
         if (checkResult.isAllAvailable()) {
-            List<String> productIds = OrderHelper.extractProductIds(orderItems);
             BulkData bulkData = fetchBulkData(productIds);
             Map<String, Integer> inventoryUpdates = OrderHelper.prepareInventoryDeduct(orderItems,
                     bulkData.inventoryMap);
@@ -126,7 +126,6 @@ public class OrderFlow {
 
             return OrderStatus.PLACED.getValue();
         } else {
-            List<String> productIds = OrderHelper.extractProductIds(orderItems);
             Map<String, ProductPojo> productMap = OrderHelper.fetchProductsMap(productApi, productIds);
 
             processOrderItems(orderItems, orderId, productMap, savedItems, totals);
@@ -164,12 +163,13 @@ public class OrderFlow {
             int availableQty = (inventory != null && inventory.getQuantity() != null) ? inventory.getQuantity() : 0;
 
             if (availableQty < item.getQuantity()) {
-                UnfulfillableItemData unfulfillable = new UnfulfillableItemData();
-                unfulfillable.setBarcode(product.getBarcode());
-                unfulfillable.setProductName(product.getName());
-                unfulfillable.setRequestedQuantity(item.getQuantity());
-                unfulfillable.setAvailableQuantity(availableQty);
-                unfulfillable.setReason(availableQty == 0 ? "OUT_OF_STOCK" : "INSUFFICIENT_QUANTITY");
+                String reason = availableQty == 0 ? "OUT_OF_STOCK" : "INSUFFICIENT_QUANTITY";
+                UnfulfillableItemData unfulfillable = OrderHelper.createUnfulfillableItem(
+                        product.getBarcode(),
+                        product.getName(),
+                        item.getQuantity(),
+                        availableQty,
+                        reason);
                 unfulfillableItems.add(unfulfillable);
             }
         }
@@ -228,8 +228,8 @@ public class OrderFlow {
             InventoryCheckResult checkResult, OrderCalculator totals) throws ApiException {
         List<OrderItemPojo> savedItems = new ArrayList<>();
 
+        List<String> newProductIds = OrderHelper.extractProductIds(newOrderItems);
         if (checkResult.isAllAvailable()) {
-            List<String> newProductIds = OrderHelper.extractProductIds(newOrderItems);
             BulkData bulkData = fetchBulkData(newProductIds);
             Map<String, Integer> deductUpdates = OrderHelper.prepareInventoryDeduct(newOrderItems,
                     bulkData.inventoryMap);
@@ -239,7 +239,6 @@ public class OrderFlow {
 
             return updateOrderStatus(order.getId(), OrderStatus.PLACED, totals);
         } else {
-            List<String> newProductIds = OrderHelper.extractProductIds(newOrderItems);
             Map<String, ProductPojo> productMap = OrderHelper.fetchProductsMap(productApi, newProductIds);
 
             processOrderItems(newOrderItems, orderId, productMap, savedItems, totals);

@@ -5,9 +5,6 @@ import lombok.Setter;
 
 import java.util.List;
 
-/**
- * Result of creating an order, includes unfulfillability info
- */
 @Getter
 @Setter
 public class OrderCreationResult {
