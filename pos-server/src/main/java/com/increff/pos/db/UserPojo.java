@@ -3,9 +3,11 @@ package com.increff.pos.db;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Field;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Document(collection = "users")
 public class UserPojo extends AbstractPojo {
 

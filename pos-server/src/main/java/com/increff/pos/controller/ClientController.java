@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
-
+// Todo Search method
 @Tag(name = "Client Management", description = "APIs for managing clients")
 @RestController
 @RequestMapping("/api/client")

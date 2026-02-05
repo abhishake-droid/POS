@@ -1,13 +1,15 @@
 package com.increff.pos.db;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.index.Indexed;
 
 import java.time.ZonedDateTime;
 
-@Data
+@Getter
+@Setter
 @Document(collection = "invoices")
 public class InvoicePojo extends AbstractPojo {
 

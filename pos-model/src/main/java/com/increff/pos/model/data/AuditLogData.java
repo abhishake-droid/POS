@@ -11,6 +11,6 @@ public class AuditLogData {
     private String id;
     private String operatorEmail;
     private String operatorName;
-    private String action; // "LOGIN" or "LOGOUT"
+    private String action;
     private ZonedDateTime timestamp;
 }

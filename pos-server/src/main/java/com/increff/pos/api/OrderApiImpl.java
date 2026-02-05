@@ -53,8 +53,7 @@ public class OrderApiImpl implements OrderApi {
     @Override
     @Transactional(readOnly = true)
     public Page<OrderPojo> getAll(PageForm form) {
-        PageRequest pageRequest = PageRequest.of(form.getPage(), form.getSize(),
-                Sort.by(Sort.Direction.DESC, "orderDate"));
+        PageRequest pageRequest = PageRequest.of(form.getPage(), form.getSize(), Sort.by(Sort.Direction.DESC, "orderDate"));
         return orderDao.findAll(pageRequest);
     }
 

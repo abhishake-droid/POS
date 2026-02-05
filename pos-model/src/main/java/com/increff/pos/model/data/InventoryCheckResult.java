@@ -5,9 +5,6 @@ import lombok.Setter;
 
 import java.util.List;
 
-/**
- * Result of checking inventory availability for order items
- */
 @Getter
 @Setter
 public class InventoryCheckResult {

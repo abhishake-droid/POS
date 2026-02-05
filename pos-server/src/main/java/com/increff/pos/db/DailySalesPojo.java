@@ -1,13 +1,15 @@
 package com.increff.pos.db;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 
 import java.time.LocalDate;
 
-@Data
+@Getter
+@Setter
 @Document(collection = "daily_sales")
 @CompoundIndex(name = "date_client_idx", def = "{'date': 1, 'clientId': 1}", unique = true)
 public class DailySalesPojo extends AbstractPojo {
