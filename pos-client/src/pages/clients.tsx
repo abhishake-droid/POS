@@ -38,7 +38,7 @@ import { ClientData, ClientForm } from '../types/client.types';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateText } from '../utils/dateFormat';
 
-type ClientSearchFilter = 'clientId' | 'name' | 'email' | 'phone';
+type ClientSearchFilter = 'clientId' | 'name' | 'email';
 
 const PAGE_SIZE = 10;
 
@@ -80,9 +80,9 @@ const StyledTableContainer = styled(TableContainer)({
 });
 
 const StyledTableHead = styled(TableHead)({
-  backgroundColor: '#1976d2',
+  backgroundColor: '#f1f5f9',
   '& .MuiTableCell-head': {
-    color: 'white',
+    color: '#0f172a',
     fontWeight: 600,
   },
 });
@@ -104,7 +104,7 @@ const PaginationBox = styled(Box)({
 });
 
 const StyledIconButton = styled(IconButton)({
-  backgroundColor: '#1d4ed8',
+  backgroundColor: '#1e3a8a',
   color: 'white',
   '&:hover': {
     backgroundColor: '#1e40af',
@@ -202,9 +202,6 @@ export default function Clients() {
           case 'email':
             return c.email.toLowerCase().includes(value);
 
-          case 'phone':
-            return c.phone.toLowerCase().includes(value);
-
           default:
             return true;
         }
@@ -291,7 +288,6 @@ export default function Clients() {
           <MenuItem value="clientId">Client ID</MenuItem>
           <MenuItem value="name">Name </MenuItem>
           <MenuItem value="email">Email</MenuItem>
-          <MenuItem value="phone">Phone</MenuItem>
         </TextField>
 
         <TextField
@@ -302,8 +298,7 @@ export default function Clients() {
           placeholder={
             searchFilter === 'clientId' ? 'Enter client ID' :
               searchFilter === 'name' ? 'Enter client name' :
-                searchFilter === 'email' ? 'Enter email address' :
-                  'Enter phone number'
+                'Enter email address'
           }
           sx={{ width: 260 }}
         />

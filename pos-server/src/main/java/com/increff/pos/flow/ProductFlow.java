@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -81,5 +82,10 @@ public class ProductFlow {
     @Transactional(readOnly = true)
     public List<String> getExistingBarcodes(List<String> barcodes) {
         return productApi.getExistingBarcodes(barcodes);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, ProductPojo> getByBarcodes(List<String> barcodes) throws ApiException {
+        return productApi.getByBarcodes(barcodes);
     }
 }

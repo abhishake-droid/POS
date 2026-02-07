@@ -39,7 +39,7 @@ public class InvoiceHelper {
         request.setOrderId(order.getOrderId());
         request.setCustomerName("");
         request.setBillingAddress("");
-        request.setOrderDate(order.getOrderDate());
+        request.setOrderDate(ZonedDateTime.now()); // Use current time for invoice generation
 
         List<InvoiceLineItem> lineItems = orderItems.stream()
                 .map(InvoiceHelper::createInvoiceLineItem)

@@ -31,8 +31,8 @@ public class ProductDto {
     private ProductFlow productFlow;
 
     public ProductData create(ProductForm form) throws ApiException {
-        ValidationUtil.validate(form);
         NormalizeUtil.normalizeProductForm(form);
+        ValidationUtil.validate(form);
         ProductPojo pojo = ProductHelper.convertToEntity(form);
         ProductPojo saved = productFlow.create(pojo);
         return toDataWithRelations(saved);
@@ -67,8 +67,8 @@ public class ProductDto {
 
     public ProductData update(String id, ProductForm form) throws ApiException {
         id = NormalizeUtil.normalizeId(id);
-        ValidationUtil.validate(form);
         NormalizeUtil.normalizeProductForm(form);
+        ValidationUtil.validate(form);
         ProductPojo pojo = ProductHelper.convertToEntity(form);
         ProductPojo updated = productFlow.update(id, pojo);
         return toDataWithRelations(updated);

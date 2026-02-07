@@ -76,9 +76,12 @@ class DailySalesFlowTest {
         LocalDate date = LocalDate.now();
         when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(), any()))
                 .thenReturn(Arrays.asList(orderPojo));
-        when(orderItemApi.getByOrderId("ORD001")).thenReturn(Arrays.asList(orderItemPojo));
-        when(productApi.getCheck("prod1")).thenReturn(productPojo);
-        when(clientApi.getCheckByClientId("client1")).thenReturn(clientPojo);
+        when(orderItemApi.getByOrderIds(Arrays.asList("ORD001")))
+                .thenReturn(Arrays.asList(orderItemPojo));
+        when(productApi.getByIds(Arrays.asList("prod1")))
+                .thenReturn(Arrays.asList(productPojo));
+        when(clientApi.getByClientIds(Arrays.asList("client1")))
+                .thenReturn(java.util.Map.of("client1", clientPojo));
         when(dailySalesApi.getByDateAndClient(any(), anyString())).thenReturn(null);
         when(dailySalesApi.add(any(DailySalesPojo.class))).thenReturn(new DailySalesPojo());
 
@@ -98,9 +101,12 @@ class DailySalesFlowTest {
 
         when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(), any()))
                 .thenReturn(Arrays.asList(orderPojo));
-        when(orderItemApi.getByOrderId("ORD001")).thenReturn(Arrays.asList(orderItemPojo));
-        when(productApi.getCheck("prod1")).thenReturn(productPojo);
-        when(clientApi.getCheckByClientId("client1")).thenReturn(clientPojo);
+        when(orderItemApi.getByOrderIds(Arrays.asList("ORD001")))
+                .thenReturn(Arrays.asList(orderItemPojo));
+        when(productApi.getByIds(Arrays.asList("prod1")))
+                .thenReturn(Arrays.asList(productPojo));
+        when(clientApi.getByClientIds(Arrays.asList("client1")))
+                .thenReturn(java.util.Map.of("client1", clientPojo));
         when(dailySalesApi.getByDateAndClient(any(), anyString())).thenReturn(existing);
         when(dailySalesApi.update(anyString(), any(DailySalesPojo.class))).thenReturn(existing);
 
@@ -144,10 +150,12 @@ class DailySalesFlowTest {
 
         when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(), any()))
                 .thenReturn(Arrays.asList(orderPojo, order2));
-        when(orderItemApi.getByOrderId("ORD001")).thenReturn(Arrays.asList(orderItemPojo));
-        when(orderItemApi.getByOrderId("ORD002")).thenReturn(Arrays.asList(item2));
-        when(productApi.getCheck("prod1")).thenReturn(productPojo);
-        when(clientApi.getCheckByClientId("client1")).thenReturn(clientPojo);
+        when(orderItemApi.getByOrderIds(Arrays.asList("ORD001", "ORD002")))
+                .thenReturn(Arrays.asList(orderItemPojo, item2));
+        when(productApi.getByIds(Arrays.asList("prod1")))
+                .thenReturn(Arrays.asList(productPojo));
+        when(clientApi.getByClientIds(Arrays.asList("client1")))
+                .thenReturn(java.util.Map.of("client1", clientPojo));
         when(dailySalesApi.getByDateAndClient(any(), anyString())).thenReturn(null);
         when(dailySalesApi.add(any(DailySalesPojo.class))).thenReturn(new DailySalesPojo());
 
@@ -164,7 +172,8 @@ class DailySalesFlowTest {
         LocalDate date = LocalDate.now();
         when(orderApi.getWithFilters(isNull(), eq("INVOICED"), any(), any()))
                 .thenReturn(Arrays.asList(orderPojo));
-        when(orderItemApi.getByOrderId("ORD001")).thenReturn(Collections.emptyList());
+        when(orderItemApi.getByOrderIds(Arrays.asList("ORD001")))
+                .thenReturn(Collections.emptyList());
 
         // When
         dailySalesFlow.aggregateSalesForDate(date);

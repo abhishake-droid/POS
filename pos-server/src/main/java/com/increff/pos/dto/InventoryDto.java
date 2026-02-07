@@ -63,7 +63,10 @@ public class InventoryDto {
         }
     }
 
-    private Map<String, Integer> parseAndAggregateInventory(String[] lines, List<TsvUploadResult> results) {
+    private Map<String, Integer> parseAndAggregateInventory(String[] lines, List<TsvUploadResult> results)
+            throws ApiException {
+        List<String> barcodes = extractBarcodes(lines);
+        Map<String, ProductPojo> productMap = productFlow.getByBarcodes(barcodes);
         Map<String, Integer> quantityByProductId = new HashMap<>();
 
         for (int i = 1; i < lines.length; i++) {
@@ -72,7 +75,7 @@ public class InventoryDto {
                 continue;
 
             try {
-                InventoryPojo pojo = InventoryHelper.parseInventory(line, i + 1, productFlow);
+                InventoryPojo pojo = InventoryHelper.parseInventory(line, i + 1, productMap);
                 String productId = pojo.getProductId();
                 quantityByProductId.merge(productId, pojo.getQuantity(), Integer::sum);
                 results.add(new TsvUploadResult(i + 1, "SUCCESS", "Inventory updated", line));
@@ -82,6 +85,22 @@ public class InventoryDto {
         }
 
         return quantityByProductId;
+    }
+
+    private List<String> extractBarcodes(String[] lines) {
+        List<String> barcodes = new ArrayList<>();
+        for (int i = 1; i < lines.length; i++) {
+            String line = lines[i].trim();
+            if (line.isEmpty())
+                continue;
+
+            String[] columns = line.split("\t");
+            if (columns.length > 0) {
+                String barcode = columns[0].trim().toLowerCase();
+                barcodes.add(barcode);
+            }
+        }
+        return barcodes;
     }
 
     private List<InventoryPojo> createInventoryUpdates(Map<String, Integer> quantityByProductId) {

@@ -14,6 +14,7 @@ public class InventoryController {
     @Autowired
     private InventoryDto inventoryDto;
 
+    // Todo use barcode
     @PutMapping("/{productId}")
     public InventoryData updateInventory(@PathVariable String productId, @RequestBody InventoryForm form)
             throws ApiException {

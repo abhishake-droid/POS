@@ -66,4 +66,9 @@ public class ProductDao extends AbstractDao<ProductPojo> {
         List<ProductPojo> products = mongoOperations.find(query, ProductPojo.class);
         return products.stream().map(ProductPojo::getBarcode).toList();
     }
+
+    public List<ProductPojo> findByBarcodes(@NonNull List<String> barcodes) {
+        Query query = Query.query(Criteria.where("barcode").in(barcodes));
+        return mongoOperations.find(query, ProductPojo.class);
+    }
 }

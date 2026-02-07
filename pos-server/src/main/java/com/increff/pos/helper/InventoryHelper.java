@@ -8,6 +8,7 @@ import com.increff.pos.model.data.InventoryData;
 import com.increff.pos.model.data.TsvUploadResult;
 
 import java.util.List;
+import java.util.Map;
 
 public class InventoryHelper {
 
@@ -28,6 +29,38 @@ public class InventoryHelper {
             String quantityStr = columns[1].trim();
 
             ProductPojo product = productFlow.getByBarcode(barcodeStr);
+            InventoryPojo pojo = new InventoryPojo();
+            pojo.setProductId(product.getId());
+
+            try {
+                Integer quantity = Integer.parseInt(quantityStr);
+                if (quantity < 0) {
+                    throw new ApiException("Row " + rowNum + ": Quantity cannot be negative");
+                }
+                pojo.setQuantity(quantity);
+            } catch (NumberFormatException e) {
+                throw new ApiException("Row " + rowNum + ": Invalid quantity");
+            }
+
+            return pojo;
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new ApiException("Row " + rowNum + ": Missing required columns. Expected: barcode, quantity");
+        }
+    }
+
+    public static InventoryPojo parseInventory(String line, int rowNum, Map<String, ProductPojo> productMap)
+            throws ApiException {
+        String[] columns = line.split("\t");
+
+        try {
+            String barcodeStr = columns[0].trim().toLowerCase();
+            String quantityStr = columns[1].trim();
+
+            ProductPojo product = productMap.get(barcodeStr);
+            if (product == null) {
+                throw new ApiException("Row " + rowNum + ": Product with barcode " + barcodeStr + " does not exist");
+            }
+
             InventoryPojo pojo = new InventoryPojo();
             pojo.setProductId(product.getId());
 

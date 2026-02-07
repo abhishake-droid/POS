@@ -23,8 +23,8 @@ public class UserDto {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public UserData create(UserForm userForm) throws ApiException {
-        ValidationUtil.validate(userForm);
         NormalizeUtil.normalizeUserForm(userForm);
+        ValidationUtil.validate(userForm);
 
         if (userForm.getRole() != null && "SUPERVISOR".equals(userForm.getRole())) {
             throw new ApiException(

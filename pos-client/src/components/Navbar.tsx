@@ -23,11 +23,12 @@ import {
 import { useState } from 'react';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: '#1976d2',
+  backgroundColor: '#1e3a8a',
   boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
   top: 0,
   zIndex: 1100,
   width: '100%',
+  borderRadius: 0,
 }));
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
@@ -43,7 +44,7 @@ const NavButton = styled(Button)(({ theme }) => ({
   textTransform: 'none',
   fontSize: '0.95rem',
   padding: '0.5rem 1.2rem',
-  borderRadius: '8px',
+  borderRadius: 0,
   transition: 'all 0.3s ease',
   '&:hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -81,18 +82,23 @@ export default function Navbar() {
   return (
     <StyledAppBar position="fixed">
       <StyledToolbar>
-        <Typography
-          variant="h5"
-          component="div"
+        <Box
           sx={{
-            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
             cursor: 'pointer',
-            letterSpacing: '0.5px',
           }}
           onClick={() => router.push('/')}
         >
-          POS System
-        </Typography>
+          <img
+            src="/logo.png"
+            alt="POS Logo"
+            style={{
+              height: '40px',
+              width: 'auto',
+            }}
+          />
+        </Box>
 
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <NavButton onClick={() => router.push('/')}>
@@ -129,7 +135,7 @@ export default function Navbar() {
                 PaperProps={{
                   sx: {
                     mt: 1,
-                    borderRadius: '8px',
+                    borderRadius: 0,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                     minWidth: 180,
                   }
@@ -139,14 +145,14 @@ export default function Navbar() {
                   onClick={() => handleNavigation('/supervisor-dashboard')}
                   sx={{ py: 1.25, px: 2 }}
                 >
-                  <Dashboard sx={{ mr: 1.5, fontSize: 20, color: '#1976d2' }} />
+                  <Dashboard sx={{ mr: 1.5, fontSize: 20, color: '#1e3a8a' }} />
                   Dashboard
                 </MenuItem>
                 <MenuItem
                   onClick={() => handleNavigation('/operators')}
                   sx={{ py: 1.25, px: 2 }}
                 >
-                  <SupervisorAccount sx={{ mr: 1.5, fontSize: 20, color: '#1976d2' }} />
+                  <SupervisorAccount sx={{ mr: 1.5, fontSize: 20, color: '#1e3a8a' }} />
                   Operators
                 </MenuItem>
               </Menu>
@@ -176,7 +182,7 @@ export default function Navbar() {
                 PaperProps={{
                   sx: {
                     mt: 1,
-                    borderRadius: '8px',
+                    borderRadius: 0,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                     minWidth: 220,
                   }

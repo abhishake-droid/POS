@@ -10,7 +10,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class ClientApiImpl implements ClientApi {
@@ -66,6 +69,23 @@ public class ClientApiImpl implements ClientApi {
         existing.setEmail(clientPojo.getEmail());
 
         return dao.save(existing);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, ClientPojo> getByClientIds(List<String> clientIds) throws ApiException {
+        if (clientIds == null || clientIds.isEmpty()) {
+            return Map.of();
+        }
+        List<ClientPojo> clients = dao.findByClientIds(clientIds);
+        return clients.stream()
+                .collect(Collectors.toMap(ClientPojo::getClientId, c -> c));
+    }
+
+    @Override
+    public Page<ClientPojo> search(String clientId, String name, String email, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return dao.findWithFilters(clientId, name, email, pageRequest);
     }
 
     private void validateClientUniqueness(ClientPojo clientPojo, String excludeId) throws ApiException {

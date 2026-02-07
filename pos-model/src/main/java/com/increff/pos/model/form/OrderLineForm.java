@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class OrderLineForm {
-    private String productId;
+    private String barcode;
     private Integer quantity;
     private Double mrp;
 }

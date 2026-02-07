@@ -19,6 +19,7 @@ import java.time.ZonedDateTime;
 
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +72,17 @@ public class OrderHelper {
     public static List<String> extractProductIds(List<OrderItemPojo> items) {
         return items.stream()
                 .map(OrderItemPojo::getProductId)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    public static List<String> extractBarcodes(List<OrderItemPojo> items) {
+        if (items == null) {
+            return Collections.emptyList();
+        }
+        return items.stream()
+                .map(OrderItemPojo::getBarcode)
+                .distinct()
                 .collect(Collectors.toList());
     }
 
@@ -181,9 +193,9 @@ public class OrderHelper {
         }
     }
 
-    public static OrderItemPojo createOrderItem(String productId, Integer quantity, Double mrp) {
+    public static OrderItemPojo createOrderItem(String barcode, Integer quantity, Double mrp) {
         OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(productId);
+        item.setBarcode(barcode);
         item.setQuantity(quantity);
         item.setMrp(mrp);
         return item;

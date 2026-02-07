@@ -40,7 +40,7 @@ class OrderDtoTest {
     @BeforeEach
     void setUp() {
         OrderLineForm line = new OrderLineForm();
-        line.setProductId("prod1");
+        line.setBarcode("PROD001");
         line.setQuantity(10);
         line.setMrp(100.0);
 
@@ -176,12 +176,12 @@ class OrderDtoTest {
     void testCreate_MultipleLines() throws ApiException {
         // Given
         OrderLineForm line1 = new OrderLineForm();
-        line1.setProductId("prod1");
+        line1.setBarcode("PROD001");
         line1.setQuantity(10);
         line1.setMrp(100.0);
 
         OrderLineForm line2 = new OrderLineForm();
-        line2.setProductId("prod2");
+        line2.setBarcode("PROD002");
         line2.setQuantity(5);
         line2.setMrp(200.0);
 

@@ -47,7 +47,7 @@ export default function Home() {
           variant="h2"
           sx={{
             fontWeight: 700,
-            background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
+            background: 'linear-gradient(45deg, #1e3a8a 30%, #0d9488 90%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             mb: 2,
@@ -62,7 +62,7 @@ export default function Home() {
 
       {isSupervisor && (
         <Box sx={{ mb: 5 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#1976d2' }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#1e3a8a' }}>
             Supervisor Tools
           </Typography>
           <Grid container spacing={3}>
@@ -76,7 +76,7 @@ export default function Home() {
                   height: '100%',
                 }}>
                   <Box sx={{ mb: 2 }}>
-                    <Dashboard sx={{ fontSize: 56, color: '#1976d2' }} />
+                    <Dashboard sx={{ fontSize: 56, color: '#1e3a8a' }} />
                   </Box>
                   <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
                     Supervisor Dashboard
@@ -106,7 +106,7 @@ export default function Home() {
                   height: '100%',
                 }}>
                   <Box sx={{ mb: 2 }}>
-                    <SupervisorAccount sx={{ fontSize: 56, color: '#1976d2' }} />
+                    <SupervisorAccount sx={{ fontSize: 56, color: '#1e3a8a' }} />
                   </Box>
                   <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
                     Operator Management
@@ -130,7 +130,7 @@ export default function Home() {
       )}
 
       <Box>
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#1976d2' }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#1e3a8a' }}>
           Core Modules
         </Typography>
         <Grid container spacing={3}>
@@ -144,7 +144,7 @@ export default function Home() {
                 height: '100%',
               }}>
                 <Box sx={{ mb: 2 }}>
-                  <People sx={{ fontSize: 56, color: '#1976d2' }} />
+                  <People sx={{ fontSize: 56, color: '#1e3a8a' }} />
                 </Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, minHeight: 48 }}>
                   Client Management
@@ -174,7 +174,7 @@ export default function Home() {
                 height: '100%',
               }}>
                 <Box sx={{ mb: 2 }}>
-                  <Inventory sx={{ fontSize: 56, color: '#1976d2' }} />
+                  <Inventory sx={{ fontSize: 56, color: '#1e3a8a' }} />
                 </Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, minHeight: 48 }}>
                   Product Management
@@ -204,7 +204,7 @@ export default function Home() {
                 height: '100%',
               }}>
                 <Box sx={{ mb: 2 }}>
-                  <ShoppingCart sx={{ fontSize: 56, color: '#1976d2' }} />
+                  <ShoppingCart sx={{ fontSize: 56, color: '#1e3a8a' }} />
                 </Box>
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, minHeight: 48 }}>
                   Order Management
@@ -235,7 +235,7 @@ export default function Home() {
                   height: '100%',
                 }}>
                   <Box sx={{ mb: 2 }}>
-                    <Assessment sx={{ fontSize: 56, color: '#1976d2' }} />
+                    <Assessment sx={{ fontSize: 56, color: '#1e3a8a' }} />
                   </Box>
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, minHeight: 48 }}>
                     Sales Report

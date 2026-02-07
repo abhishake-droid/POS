@@ -1,9 +1,9 @@
 export type OrderStatus = 'PLACED' | 'INVOICED' | 'CANCELLED' | 'UNFULFILLABLE';
 
 export interface OrderLineForm {
-  productId: string;
+  barcode: string;
+  productId?: string; // Keep for display purposes only
   productName?: string;
-  barcode?: string;
   quantity: number;
   mrp: number;
   lineTotal: number;

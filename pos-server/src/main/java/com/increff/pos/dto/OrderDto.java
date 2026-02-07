@@ -135,7 +135,7 @@ public class OrderDto {
     private List<OrderItemPojo> convertToOrderItems(OrderForm form) {
         return form.getLines().stream()
                 .map(line -> OrderHelper.createOrderItem(
-                        line.getProductId(), line.getQuantity(), line.getMrp()))
+                        line.getBarcode(), line.getQuantity(), line.getMrp()))
                 .collect(Collectors.toList());
     }
 }

@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(rollbackFor = ApiException.class)
@@ -75,6 +77,17 @@ public class ProductApiImpl implements ProductApi {
             return List.of();
         }
         return productDao.findBarcodesByBarcodes(barcodes);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, ProductPojo> getByBarcodes(List<String> barcodes) throws ApiException {
+        if (barcodes == null || barcodes.isEmpty()) {
+            return Map.of();
+        }
+        List<ProductPojo> products = productDao.findByBarcodes(barcodes);
+        return products.stream()
+                .collect(Collectors.toMap(ProductPojo::getBarcode, p -> p));
     }
 
     private void validateBarcodeUniqueness(String barcode, String excludeId) throws ApiException {

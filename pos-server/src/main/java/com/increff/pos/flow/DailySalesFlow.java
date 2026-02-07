@@ -23,9 +23,11 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,7 +50,6 @@ public class DailySalesFlow {
         LocalDate today = LocalDate.now();
         LocalDate yesterday = today.minusDays(1);
         aggregateSalesForDate(yesterday);
-        aggregateSalesForDate(today);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -58,26 +59,59 @@ public class DailySalesFlow {
 
         List<OrderPojo> orders = orderApi.getWithFilters(null, OrderStatus.INVOICED.getValue(), startOfDay, endOfDay);
 
+        if (orders.isEmpty()) {
+            return;
+        }
+
+        List<String> orderIds = orders.stream().map(OrderPojo::getOrderId).collect(Collectors.toList());
+        List<OrderItemPojo> allItems = orderItemApi.getByOrderIds(orderIds);
+
+        Map<String, List<OrderItemPojo>> itemsByOrderId = allItems.stream()
+                .collect(Collectors.groupingBy(OrderItemPojo::getOrderId));
+
+        Set<String> productIds = allItems.stream().map(OrderItemPojo::getProductId).collect(Collectors.toSet());
+        List<ProductPojo> allProducts = productApi.getByIds(new ArrayList<>(productIds));
+
+        Map<String, ProductPojo> productsById = allProducts.stream()
+                .collect(Collectors.toMap(ProductPojo::getId, p -> p));
+
+        Map<String, ClientAggregateData> clientDataMap = processOrdersAndAggregateByClient(orders, itemsByOrderId, productsById);
+
+
+        Map<String, ClientPojo> clientsById;
+        try {
+            clientsById = clientApi.getByClientIds(new ArrayList<>(clientDataMap.keySet()));
+        } catch (ApiException e) {
+            clientsById = Map.of();
+        }
+        saveDailySalesRecords(date, clientDataMap, clientsById);
+    }
+
+    private Map<String, ClientAggregateData> processOrdersAndAggregateByClient(
+            List<OrderPojo> orders,
+            Map<String, List<OrderItemPojo>> itemsByOrderId,
+            Map<String, ProductPojo> productsById) {
+
         Map<String, ClientAggregateData> clientDataMap = new HashMap<>();
 
         for (OrderPojo order : orders) {
-            List<OrderItemPojo> items = orderItemApi.getByOrderId(order.getOrderId());
+            List<OrderItemPojo> items = itemsByOrderId.get(order.getOrderId());
 
-            if (items.isEmpty()) {
+            if (items == null || items.isEmpty()) {
                 continue;
             }
 
             Map<String, ClientOrderData> clientOrderMap = new HashMap<>();
             for (OrderItemPojo item : items) {
-                try {
-                    ProductPojo product = productApi.getCheck(item.getProductId());
-                    String clientId = product.getClientId();
-
-                    ClientOrderData clientOrder = clientOrderMap.computeIfAbsent(clientId, k -> new ClientOrderData());
-                    clientOrder.itemsCount += item.getQuantity();
-                    clientOrder.revenue += item.getLineTotal();
-                } catch (ApiException e) {
+                ProductPojo product = productsById.get(item.getProductId());
+                if (product == null) {
+                    continue;
                 }
+
+                String clientId = product.getClientId();
+                ClientOrderData clientOrder = clientOrderMap.computeIfAbsent(clientId, k -> new ClientOrderData());
+                clientOrder.itemsCount += item.getQuantity();
+                clientOrder.revenue += item.getLineTotal();
             }
 
             for (Map.Entry<String, ClientOrderData> entry : clientOrderMap.entrySet()) {
@@ -92,17 +126,22 @@ public class DailySalesFlow {
             }
         }
 
+        return clientDataMap;
+    }
+
+    private void saveDailySalesRecords(
+            LocalDate date,
+            Map<String, ClientAggregateData> clientDataMap,
+            Map<String, ClientPojo> clientsById) {
+
         for (Map.Entry<String, ClientAggregateData> entry : clientDataMap.entrySet()) {
             String clientId = entry.getKey();
             ClientAggregateData data = entry.getValue();
 
             String clientName = "Unknown";
-            try {
-                ClientPojo client = clientApi.getCheckByClientId(clientId);
-                if (client != null) {
-                    clientName = client.getName();
-                }
-            } catch (ApiException e) {
+            ClientPojo client = clientsById.get(clientId);
+            if (client != null) {
+                clientName = client.getName();
             }
 
             DailySalesPojo existing = dailySalesApi.getByDateAndClient(date, clientId);

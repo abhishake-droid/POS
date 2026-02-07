@@ -4,10 +4,11 @@ import { useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/globals.css';
-import { Box } from '@mui/material';
+import { Box, ThemeProvider } from '@mui/material';
 import Navbar from '../components/Navbar';
 import AuthGuard from '../components/AuthGuard';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import theme from '../theme/theme';
 
 function AppContent({ Component, pageProps }: AppProps) {
   const { user, isLoading, checkAuth } = useAuth();
@@ -59,8 +60,10 @@ function AppContent({ Component, pageProps }: AppProps) {
 
 export default function App(props: AppProps) {
   return (
-    <AuthProvider>
-      <AppContent {...props} />
-    </AuthProvider>
+    <ThemeProvider theme={theme}>
+      <AuthProvider>
+        <AppContent {...props} />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

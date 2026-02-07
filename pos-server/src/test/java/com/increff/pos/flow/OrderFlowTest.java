@@ -63,6 +63,15 @@ class OrderFlowTest extends AbstractUnitTest {
         inventoryApi.add(inventory);
     }
 
+    // Helper method to create order item with barcode
+    private OrderItemPojo createOrderItem(String barcode, int quantity, double mrp) {
+        OrderItemPojo item = new OrderItemPojo();
+        item.setBarcode(barcode);
+        item.setQuantity(quantity);
+        item.setMrp(mrp);
+        return item;
+    }
+
     @Test
     void testCreateOrder_FullyFulfillable() throws ApiException {
         // Given - Create client, product, and inventory
@@ -71,10 +80,7 @@ class OrderFlowTest extends AbstractUnitTest {
         addInventory(product.getId(), 100);
 
         // Create order items
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         // When
         OrderCreationResult result = orderFlow.createOrder(Arrays.asList(item));
@@ -105,10 +111,7 @@ class OrderFlowTest extends AbstractUnitTest {
         addInventory(product.getId(), 5); // Only 5 available
 
         // Try to order 10
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         // When
         OrderCreationResult result = orderFlow.createOrder(Arrays.asList(item));
@@ -139,15 +142,8 @@ class OrderFlowTest extends AbstractUnitTest {
         addInventory(product2.getId(), 30);
 
         // Create order with multiple items
-        OrderItemPojo item1 = new OrderItemPojo();
-        item1.setProductId(product1.getId());
-        item1.setQuantity(5);
-        item1.setMrp(100.0);
-
-        OrderItemPojo item2 = new OrderItemPojo();
-        item2.setProductId(product2.getId());
-        item2.setQuantity(3);
-        item2.setMrp(200.0);
+        OrderItemPojo item1 = createOrderItem(product1.getBarcode(), 5, 100.0);
+        OrderItemPojo item2 = createOrderItem(product2.getBarcode(), 3, 200.0);
 
         // When
         OrderCreationResult result = orderFlow.createOrder(Arrays.asList(item1, item2));
@@ -173,10 +169,7 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER4", client.getClientId());
         addInventory(product.getId(), 100);
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
         String orderId = createResult.getOrderId();
@@ -203,10 +196,7 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER5", client.getClientId());
         addInventory(product.getId(), 100);
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(20);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 20, 100.0);
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
         String orderId = createResult.getOrderId();
@@ -228,19 +218,13 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER6", client.getClientId());
         addInventory(product.getId(), 100);
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
         String orderId = createResult.getOrderId();
 
         // When - Update the order with different quantity
-        OrderItemPojo updatedItem = new OrderItemPojo();
-        updatedItem.setProductId(product.getId());
-        updatedItem.setQuantity(15); // Increase quantity
-        updatedItem.setMrp(100.0);
+        OrderItemPojo updatedItem = createOrderItem(product.getBarcode(), 15, 100.0); // Increase quantity
 
         OrderPojo updatedOrder = orderFlow.updateOrder(orderId, Arrays.asList(updatedItem));
 
@@ -260,10 +244,7 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER7", client.getClientId());
         addInventory(product.getId(), 100);
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
         String orderId = createResult.getOrderId();
@@ -274,10 +255,7 @@ class OrderFlowTest extends AbstractUnitTest {
         orderApi.update(order.getId(), order);
 
         // When/Then - Try to update invoiced order
-        OrderItemPojo updatedItem = new OrderItemPojo();
-        updatedItem.setProductId(product.getId());
-        updatedItem.setQuantity(15);
-        updatedItem.setMrp(100.0);
+        OrderItemPojo updatedItem = createOrderItem(product.getBarcode(), 15, 100.0);
 
         assertThrows(ApiException.class, () -> orderFlow.updateOrder(orderId, Arrays.asList(updatedItem)));
     }
@@ -289,10 +267,7 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER8", client.getClientId());
         addInventory(product.getId(), 5); // Limited inventory
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
         String orderId = createResult.getOrderId();
@@ -326,10 +301,8 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER9", client.getClientId());
         addInventory(product.getId(), 5); // Limited inventory
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(20); // More than available - will be unfulfillable
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 20, 100.0); // More than available - will be
+                                                                               // unfulfillable
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
         String orderId = createResult.getOrderId();
@@ -340,10 +313,7 @@ class OrderFlowTest extends AbstractUnitTest {
         inventoryApi.update(inventory.getId(), inventory);
 
         // When - Retry with different quantity
-        OrderItemPojo newItem = new OrderItemPojo();
-        newItem.setProductId(product.getId());
-        newItem.setQuantity(20); // Different quantity
-        newItem.setMrp(100.0);
+        OrderItemPojo newItem = createOrderItem(product.getBarcode(), 20, 100.0); // Different quantity
 
         OrderCreationResult retryResult = orderFlow.retryOrder(orderId, Arrays.asList(newItem));
 
@@ -361,10 +331,7 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER10", client.getClientId());
         addInventory(product.getId(), 100);
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
         String orderId = createResult.getOrderId();
@@ -385,10 +352,7 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER11", client.getClientId());
         addInventory(product.getId(), 100);
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
         String orderId = createResult.getOrderId();
@@ -409,10 +373,7 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER12", client.getClientId());
         addInventory(product.getId(), 100);
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
 
@@ -433,10 +394,7 @@ class OrderFlowTest extends AbstractUnitTest {
         ProductPojo product = createTestProduct("BC_ORDER13", client.getClientId());
         addInventory(product.getId(), 100);
 
-        OrderItemPojo item = new OrderItemPojo();
-        item.setProductId(product.getId());
-        item.setQuantity(10);
-        item.setMrp(100.0);
+        OrderItemPojo item = createOrderItem(product.getBarcode(), 10, 100.0);
 
         OrderCreationResult createResult = orderFlow.createOrder(Arrays.asList(item));
         String orderId = createResult.getOrderId();

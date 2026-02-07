@@ -44,8 +44,9 @@ const HeaderBox = styled(Box)({
   marginBottom: '2rem',
   padding: '1.5rem',
   borderRadius: '12px',
-  backgroundColor: '#1976d2',
-  color: 'white',
+  backgroundColor: '#ffffff',
+  color: '#0f172a',
+  boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
 });
 
 const SectionCard = styled(Paper)({
@@ -55,9 +56,9 @@ const SectionCard = styled(Paper)({
 });
 
 const StyledTableHead = styled(TableHead)({
-  backgroundColor: '#1976d2',
+  backgroundColor: '#f1f5f9',
   '& .MuiTableCell-head': {
-    color: 'white',
+    color: '#0f172a',
     fontWeight: 600,
   },
 });
@@ -116,7 +117,7 @@ function ProductDetailsModal({ open, onClose, client }: ProductDetailsModalProps
             </Grid>
             <Grid item xs={6}>
               <Typography variant="body2" color="text.secondary">Total Revenue</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e3a8a' }}>
                 {formatINR(client.totalRevenue)}
               </Typography>
             </Grid>
@@ -362,7 +363,7 @@ export default function SalesReportPage() {
                   <Card>
                     <CardContent>
                       <Typography color="text.secondary" variant="body2">Invoiced Orders</Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e3a8a' }}>
                         {dailyTotalOrders}
                       </Typography>
                     </CardContent>
@@ -372,7 +373,7 @@ export default function SalesReportPage() {
                   <Card>
                     <CardContent>
                       <Typography color="text.secondary" variant="body2">Items (Qty)</Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e3a8a' }}>
                         {dailyTotalItems}
                       </Typography>
                     </CardContent>
@@ -382,7 +383,7 @@ export default function SalesReportPage() {
                   <Card>
                     <CardContent>
                       <Typography color="text.secondary" variant="body2">Total Revenue</Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e3a8a' }}>
                         {formatINR(dailyTotalRevenue)}
                       </Typography>
                     </CardContent>
@@ -493,7 +494,7 @@ export default function SalesReportPage() {
                   <Card>
                     <CardContent>
                       <Typography color="text.secondary" variant="body2">Invoiced Orders</Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e3a8a' }}>
                         {rangeTotalOrders}
                       </Typography>
                     </CardContent>
@@ -503,7 +504,7 @@ export default function SalesReportPage() {
                   <Card>
                     <CardContent>
                       <Typography color="text.secondary" variant="body2"> Items (Qty)</Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e3a8a' }}>
                         {rangeTotalQuantity}
                       </Typography>
                     </CardContent>
@@ -513,7 +514,7 @@ export default function SalesReportPage() {
                   <Card>
                     <CardContent>
                       <Typography color="text.secondary" variant="body2">Total Revenue</Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e3a8a' }}>
                         {formatINR(rangeTotalRevenue)}
                       </Typography>
                     </CardContent>

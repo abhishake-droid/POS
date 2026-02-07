@@ -3,6 +3,7 @@ package com.increff.pos.controller;
 import com.increff.pos.dto.ClientDto;
 import com.increff.pos.model.data.ClientData;
 import com.increff.pos.model.form.ClientForm;
+import com.increff.pos.model.form.ClientSearchForm;
 import com.increff.pos.model.form.PageForm;
 import com.increff.pos.exception.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,7 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
-// Todo Search method
+
 @Tag(name = "Client Management", description = "APIs for managing clients")
 @RestController
 @RequestMapping("/api/client")
@@ -29,6 +30,12 @@ public class ClientController {
     @PostMapping("/get-all-paginated")
     public Page<ClientData> getAll(@RequestBody PageForm form) throws ApiException {
         return clientDto.getAll(form);
+    }
+
+    @Operation(summary = "Search clients with filters and pagination")
+    @PostMapping("/search")
+    public Page<ClientData> search(@RequestBody ClientSearchForm form) throws ApiException {
+        return clientDto.search(form);
     }
 
     @Operation(summary = "Get client by ID")

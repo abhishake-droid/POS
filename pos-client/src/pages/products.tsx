@@ -87,7 +87,7 @@ const PaginationBox = styled(Box)({
 });
 
 const StyledIconButton = styled(IconButton)({
-  backgroundColor: '#1d4ed8',
+  backgroundColor: '#1e3a8a',
   color: 'white',
   '&:hover': {
     backgroundColor: '#1e40af',
@@ -767,15 +767,15 @@ export default function Products() {
                             <TableRow>
                               {uploadType === 'inventory' ? (
                                 <>
-                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>barcode</TableCell>
-                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>quantity</TableCell>
+                                  <TableCell sx={{ color: '#0f172a', fontWeight: 600, borderBottom: '1px solid #e5e7eb', bgcolor: '#f1f5f9' }}>barcode</TableCell>
+                                  <TableCell sx={{ color: '#0f172a', fontWeight: 600, borderBottom: '1px solid #e5e7eb', bgcolor: '#f1f5f9' }}>quantity</TableCell>
                                 </>
                               ) : (
                                 <>
-                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>barcode</TableCell>
-                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>name</TableCell>
-                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>mrp</TableCell>
-                                  <TableCell sx={{ color: 'white', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.3)' }}>clientId</TableCell>
+                                  <TableCell sx={{ color: '#0f172a', fontWeight: 600, borderBottom: '1px solid #e5e7eb', bgcolor: '#f1f5f9' }}>barcode</TableCell>
+                                  <TableCell sx={{ color: '#0f172a', fontWeight: 600, borderBottom: '1px solid #e5e7eb', bgcolor: '#f1f5f9' }}>name</TableCell>
+                                  <TableCell sx={{ color: '#0f172a', fontWeight: 600, borderBottom: '1px solid #e5e7eb', bgcolor: '#f1f5f9' }}>mrp</TableCell>
+                                  <TableCell sx={{ color: '#0f172a', fontWeight: 600, borderBottom: '1px solid #e5e7eb', bgcolor: '#f1f5f9' }}>clientId</TableCell>
                                 </>
                               )}
                             </TableRow>
@@ -823,14 +823,14 @@ export default function Products() {
                         uploadType && downloadTemplateTsv(uploadType === 'inventory' ? 'inventory' : 'products')
                       }
                       sx={{
-                        color: '#3b82f6',
+                        color: '#1e3a8a',
                         fontWeight: 600,
                         fontSize: '0.8125rem',
                         textTransform: 'none',
                         px: 0,
                         '&:hover': {
                           bgcolor: 'transparent',
-                          color: '#2563eb',
+                          color: '#1e40af',
                         },
                       }}
                     >
@@ -1018,189 +1018,147 @@ export default function Products() {
                   borderRadius: '16px',
                   backgroundColor: '#ffffff',
                   border: '1px solid #e5e7eb',
-                  boxShadow: '0 2px 8px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.06)',
-                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 12px rgba(15,23,42,0.06), 0 2px 4px rgba(15,23,42,0.04)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    borderColor: '#cbd5e1',
-                    boxShadow: '0 8px 16px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.06)',
-                    transform: 'translateY(-2px)',
+                    borderColor: '#3b82f6',
+                    boxShadow: '0 12px 24px rgba(59,130,246,0.12), 0 4px 8px rgba(59,130,246,0.08)',
+                    transform: 'translateY(-4px)',
                   },
                 }}
               >
-                <CardHeader
+                {/* Product Image - Centered at top */}
+                <Box
                   sx={{
-                    pb: 1.5,
-                    pt: 2,
                     display: 'flex',
+                    justifyContent: 'center',
                     alignItems: 'center',
-                    gap: 1.5,
+                    pt: 3,
+                    pb: 2,
+                    borderBottom: '1px solid #f1f5f9',
                   }}
-                  avatar={
-                    <Avatar
-                      src={p.imageUrl || undefined}
-                      alt={p.name}
-                      sx={{
-                        width: 72,
-                        height: 72,
-                        borderRadius: 3,
-                        bgcolor: '#f3f4f6',
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: '#9ca3af',
-                        border: '1px solid #e5e7eb',
-                      }}
-                      variant="rounded"
-                    >
-                      {p.imageUrl ? null : 'No Img'}
-                    </Avatar>
-                  }
-                  title={
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        fontWeight: 600,
-                        color: '#0f172a',
-                        mb: 0.25,
-                        fontSize: '0.95rem',
-                      }}
-                    >
-                      {p.name}
-                    </Typography>
-                  }
-                  subheader={
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                >
+                  <Avatar
+                    src={p.imageUrl || undefined}
+                    alt={p.name}
+                    sx={{
+                      width: 100,
+                      height: 100,
+                      borderRadius: 3,
+                      bgcolor: '#f9fafb',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: '#6b7280',
+                      border: '2px solid #e5e7eb',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.08)',
+                    }}
+                    variant="rounded"
+                  >
+                    {p.imageUrl ? null : 'No Image'}
+                  </Avatar>
+                </Box>
+
+                {/* Product Details */}
+                <CardContent sx={{ pt: 2.5, pb: 2, px: 2.5, flexGrow: 1 }}>
+                  {/* Product Name */}
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      color: '#0f172a',
+                      mb: 1.5,
+                      fontSize: '1.05rem',
+                      lineHeight: 1.3,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {p.name}
+                  </Typography>
+
+                  {/* Barcode & Client */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.75,
+                      mb: 2,
+                      pb: 2,
+                      borderBottom: '1px solid #f1f5f9',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500 }}>
+                        Barcode
+                      </Typography>
                       <Typography
                         variant="caption"
-                        sx={{ color: '#6b7280', fontFamily: 'monospace' }}
+                        sx={{ color: '#1e293b', fontFamily: 'monospace', fontWeight: 600, fontSize: '0.8rem' }}
                       >
                         {p.barcode}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: '#4b5563' }}>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500 }}>
+                        Client
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#1e293b', fontWeight: 600, fontSize: '0.8rem' }}>
                         {p.clientName || p.clientId}
                       </Typography>
                     </Box>
-                  }
-                />
-                <CardContent sx={{ pt: 1, pb: 2, px: 2.25, flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.25 }}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500, fontSize: '0.75rem' }}>
+                  </Box>
+
+                  {/* MRP */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
                       MRP
                     </Typography>
                     <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}
+                      variant="h6"
+                      sx={{ fontWeight: 700, color: '#1e3a8a', fontSize: '1.1rem' }}
                     >
                       {formatINR(p.mrp)}
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500, fontSize: '0.75rem' }}>
+
+                  {/* Inventory */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
                       Inventory
                     </Typography>
-                    {isSupervisor && editingInventoryId === p.id ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <Chip
+                        size="small"
+                        label={p.quantity ?? 0}
+                        sx={{
+                          height: 26,
+                          borderRadius: '8px',
+                          backgroundColor:
+                            (p.quantity ?? 0) === 0
+                              ? '#fef2f2'
+                              : '#f0fdf4',
+                          color:
+                            (p.quantity ?? 0) === 0 ? '#dc2626' : '#16a34a',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          px: 1.5,
+                          border: (p.quantity ?? 0) === 0 ? '1.5px solid #fecaca' : '1.5px solid #bbf7d0',
+                        }}
+                      />
+                      {isSupervisor && (
                         <IconButton
                           size="small"
-                          onClick={handleInventoryDecrement}
+                          onClick={() => handleStartInventoryEdit(p)}
                           sx={{
-                            width: 24,
-                            height: 24,
-                            backgroundColor: '#f3f4f6',
-                            '&:hover': { backgroundColor: '#e5e7eb' },
+                            width: 26,
+                            height: 26,
+                            backgroundColor: '#f1f5f9',
+                            '&:hover': { backgroundColor: '#e2e8f0', color: '#2563eb' },
                           }}
                         >
-                          <Remove sx={{ fontSize: 14 }} />
+                          <Edit sx={{ fontSize: 14, color: '#64748b' }} />
                         </IconButton>
-                        <TextField
-                          size="small"
-                          type="number"
-                          value={tempInventoryValue}
-                          onChange={(e) => handleInventoryManualChange(e.target.value)}
-                          sx={{
-                            width: 60,
-                            '& input': {
-                              textAlign: 'center',
-                              padding: '4px 6px',
-                              fontSize: 13,
-                            },
-                          }}
-                          inputProps={{ min: 0, max: 5000 }}
-                        />
-                        <IconButton
-                          size="small"
-                          onClick={handleInventoryIncrement}
-                          sx={{
-                            width: 24,
-                            height: 24,
-                            backgroundColor: '#f3f4f6',
-                            '&:hover': { backgroundColor: '#e5e7eb' },
-                          }}
-                        >
-                          <Add sx={{ fontSize: 14 }} />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleInventorySave(p.id)}
-                          sx={{
-                            width: 24,
-                            height: 24,
-                            backgroundColor: '#22c55e',
-                            color: 'white',
-                            ml: 0.5,
-                            '&:hover': { backgroundColor: '#16a34a' },
-                          }}
-                        >
-                          <Check sx={{ fontSize: 14 }} />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={handleInventoryCancel}
-                          sx={{
-                            width: 24,
-                            height: 24,
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            '&:hover': { backgroundColor: '#dc2626' },
-                          }}
-                        >
-                          <Close sx={{ fontSize: 14 }} />
-                        </IconButton>
-                      </Box>
-                    ) : (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <Chip
-                          size="small"
-                          label={p.quantity ?? 0}
-                          sx={{
-                            height: 24,
-                            borderRadius: '8px',
-                            backgroundColor:
-                              (p.quantity ?? 0) === 0
-                                ? '#fef2f2'
-                                : '#f0fdf4',
-                            color:
-                              (p.quantity ?? 0) === 0 ? '#dc2626' : '#16a34a',
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            px: 1.25,
-                            border: (p.quantity ?? 0) === 0 ? '1px solid #fecaca' : '1px solid #bbf7d0',
-                          }}
-                        />
-                        {isSupervisor && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleStartInventoryEdit(p)}
-                            sx={{
-                              width: 20,
-                              height: 20,
-                              '&:hover': { backgroundColor: '#f3f4f6' },
-                            }}
-                          >
-                            <Edit sx={{ fontSize: 12, color: '#6b7280' }} />
-                          </IconButton>
-                        )}
-                      </Box>
-                    )}
+                      )}
+                    </Box>
                   </Box>
                 </CardContent>
                 <CardActions
@@ -1509,6 +1467,138 @@ export default function Products() {
             }}
           >
             {editingId ? 'Save Changes' : 'Add Product'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Inventory Update Dialog */}
+      <Dialog
+        open={editingInventoryId !== null}
+        onClose={handleInventoryCancel}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ pb: 0.5, pt: 2, px: 2.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b', fontSize: '1.1rem' }}>
+            Update Inventory
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#64748b', mt: 0.25, fontSize: '0.85rem' }}>
+            Adjust the inventory quantity
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ px: 2.5, py: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifyContent: 'center' }}>
+            <IconButton
+              onClick={handleInventoryDecrement}
+              sx={{
+                width: 36,
+                height: 36,
+                backgroundColor: '#f1f5f9',
+                border: '1.5px solid #e2e8f0',
+                '&:hover': {
+                  backgroundColor: '#e2e8f0',
+                  borderColor: '#cbd5e1',
+                },
+              }}
+            >
+              <Remove sx={{ fontSize: 18, color: '#475569' }} />
+            </IconButton>
+
+            <TextField
+              type="number"
+              value={tempInventoryValue}
+              onChange={(e) => handleInventoryManualChange(e.target.value)}
+              sx={{
+                width: 90,
+                '& input': {
+                  textAlign: 'center',
+                  padding: '8px 10px',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: '#1e293b',
+                },
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  '& fieldset': {
+                    borderColor: '#cbd5e1',
+                    borderWidth: '1.5px',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#2563eb',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#2563eb',
+                    borderWidth: '2px',
+                  },
+                },
+              }}
+              inputProps={{ min: 0, max: 5000 }}
+            />
+
+            <IconButton
+              onClick={handleInventoryIncrement}
+              sx={{
+                width: 36,
+                height: 36,
+                backgroundColor: '#f1f5f9',
+                border: '1.5px solid #e2e8f0',
+                '&:hover': {
+                  backgroundColor: '#e2e8f0',
+                  borderColor: '#cbd5e1',
+                },
+              }}
+            >
+              <Add sx={{ fontSize: 18, color: '#475569' }} />
+            </IconButton>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2, pt: 1, gap: 1 }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={handleInventoryCancel}
+            sx={{
+              borderColor: '#e2e8f0',
+              color: '#64748b',
+              fontWeight: 600,
+              py: 0.75,
+              borderRadius: '8px',
+              textTransform: 'none',
+              fontSize: '0.9rem',
+              '&:hover': {
+                borderColor: '#cbd5e1',
+                bgcolor: '#f8fafc',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => handleInventorySave(editingInventoryId!)}
+            sx={{
+              bgcolor: '#22c55e',
+              color: 'white',
+              fontWeight: 600,
+              py: 0.75,
+              borderRadius: '8px',
+              textTransform: 'none',
+              fontSize: '0.9rem',
+              boxShadow: '0 2px 8px rgba(34,197,94,0.2)',
+              '&:hover': {
+                bgcolor: '#16a34a',
+                boxShadow: '0 4px 12px rgba(34,197,94,0.3)',
+              },
+            }}
+          >
+            Save
           </Button>
         </DialogActions>
       </Dialog>

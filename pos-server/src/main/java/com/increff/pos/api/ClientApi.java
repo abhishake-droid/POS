@@ -14,4 +14,8 @@ public interface ClientApi {
     Page<ClientPojo> getAll(int page, int size);
 
     ClientPojo update(String id, ClientPojo clientPojo) throws ApiException;
+
+    java.util.Map<String, ClientPojo> getByClientIds(java.util.List<String> clientIds) throws ApiException;
+
+    Page<ClientPojo> search(String clientId, String name, String email, int page, int size);
 }

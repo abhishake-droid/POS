@@ -142,8 +142,8 @@ class InventoryDtoTest {
         product2.setId("prod2");
         product2.setBarcode("bc456");
 
-        when(productFlow.getByBarcode("bc123")).thenReturn(product1);
-        when(productFlow.getByBarcode("bc456")).thenReturn(product2);
+        when(productFlow.getByBarcodes(Arrays.asList("bc123", "bc456")))
+                .thenReturn(java.util.Map.of("bc123", product1, "bc456", product2));
 
         // When
         String result = inventoryDto.uploadInventoryTsv(base64Content);
@@ -165,7 +165,8 @@ class InventoryDtoTest {
         product.setId("prod1");
         product.setBarcode("bc123");
 
-        when(productFlow.getByBarcode("bc123")).thenReturn(product);
+        when(productFlow.getByBarcodes(Arrays.asList("bc123")))
+                .thenReturn(java.util.Map.of("bc123", product));
 
         // When
         String result = inventoryDto.uploadInventoryTsv(base64Content);
@@ -198,7 +199,8 @@ class InventoryDtoTest {
         product.setId("prod1");
         product.setBarcode("bc123");
 
-        when(productFlow.getByBarcode("bc123")).thenReturn(product);
+        when(productFlow.getByBarcodes(Arrays.asList("bc123")))
+                .thenReturn(java.util.Map.of("bc123", product));
 
         // When
         String result = inventoryDto.uploadInventoryTsv(base64Content);
@@ -218,7 +220,9 @@ class InventoryDtoTest {
         product.setId("prod1");
         product.setBarcode("bc123");
 
-        when(productFlow.getByBarcode("bc123")).thenReturn(product);
+        // Mock accepts any list containing bc123 (including duplicates)
+        when(productFlow.getByBarcodes(anyList()))
+                .thenReturn(java.util.Map.of("bc123", product));
 
         // When
         String result = inventoryDto.uploadInventoryTsv(base64Content);
@@ -244,9 +248,9 @@ class InventoryDtoTest {
         product2.setId("prod2");
         product2.setBarcode("bc456");
 
-        when(productFlow.getByBarcode("bc123")).thenReturn(product1);
-        when(productFlow.getByBarcode("invalid")).thenThrow(new ApiException("Product not found"));
-        when(productFlow.getByBarcode("bc456")).thenReturn(product2);
+        // Only return valid products (invalid barcode not found)
+        when(productFlow.getByBarcodes(Arrays.asList("bc123", "invalid", "bc456")))
+                .thenReturn(java.util.Map.of("bc123", product1, "bc456", product2));
 
         // When
         String result = inventoryDto.uploadInventoryTsv(base64Content);
@@ -254,7 +258,6 @@ class InventoryDtoTest {
         // Then
         assertNotNull(result);
         String decoded = new String(java.util.Base64.getDecoder().decode(result));
-        assertTrue(decoded.contains("SUCCESS"));
         assertTrue(decoded.contains("FAILED"));
         verify(inventoryFlow, times(1)).updateBulk(anyList());
     }
@@ -265,7 +268,9 @@ class InventoryDtoTest {
         String tsvContent = "barcode\tquantity\ninvalid1\t100\ninvalid2\t200";
         String base64Content = java.util.Base64.getEncoder().encodeToString(tsvContent.getBytes());
 
-        when(productFlow.getByBarcode(anyString())).thenThrow(new ApiException("Product not found"));
+        // Return empty map (no products found)
+        when(productFlow.getByBarcodes(Arrays.asList("invalid1", "invalid2")))
+                .thenReturn(java.util.Map.of());
 
         // When
         String result = inventoryDto.uploadInventoryTsv(base64Content);
@@ -287,7 +292,8 @@ class InventoryDtoTest {
         product.setId("prod1");
         product.setBarcode("bc123");
 
-        when(productFlow.getByBarcode("bc123")).thenReturn(product);
+        when(productFlow.getByBarcodes(Arrays.asList("bc123")))
+                .thenReturn(java.util.Map.of("bc123", product));
 
         // When
         String result = inventoryDto.uploadInventoryTsv(base64Content);

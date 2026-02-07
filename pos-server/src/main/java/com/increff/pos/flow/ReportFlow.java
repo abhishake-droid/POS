@@ -129,6 +129,7 @@ public class ReportFlow {
         report.setTotalQuantity(totalQty);
         report.setTotalRevenue(totalRev);
 
+        // Todo check if i am using min mx n avg
         List<Double> prices = report.getPrices();
         if (!prices.isEmpty()) {
             report.setMinPrice(Collections.min(prices));

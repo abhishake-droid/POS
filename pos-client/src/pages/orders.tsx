@@ -111,10 +111,10 @@ const PaginationBox = styled(Box)({
 });
 
 const StyledIconButton = styled(IconButton)({
-  backgroundColor: '#1976d2',
+  backgroundColor: '#1e3a8a',
   color: 'white',
   '&:hover': {
-    backgroundColor: '#1565c0',
+    backgroundColor: '#1e40af',
   },
 });
 
@@ -126,7 +126,7 @@ export default function OrdersPage() {
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [orderForm, setOrderForm] = useState<CreateOrderForm>({
-    lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+    lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
   });
 
   const [initialLoad, setInitialLoad] = useState(true);
@@ -234,7 +234,7 @@ export default function OrdersPage() {
   const handleAddLine = () => {
     setOrderForm((prev) => ({
       ...prev,
-      lines: [...prev.lines, { productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+      lines: [...prev.lines, { barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
     }));
   };
 
@@ -267,9 +267,9 @@ export default function OrdersPage() {
           const quantity = line.quantity || 1;
           return {
             ...line,
-            productId: product ? product.id : '',
+            barcode: product ? product.barcode : '',
+            productId: product ? product.id : undefined,
             productName: product ? product.name : undefined,
-            barcode: product ? product.barcode : undefined,
             mrp,
             lineTotal: mrp * quantity,
           };
@@ -321,7 +321,7 @@ export default function OrdersPage() {
         return;
       }
       for (const line of orderForm.lines) {
-        if (!line.productId) {
+        if (!line.barcode) {
           toastError('Please select a product.');
           return;
         }
@@ -345,7 +345,7 @@ export default function OrdersPage() {
 
       setCreateDialogOpen(false);
       setOrderForm({
-        lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+        lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
       });
       setCurrentPage(0);
       loadOrders(0, filters).catch((err) => {
@@ -375,12 +375,12 @@ export default function OrdersPage() {
       const lines = (orderData.items || []).map(item => {
         console.log('Order item:', item);
         return {
+          barcode: item.barcode,
           productId: item.productId,
           quantity: item.quantity,
           mrp: item.mrp,
           lineTotal: item.lineTotal,
           productName: item.productName,
-          barcode: item.barcode,
         };
       });
 
@@ -401,7 +401,7 @@ export default function OrdersPage() {
         return;
       }
       for (const line of orderForm.lines) {
-        if (!line.productId) {
+        if (!line.barcode) {
           toastError('Please select a product.');
           return;
         }
@@ -426,7 +426,7 @@ export default function OrdersPage() {
       setEditDialogOpen(false);
       setEditingOrderId(null);
       setOrderForm({
-        lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+        lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
       });
       setCurrentPage(0);
       loadOrders(0, filters).catch((err) => {
@@ -551,12 +551,12 @@ export default function OrdersPage() {
       const orderData = await orderService.getById(orderId);
 
       const lines = (orderData.items || []).map(item => ({
+        barcode: item.barcode,
         productId: item.productId,
         quantity: item.quantity,
         mrp: item.mrp,
         lineTotal: item.lineTotal,
         productName: item.productName,
-        barcode: item.barcode,
       }));
 
       setOrderForm({ lines });
@@ -575,7 +575,7 @@ export default function OrdersPage() {
         return;
       }
       for (const line of orderForm.lines) {
-        if (!line.productId) {
+        if (!line.barcode) {
           toastError('Please select a product.');
           return;
         }
@@ -600,7 +600,7 @@ export default function OrdersPage() {
       setRetryDialogOpen(false);
       setRetryingOrderId(null);
       setOrderForm({
-        lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+        lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
       });
       setCurrentPage(0);
       loadOrders(0, filters).catch((err) => {
@@ -630,7 +630,7 @@ export default function OrdersPage() {
           startIcon={<Add />}
           onClick={() => {
             setOrderForm({
-              lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+              lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
             });
             setProductSearchQuery('');
             setCreateDialogOpen(true);
@@ -1021,6 +1021,7 @@ export default function OrdersPage() {
                   disabled={loading}
                   hidePrevButton
                   hideNextButton
+                  color="primary"
                 />
 
                 <Tooltip title="Next Page">
@@ -1057,7 +1058,7 @@ export default function OrdersPage() {
           if (reason === 'backdropClick') return;
           setCreateDialogOpen(false);
           setOrderForm({
-            lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+            lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
           });
           setSelectedProducts(new Map()); // Clear cached products
         }}
@@ -1198,12 +1199,22 @@ export default function OrdersPage() {
                 borderTop: '2px solid #e0e0e0',
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Total: ₹
-                {orderForm.lines
-                  .reduce((sum, line) => sum + line.lineTotal, 0)
-                  .toFixed(2)}
-              </Typography>
+              <Box
+                sx={{
+                  border: '3px solid #0d9488',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  display: 'inline-block',
+                  backgroundColor: '#f0fdfa',
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#0f766e', whiteSpace: 'nowrap' }}>
+                  TOTAL: ₹
+                  {orderForm.lines
+                    .reduce((sum, line) => sum + line.lineTotal, 0)
+                    .toFixed(2)}
+                </Typography>
+              </Box>
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
@@ -1218,7 +1229,7 @@ export default function OrdersPage() {
             onClick={() => {
               setCreateDialogOpen(false);
               setOrderForm({
-                lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+                lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
               });
               setSelectedProducts(new Map()); // Clear cached products
             }}
@@ -1239,7 +1250,7 @@ export default function OrdersPage() {
           setEditDialogOpen(false);
           setEditingOrderId(null);
           setOrderForm({
-            lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+            lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
           });
           setSelectedProducts(new Map()); // Clear cached products
         }}
@@ -1253,7 +1264,7 @@ export default function OrdersPage() {
               const selectedProduct = selectedProducts.get(index) ||
                 products.find((p) => p.id === line.productId) ||
                 (line.productName && line.barcode ? {
-                  id: line.productId,
+                  id: line.productId || '',
                   name: line.productName,
                   barcode: line.barcode,
                   clientId: '',
@@ -1360,7 +1371,7 @@ export default function OrdersPage() {
               setEditDialogOpen(false);
               setEditingOrderId(null);
               setOrderForm({
-                lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+                lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
               });
               setSelectedProducts(new Map()); // Clear cached products
             }}
@@ -1381,7 +1392,7 @@ export default function OrdersPage() {
           setRetryDialogOpen(false);
           setRetryingOrderId(null);
           setOrderForm({
-            lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+            lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
           });
           setSelectedProducts(new Map()); // Clear cached products
         }}
@@ -1485,7 +1496,7 @@ export default function OrdersPage() {
               setRetryDialogOpen(false);
               setRetryingOrderId(null);
               setOrderForm({
-                lines: [{ productId: '', quantity: 1, mrp: 0, lineTotal: 0 }],
+                lines: [{ barcode: '', quantity: 1, mrp: 0, lineTotal: 0 }],
               });
               setSelectedProducts(new Map()); // Clear cached products
             }}
@@ -1622,6 +1633,26 @@ export default function OrdersPage() {
           )}
         </DialogContent>
         <DialogActions>
+          {viewOrderData?.status === 'INVOICED' && viewOrderData?.hasInvoice && (
+            <Button
+              variant="contained"
+              startIcon={<Download />}
+              onClick={() => {
+                if (viewOrderData?.orderId) {
+                  handleDownloadInvoice(viewOrderData.orderId);
+                }
+              }}
+              sx={{
+                mr: 'auto',
+                bgcolor: '#1976d2',
+                '&:hover': {
+                  bgcolor: '#1565c0',
+                },
+              }}
+            >
+              Download Invoice
+            </Button>
+          )}
           <Button
             onClick={() => {
               setViewDialogOpen(false);
